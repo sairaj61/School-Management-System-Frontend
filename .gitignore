@@ -1,0 +1,21 @@
+node_modules/
+
+# Build output
+dist/
+build/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Vite/temporary files
+.vite/
+
+# Ignore local environment files only if not in public (handled by user)
+# .env
+# .env.*
