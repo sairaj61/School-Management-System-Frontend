@@ -26,8 +26,11 @@ RUN rm -rf ./*
 
 # Copy built files from the build stage
 COPY --from=build /app/dist .
-# Copy custom nginx config
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Copy custom nginx config template
+COPY nginx.conf.template /etc/nginx/conf.d/nginx.conf.template
+# Copy entrypoint script
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
 EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
+ENTRYPOINT ["/entrypoint.sh"]
