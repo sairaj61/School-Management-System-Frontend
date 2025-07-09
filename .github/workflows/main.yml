@@ -1,50 +1,40 @@
-name: Build and Deploy Frontend to EC2
+name: Deploy Frontend to EC2
 
 on:
   push:
     branches:
-      - main  # Change if frontend is on another branch
+      - main
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout frontend code
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Build frontend Docker image
-        run: |
-          docker build -t school-frontend:latest .
-
-      - name: Save image to tar file
-        run: |
-          docker save school-frontend:latest -o frontend.tar
-
-      - name: Set up SSH agent
+      - name: Set up SSH
         uses: webfactory/ssh-agent@v0.8.0
         with:
-          ssh-private-key: ${{ secrets.EC2_KEY }}
+          ssh-private-key: ${{ secrets.EC2_FRONTEND_KEY }}
 
-      - name: Transfer tar to EC2
+      - name: Fix permissions (optional, for non-root user)
         run: |
-          scp -o StrictHostKeyChecking=no frontend.tar ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST_FE }}:/home/${{ secrets.EC2_USER }}/frontend.tar
+          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_FE_USER }}@${{ secrets.EC2_FE_HOST }} \
+            "sudo chown -R \$USER:\$USER ~/School-Frontend || true"
 
-      - name: Load and run image on EC2
+      - name: Sync frontend files to EC2
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST_FE }} << 'EOF'
+          rsync -avz --delete -e "ssh -o StrictHostKeyChecking=no" ./ ${{ secrets.EC2_FE_USER }}@${{ secrets.EC2_FE_HOST }}:~/School-Frontend/
+
+      - name: Deploy on EC2
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_FE_USER }}@${{ secrets.EC2_FE_HOST }} << 'EOF'
             set -e
-
-            echo "📦 Loading Docker image..."
-            docker load -i frontend.tar
-
-            echo "🛑 Stopping existing container..."
-            docker stop school-frontend || true
-            docker rm school-frontend || true
-
-            echo "🚀 Running new container..."
-            docker run -d --name school-frontend -p 80:80 --restart unless-stopped school-frontend:latest
-
-            echo "🧹 Cleaning up..."
-            rm frontend.tar
+            cd ~/School-Frontend
+            docker compose down || true
+            source /etc/environment
+            docker compose up -d --build
+            docker image prune -f
+            docker container prune -f || true
           EOF

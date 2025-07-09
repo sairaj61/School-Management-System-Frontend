@@ -2,10 +2,10 @@ version: '3.8'
 
 services:
   frontend:
-    container_name: school_frontend
-    build:
-      context: .
-      dockerfile: Dockerfile.nginx
+    build: .
+    container_name: school-frontend
     ports:
       - "80:80"
-    restart: unless-stopped
+    env_file:
+      - /etc/environment
+    restart: always
