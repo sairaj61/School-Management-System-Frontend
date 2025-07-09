@@ -17,15 +17,17 @@ ENV VITE_BUILD_CONCURRENCY=1
 RUN chmod +x node_modules/.bin/vite
 RUN npm run build
 
-# ---------- Serve Stage ----------
-FROM node:18-slim AS serve
-WORKDIR /app
+# ---------- NGINX Serve Stage ----------
+FROM nginx:1.25-alpine AS serve
+WORKDIR /usr/share/nginx/html
 
-# Install lightweight HTTP server
-RUN npm install -g serve
+# Remove default nginx static assets
+RUN rm -rf ./*
 
 # Copy built files from the build stage
-COPY --from=build /app/dist ./dist
+COPY --from=build /app/dist .
+# Copy custom nginx config
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-EXPOSE 5173
-CMD ["serve", "-s", "dist", "-l", "5173"]
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
