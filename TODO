@@ -1,0 +1,69 @@
+🚀 Production Readiness TODO List
+🔹 1. Versioning & Rollback
+ Tag Docker images with git commit SHA (e.g., school-frontend:<sha>)
+
+ Store or log deployed image tag for rollback tracking
+
+ Update GitHub Action to accept custom tags or rollback to previous
+
+🔹 2. Health Check
+ Add health check endpoint to the frontend (e.g., /health)
+
+ Add a step in GitHub Actions (or entrypoint) to curl this endpoint after container start
+
+ Fail deployment if health check fails
+
+🔹 3. Blue-Green or Zero-Downtime Deployment
+ Run new container on a temporary port (e.g., 8080)
+
+ Validate health of new version
+
+ Switch Nginx or reverse proxy to new container
+
+ Gracefully remove old container
+
+🔹 4. HTTPS and Security
+ Install and configure Certbot (Let’s Encrypt) for SSL on frontend EC2
+
+ Update Nginx config to redirect HTTP → HTTPS
+
+ Add security headers in Nginx config (CSP, X-Frame-Options, etc.)
+
+🔹 5. Logging & Monitoring
+ Forward Nginx and Docker logs to CloudWatch or a log system (like ELK)
+
+ Set up monitoring (e.g., Uptime Kuma, Prometheus + Grafana)
+
+ Configure alerts for failed health checks or crashes
+
+🔹 6. Clean Environment Practices
+ Run docker system prune -f periodically (with care)
+
+ Add cron job or GitHub Action to clean old Docker image versions
+
+ Use .env or secret managers for sensitive config (instead of raw env)
+
+🔹 7. Infrastructure Improvements (Optional)
+ Move Docker image hosting to Amazon ECR
+
+ Replace SSH/scp with docker pull from ECR
+
+ Use Terraform or Ansible for EC2 provisioning and deployment
+
+🔹 8. Deployment Confirmation
+ Post message to Slack/Email with:
+
+Deployed version
+
+EC2 instance
+
+Health check status
+
+🧾 Example Final Goal
+✔ Auto-deploy on merge to main
+✔ Dockerized build with school-frontend:<tag>
+✔ HEALTHY backend integration via injected IP
+✔ HTTPS Nginx setup with Certbot
+✔ No downtime
+✔ Logs visible in CloudWatch
+✔ Auto-cleaned Docker environment
