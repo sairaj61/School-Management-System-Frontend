@@ -37,7 +37,7 @@ jobs:
 
             echo "📦 Loading Docker image..."
             docker load -i frontend.tar
-
+            source /etc/environment
             echo "🛑 Stopping and removing existing container..."
             docker stop school-frontend || true
             docker rm school-frontend || true
