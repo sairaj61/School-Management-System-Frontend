@@ -31,17 +31,17 @@ jobs:
           scp -o StrictHostKeyChecking=no frontend.tar ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST_FE }}:/home/${{ secrets.EC2_USER }}/frontend.tar
 
       - name: Load and run container on frontend EC2 with BACKEND_URL
+        env:
+          BACKEND_IP: ${{ secrets.EC2_HOST_BE }}
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST_FE }} << 'EOF'
+          BACKEND_URL="http://${BACKEND_IP}:8000"
+          echo "🔗 Built BACKEND_URL=${BACKEND_URL}"
+
+          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST_FE }} << EOF
             set -e
 
             echo "📦 Loading Docker image..."
             docker load -i frontend.tar
-
-            # Explicitly source and export variables from /etc/environment
-            set -a
-            source /etc/environment
-            set +a
 
             echo "✅ Using BACKEND_URL: ${BACKEND_URL}"
 
