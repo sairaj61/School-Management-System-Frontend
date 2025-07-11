@@ -3,7 +3,7 @@ name: Build and Deploy Frontend to EC2
 on:
   push:
     branches:
-      - main  # Change if frontend is on another branch
+      - main  # Adjust if needed
 
 jobs:
   build-and-deploy:
@@ -26,25 +26,46 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.EC2_KEY }}
 
-      - name: Transfer tar to EC2
+      - name: Transfer tar to EC2 frontend server
         run: |
           scp -o StrictHostKeyChecking=no frontend.tar ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST_FE }}:/home/${{ secrets.EC2_USER }}/frontend.tar
 
-      - name: Load and run image on EC2
+      - name: Load and run container on frontend EC2 with BACKEND_URL
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST_FE }} << 'EOF'
             set -e
 
+            BACKEND_URL="http://${{ secrets.EC2_HOST_BE }}:8000"
+
             echo "📦 Loading Docker image..."
             docker load -i frontend.tar
 
-            echo "🛑 Stopping existing container..."
+            echo "🛑 Stopping and removing existing container..."
             docker stop school-frontend || true
             docker rm school-frontend || true
 
-            echo "🚀 Running new container..."
-            docker run -d --name school-frontend -p 80:80 --restart unless-stopped school-frontend:latest
+            echo "🚀 Running new frontend container with BACKEND_URL=\$BACKEND_URL"
+            docker run -d \
+              --name school-frontend \
+              -e BACKEND_URL=\$BACKEND_URL \
+              -p 80:80 \
+              --restart unless-stopped \
+              school-frontend:latest
 
-            echo "🧹 Cleaning up..."
+            echo "🧹 Cleaning up frontend.tar..."
             rm frontend.tar
+
+            echo "🧽 Cleaning up unused Docker resources..."
+
+            # Remove exited containers
+            docker container prune -f
+
+            # Remove dangling/untagged images (e.g., <none>)
+            docker image prune -f
+
+            # Optionally clean volumes/networks if needed
+            # docker volume prune -f
+            # docker network prune -f
+
+            echo "✅ Cleanup complete."
           EOF
