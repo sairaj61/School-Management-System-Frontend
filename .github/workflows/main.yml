@@ -49,13 +49,8 @@ jobs:
             docker stop school-frontend || true
             docker rm school-frontend || true
 
-            echo "🚀 Running new frontend container with BACKEND_URL=\$BACKEND_URL"
-            docker run -d \
-              --name school-frontend \
-              -e BACKEND_URL=\$BACKEND_URL \
-              -p 80:80 \
-              --restart unless-stopped \
-              school-frontend:latest
+            echo "🚀 Running new frontend container with BACKEND_URL=$BACKEND_URL"
+            docker run -d   --name school-frontend   -e BACKEND_URL=$BACKEND_URL   -p 80:80   --restart unless-stopped   school-frontend:latest
 
             echo "🧹 Cleaning up frontend.tar..."
             rm frontend.tar
