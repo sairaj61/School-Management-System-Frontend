@@ -35,8 +35,6 @@ jobs:
           ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST_FE }} << 'EOF'
             set -e
 
-            BACKEND_URL="http://${{ secrets.EC2_HOST_BE }}:8000"
-
             echo "📦 Loading Docker image..."
             docker load -i frontend.tar
 
