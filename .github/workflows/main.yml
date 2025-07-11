@@ -37,8 +37,14 @@ jobs:
 
             echo "📦 Loading Docker image..."
             docker load -i frontend.tar
+
+            # Explicitly source and export variables from /etc/environment
+            set -a
             source /etc/environment
+            set +a
+
             echo "✅ Using BACKEND_URL: ${BACKEND_URL}"
+
             echo "🛑 Stopping and removing existing container..."
             docker stop school-frontend || true
             docker rm school-frontend || true
@@ -55,16 +61,8 @@ jobs:
             rm frontend.tar
 
             echo "🧽 Cleaning up unused Docker resources..."
-
-            # Remove exited containers
             docker container prune -f
-
-            # Remove dangling/untagged images (e.g., <none>)
             docker image prune -f
-
-            # Optionally clean volumes/networks if needed
-            # docker volume prune -f
-            # docker network prune -f
-
             echo "✅ Cleanup complete."
           EOF
+
