@@ -39,44 +39,44 @@ import appConfig from '../config/appConfig';
 
 // Styled components for better visual appeal
 const CalendarContainer = styled(Paper)(({ theme }) => ({
-  padding: theme.spacing(3),
-  marginBottom: theme.spacing(3),
-  borderRadius: theme.spacing(2),
-  boxShadow: '0 8px 32px rgba(0, 0, 0, 0.08)',
-  background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
+  padding: theme.spacing(2),
+  marginBottom: theme.spacing(2),
+  borderRadius: theme.spacing(1),
+  boxShadow: '0 4px 16px rgba(0, 0, 0, 0.06)',
+  background: theme.palette.background.paper,
 }));
 
 const CalendarHeader = styled(Box)(({ theme }) => ({
   display: 'flex',
   justifyContent: 'space-between',
   alignItems: 'center',
-  marginBottom: theme.spacing(3),
-  padding: theme.spacing(2),
+  marginBottom: theme.spacing(2),
+  padding: theme.spacing(1.5),
   backgroundColor: theme.palette.primary.main,
-  borderRadius: theme.spacing(1),
+  borderRadius: theme.spacing(0.5),
   color: theme.palette.primary.contrastText,
 }));
 
 const WeekdayHeader = styled(Box)(({ theme }) => ({
   display: 'grid',
   gridTemplateColumns: 'repeat(7, 1fr)',
-  gap: theme.spacing(1),
+  gap: theme.spacing(0.5),
   marginBottom: theme.spacing(1),
 }));
 
 const WeekdayCell = styled(Box)(({ theme }) => ({
-  padding: theme.spacing(1),
+  padding: theme.spacing(0.5),
   textAlign: 'center',
   fontWeight: 600,
   color: theme.palette.text.secondary,
-  fontSize: '0.875rem',
+  fontSize: '0.75rem',
 }));
 
 const CalendarGrid = styled(Box)(({ theme }) => ({
   display: 'grid',
   gridTemplateColumns: 'repeat(7, 1fr)',
-  gap: theme.spacing(1),
-  minHeight: '400px',
+  gap: theme.spacing(0.5),
+  minHeight: '300px',
 }));
 
 const DateCell = styled(Card)(({ theme, status, isToday, isEmpty }) => {
@@ -130,29 +130,29 @@ const DateCell = styled(Card)(({ theme, status, isToday, isEmpty }) => {
   const statusStyle = getStatusColor();
 
   return {
-    minHeight: '80px',
+    minHeight: '50px',
     cursor: isEmpty ? 'default' : 'pointer',
-    border: `2px solid ${statusStyle.borderColor}`,
+    border: `1px solid ${statusStyle.borderColor}`,
     backgroundColor: statusStyle.backgroundColor,
     color: statusStyle.color,
     opacity: isEmpty ? 0.3 : 1,
-    transform: isToday ? 'scale(1.05)' : 'scale(1)',
+    transform: isToday ? 'scale(1.02)' : 'scale(1)',
     boxShadow: isToday 
-      ? '0 4px 20px rgba(0, 0, 0, 0.15)' 
-      : '0 2px 8px rgba(0, 0, 0, 0.1)',
-    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+      ? '0 2px 8px rgba(0, 0, 0, 0.12)' 
+      : '0 1px 3px rgba(0, 0, 0, 0.08)',
+    transition: 'all 0.2s ease',
     '&:hover': isEmpty ? {} : {
-      transform: 'scale(1.05)',
-      boxShadow: '0 8px 25px rgba(0, 0, 0, 0.15)',
+      transform: 'scale(1.02)',
+      boxShadow: '0 3px 12px rgba(0, 0, 0, 0.15)',
       zIndex: 1,
     },
   };
 });
 
 const LegendContainer = styled(Paper)(({ theme }) => ({
-  padding: theme.spacing(2),
-  marginBottom: theme.spacing(3),
-  borderRadius: theme.spacing(1),
+  padding: theme.spacing(1.5),
+  marginBottom: theme.spacing(2),
+  borderRadius: theme.spacing(0.5),
   backgroundColor: theme.palette.background.paper,
   border: `1px solid ${theme.palette.divider}`,
 }));
@@ -160,16 +160,16 @@ const LegendContainer = styled(Paper)(({ theme }) => ({
 const LegendItem = styled(Box)(({ theme }) => ({
   display: 'flex',
   alignItems: 'center',
-  gap: theme.spacing(1),
-  marginBottom: theme.spacing(0.5),
+  gap: theme.spacing(0.5),
+  marginBottom: theme.spacing(0.25),
 }));
 
 const StatusIndicator = styled(Box)(({ color }) => ({
-  width: 16,
-  height: 16,
+  width: 12,
+  height: 12,
   borderRadius: '50%',
   backgroundColor: color,
-  border: '2px solid rgba(0, 0, 0, 0.1)',
+  border: '1px solid rgba(0, 0, 0, 0.1)',
 }));
 
 const StudentAttendance = ({ studentId, onClose }) => {
@@ -307,25 +307,26 @@ const StudentAttendance = ({ studentId, onClose }) => {
           isToday={today}
           onClick={() => handleDateClick(date, attendanceRecord)}
         >
-          <CardContent sx={{ p: 1, '&:last-child': { pb: 1 } }}>
-            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%' }}>
-              <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
+          <CardContent sx={{ p: 0.5, '&:last-child': { pb: 0.5 } }}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', minHeight: '45px' }}>
+              <Typography variant="body2" sx={{ fontWeight: 600, fontSize: '0.9rem' }}>
                 {date}
               </Typography>
               {attendanceRecord && (
-                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.25, mt: 0.25 }}>
                   <Chip
                     size="small"
                     label={statusConfig[attendanceRecord.status]?.label || attendanceRecord.status}
                     sx={{
-                      fontSize: '0.7rem',
-                      height: '20px',
+                      fontSize: '0.6rem',
+                      height: '16px',
                       backgroundColor: statusConfig[attendanceRecord.status]?.bgColor,
                       color: statusConfig[attendanceRecord.status]?.color,
+                      '& .MuiChip-label': { px: 0.5 }
                     }}
                   />
                   {attendanceRecord.is_late && (
-                    <WarningIcon sx={{ fontSize: 16, color: '#ff9800' }} />
+                    <WarningIcon sx={{ fontSize: 12, color: '#ff9800' }} />
                   )}
                 </Box>
               )}
@@ -333,10 +334,10 @@ const StudentAttendance = ({ studentId, onClose }) => {
                 <Box
                   sx={{
                     position: 'absolute',
-                    top: 4,
-                    right: 4,
-                    width: 8,
-                    height: 8,
+                    top: 2,
+                    right: 2,
+                    width: 6,
+                    height: 6,
                     borderRadius: '50%',
                     backgroundColor: '#ff4444',
                   }}
@@ -375,135 +376,110 @@ const StudentAttendance = ({ studentId, onClose }) => {
 
   return (
     <Box sx={{ width: '100%' }}>
-      {/* Header */}
-      <Paper sx={{ p: 3, mb: 3, borderRadius: 2, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', color: 'white' }}>
-          <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)', mr: 2 }}>
-            <CalendarIcon />
-          </Avatar>
-          <Box sx={{ flexGrow: 1 }}>
-            <Typography variant="h5" sx={{ fontWeight: 600, mb: 1 }}>
-              Student Attendance
-            </Typography>
-            <Typography variant="subtitle1" sx={{ opacity: 0.9 }}>
-              Monthly attendance view with detailed status tracking
-            </Typography>
-          </Box>
+      {/* Compact Header */}
+      <Paper sx={{ p: 2, mb: 2, borderRadius: 1, bgcolor: 'primary.main', color: 'white' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <CalendarIcon sx={{ mr: 1 }} />
+          <Typography variant="h6" sx={{ fontWeight: 600 }}>
+            Student Attendance - {monthNames[currentMonth]} {currentYear}
+          </Typography>
         </Box>
       </Paper>
 
-      {/* Stats Cards */}
-      <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid item xs={6} sm={4} md={2}>
-          <Card sx={{ textAlign: 'center', bgcolor: '#e8f5e8' }}>
-            <CardContent>
-              <Typography variant="h6" sx={{ color: '#2e7d32', fontWeight: 600 }}>
+      {/* Compact Stats Cards */}
+      <Paper sx={{ p: 1.5, mb: 2, borderRadius: 1 }}>
+        <Grid container spacing={1}>
+          <Grid item xs={6} sm={2}>
+            <Box sx={{ textAlign: 'center', p: 1, bgcolor: '#e8f5e8', borderRadius: 0.5 }}>
+              <Typography variant="h6" sx={{ color: '#2e7d32', fontWeight: 600, fontSize: '1.1rem' }}>
                 {stats.present}
               </Typography>
-              <Typography variant="caption" color="textSecondary">
+              <Typography variant="caption" color="textSecondary" sx={{ fontSize: '0.7rem' }}>
                 Present
               </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={6} sm={4} md={2}>
-          <Card sx={{ textAlign: 'center', bgcolor: '#ffebee' }}>
-            <CardContent>
-              <Typography variant="h6" sx={{ color: '#c62828', fontWeight: 600 }}>
+            </Box>
+          </Grid>
+          <Grid item xs={6} sm={2}>
+            <Box sx={{ textAlign: 'center', p: 1, bgcolor: '#ffebee', borderRadius: 0.5 }}>
+              <Typography variant="h6" sx={{ color: '#c62828', fontWeight: 600, fontSize: '1.1rem' }}>
                 {stats.absent}
               </Typography>
-              <Typography variant="caption" color="textSecondary">
+              <Typography variant="caption" color="textSecondary" sx={{ fontSize: '0.7rem' }}>
                 Absent
               </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={6} sm={4} md={2}>
-          <Card sx={{ textAlign: 'center', bgcolor: '#fff3e0' }}>
-            <CardContent>
-              <Typography variant="h6" sx={{ color: '#ef6c00', fontWeight: 600 }}>
+            </Box>
+          </Grid>
+          <Grid item xs={6} sm={2}>
+            <Box sx={{ textAlign: 'center', p: 1, bgcolor: '#fff3e0', borderRadius: 0.5 }}>
+              <Typography variant="h6" sx={{ color: '#ef6c00', fontWeight: 600, fontSize: '1.1rem' }}>
                 {stats.late}
               </Typography>
-              <Typography variant="caption" color="textSecondary">
+              <Typography variant="caption" color="textSecondary" sx={{ fontSize: '0.7rem' }}>
                 Late
               </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={6} sm={4} md={2}>
-          <Card sx={{ textAlign: 'center', bgcolor: '#e3f2fd' }}>
-            <CardContent>
-              <Typography variant="h6" sx={{ color: '#1565c0', fontWeight: 600 }}>
+            </Box>
+          </Grid>
+          <Grid item xs={6} sm={2}>
+            <Box sx={{ textAlign: 'center', p: 1, bgcolor: '#e3f2fd', borderRadius: 0.5 }}>
+              <Typography variant="h6" sx={{ color: '#1565c0', fontWeight: 600, fontSize: '1.1rem' }}>
                 {stats.excused}
               </Typography>
-              <Typography variant="caption" color="textSecondary">
+              <Typography variant="caption" color="textSecondary" sx={{ fontSize: '0.7rem' }}>
                 Excused
               </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={6} sm={4} md={2}>
-          <Card sx={{ textAlign: 'center', bgcolor: '#f3e5f5' }}>
-            <CardContent>
-              <Typography variant="h6" sx={{ color: '#7b1fa2', fontWeight: 600 }}>
+            </Box>
+          </Grid>
+          <Grid item xs={6} sm={2}>
+            <Box sx={{ textAlign: 'center', p: 1, bgcolor: '#f3e5f5', borderRadius: 0.5 }}>
+              <Typography variant="h6" sx={{ color: '#7b1fa2', fontWeight: 600, fontSize: '1.1rem' }}>
                 {stats.sick_leave}
               </Typography>
-              <Typography variant="caption" color="textSecondary">
+              <Typography variant="caption" color="textSecondary" sx={{ fontSize: '0.7rem' }}>
                 Sick Leave
               </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={6} sm={4} md={2}>
-          <Card sx={{ textAlign: 'center', bgcolor: '#fff8e1' }}>
-            <CardContent>
-              <Typography variant="h6" sx={{ color: '#f57c00', fontWeight: 600 }}>
+            </Box>
+          </Grid>
+          <Grid item xs={6} sm={2}>
+            <Box sx={{ textAlign: 'center', p: 1, bgcolor: '#fff8e1', borderRadius: 0.5 }}>
+              <Typography variant="h6" sx={{ color: '#f57c00', fontWeight: 600, fontSize: '1.1rem' }}>
                 {stats.half_day}
               </Typography>
-              <Typography variant="caption" color="textSecondary">
+              <Typography variant="caption" color="textSecondary" sx={{ fontSize: '0.7rem' }}>
                 Half Day
               </Typography>
-            </CardContent>
-          </Card>
+            </Box>
+          </Grid>
         </Grid>
-      </Grid>
+      </Paper>
 
-      {/* Legend */}
+      {/* Compact Legend */}
       <LegendContainer>
-        <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <EventNoteIcon />
-          Attendance Legend
+        <Typography variant="subtitle2" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1 }}>
+          <EventNoteIcon fontSize="small" />
+          Legend
         </Typography>
-        <Grid container spacing={2}>
+        <Grid container spacing={1}>
           {Object.entries(statusConfig).map(([status, config]) => (
             <Grid item xs={6} sm={4} md={2} key={status}>
               <LegendItem>
                 <StatusIndicator color={config.color} />
-                <Typography variant="body2">{config.label}</Typography>
+                <Typography variant="caption" sx={{ fontSize: '0.7rem' }}>{config.label}</Typography>
               </LegendItem>
             </Grid>
           ))}
         </Grid>
-        <Box sx={{ mt: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
-          <WarningIcon sx={{ fontSize: 16, color: '#ff9800' }} />
-          <Typography variant="caption" color="textSecondary">
-            Warning icon indicates late arrival
-          </Typography>
-        </Box>
       </LegendContainer>
 
       {/* Calendar */}
       <CalendarContainer>
         <CalendarHeader>
-          <IconButton onClick={handlePreviousMonth} sx={{ color: 'inherit' }}>
+          <IconButton onClick={handlePreviousMonth} sx={{ color: 'inherit' }} size="small">
             <ChevronLeftIcon />
           </IconButton>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Typography variant="h5" sx={{ fontWeight: 600 }}>
-              {monthNames[currentMonth]} {currentYear}
-            </Typography>
-          </Box>
-          <IconButton onClick={handleNextMonth} sx={{ color: 'inherit' }}>
+          <Typography variant="h6" sx={{ fontWeight: 600 }}>
+            {monthNames[currentMonth]} {currentYear}
+          </Typography>
+          <IconButton onClick={handleNextMonth} sx={{ color: 'inherit' }} size="small">
             <ChevronRightIcon />
           </IconButton>
         </CalendarHeader>

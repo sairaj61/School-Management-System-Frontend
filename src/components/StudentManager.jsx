@@ -8,6 +8,7 @@ import { handleApiError } from '../utils/errorHandler';
 import axiosInstance from '../utils/axiosConfig';
 import appConfig from '../config/appConfig';
 import StudentAttendance from './StudentAttendance';
+import StudentDetails from './StudentDetails';
 
 // Icons
 import PeopleIcon from '@mui/icons-material/People';
@@ -338,7 +339,15 @@ const StudentManager = () => {
 
   // New: Handle opening the main student details tab
   const handleViewStudentDetails = (student) => {
-    setViewedStudent(student); // Set the student object for the dedicated tab
+    // Enrich student object with computed fields for StudentDetails component
+    const enrichedStudent = {
+      ...student,
+      class_name: classes.find(c => c.id === student.class_id)?.class_name || 'N/A',
+      section_name: sections.find(s => s.id === student.section_id)?.name || 'N/A', 
+      academic_year_name: academicYears.find(ay => ay.id === student.academic_year_id)?.year_name || 'N/A'
+    };
+    
+    setViewedStudent(enrichedStudent); // Set the enriched student object for the dedicated tab
     fetchStudentFacilities(student.id); 
     fetchStudentFixedFees(student.id); 
     if (student.class_id) {
@@ -351,7 +360,15 @@ const StudentManager = () => {
 
   // New: Handle opening the student attendance tab
   const handleViewStudentAttendance = (student) => {
-    setViewedStudent(student); // Set the student object for the dedicated tab
+    // Enrich student object with computed fields for StudentDetails component
+    const enrichedStudent = {
+      ...student,
+      class_name: classes.find(c => c.id === student.class_id)?.class_name || 'N/A',
+      section_name: sections.find(s => s.id === student.section_id)?.name || 'N/A', 
+      academic_year_name: academicYears.find(ay => ay.id === student.academic_year_id)?.year_name || 'N/A'
+    };
+    
+    setViewedStudent(enrichedStudent); // Set the enriched student object for the dedicated tab
     fetchStudentFacilities(student.id); 
     fetchStudentFixedFees(student.id); 
     if (student.class_id) {
@@ -870,54 +887,56 @@ const StudentManager = () => {
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      {/* Statistics Cards */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={6} md={4}> 
-          <Card sx={{ bgcolor: 'primary.light', color: 'primary.contrastText' }}>
-            <CardContent>
-              <Box display="flex" alignItems="center" mb={1}>
-                <PeopleIcon sx={{ mr: 1 }} />
-                <Typography variant="h6" gutterBottom>
-                  Total Students
+      {/* Statistics Cards - Only show for "All Students" and "Students by Category" tabs */}
+      {tabValue !== 2 && (
+        <Grid container spacing={3} sx={{ mb: 4 }}>
+          <Grid item xs={12} sm={6} md={4}> 
+            <Card sx={{ bgcolor: 'primary.light', color: 'primary.contrastText' }}>
+              <CardContent>
+                <Box display="flex" alignItems="center" mb={1}>
+                  <PeopleIcon sx={{ mr: 1 }} />
+                  <Typography variant="h6" gutterBottom>
+                    Total Students
+                  </Typography>
+                </Box>
+                <Typography variant="h3">
+                  {stats.totalStudents}
                 </Typography>
-              </Box>
-              <Typography variant="h3">
-                {stats.totalStudents}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={4}> 
-          <Card sx={{ bgcolor: 'success.light', color: 'success.contrastText' }}>
-            <CardContent>
-              <Box display="flex" alignItems="center" mb={1}>
-                <SchoolIcon sx={{ mr: 1 }} />
-                <Typography variant="h6" gutterBottom>
-                  Total Classes
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={12} sm={6} md={4}> 
+            <Card sx={{ bgcolor: 'success.light', color: 'success.contrastText' }}>
+              <CardContent>
+                <Box display="flex" alignItems="center" mb={1}>
+                  <SchoolIcon sx={{ mr: 1 }} />
+                  <Typography variant="h6" gutterBottom>
+                    Total Classes
+                  </Typography>
+                </Box>
+                <Typography variant="h3">
+                  {stats.totalClasses}
                 </Typography>
-              </Box>
-              <Typography variant="h3">
-                {stats.totalClasses}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={4}> 
-          <Card sx={{ bgcolor: 'info.light', color: 'info.contrastText' }}>
-            <CardContent>
-              <Box display="flex" alignItems="center" mb={1}>
-                <ViewWeekIcon sx={{ mr: 1 }} />
-                <Typography variant="h6" gutterBottom>
-                  Total Sections
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={12} sm={6} md={4}> 
+            <Card sx={{ bgcolor: 'info.light', color: 'info.contrastText' }}>
+              <CardContent>
+                <Box display="flex" alignItems="center" mb={1}>
+                  <ViewWeekIcon sx={{ mr: 1 }} />
+                  <Typography variant="h6" gutterBottom>
+                    Total Sections
+                  </Typography>
+                </Box>
+                <Typography variant="h3">
+                  {stats.totalSections}
                 </Typography>
-              </Box>
-              <Typography variant="h3">
-                {stats.totalSections}
-              </Typography>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </Grid>
         </Grid>
-      </Grid>
+      )}
 
       {/* Main Tabs */}
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
@@ -1113,223 +1132,11 @@ const StudentManager = () => {
 
       {/* New: Content for "Student Details" Tab */}
       {tabValue === 2 && viewedStudent && (
-        <Box sx={{ mb: 3 }}>
-          {/* Header with back button */}
-          <Paper sx={{ p: 2, mb: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
-            <IconButton 
-              onClick={() => setTabValue(0)} 
-              color="primary"
-              sx={{ 
-                bgcolor: 'primary.light', 
-                '&:hover': { bgcolor: 'primary.main', color: 'white' }
-              }}
-            >
-              <ArrowBackIcon />
-            </IconButton>
-            <Box sx={{ flexGrow: 1 }}>
-              <Typography variant="h5" sx={{ fontWeight: 600, color: 'primary.main' }}>
-                {viewedStudent.name}
-              </Typography>
-              <Typography variant="body2" color="textSecondary">
-                Roll No: {viewedStudent.roll_number} • Class: {classes.find(c => c.id === viewedStudent.class_id)?.class_name || 'N/A'}
-              </Typography>
-            </Box>
-          </Paper>
-
-          {/* Sub-tabs for student details */}
-          <Paper sx={{ mb: 2 }}>
-            <Tabs 
-              value={studentDetailsTabValue} 
-              onChange={(e, newValue) => setStudentDetailsTabValue(newValue)}
-              sx={{ borderBottom: 1, borderColor: 'divider' }}
-              variant="scrollable"
-              scrollButtons="auto"
-            >
-              <Tab label="Personal Info" />
-              <Tab label="Academic Info" />
-              <Tab label="Fees & Facilities" />
-              <Tab label="Attendance" />
-            </Tabs>
-          </Paper>
-
-          {/* Personal Information Tab */}
-          {studentDetailsTabValue === 0 && (
-            <Paper sx={{ p: 3 }}>
-              <Typography variant="h6" gutterBottom sx={{ color: 'primary.main', fontWeight: 600 }}>
-                Personal Information
-              </Typography>
-              <Grid container spacing={3}>
-                <Grid item xs={12} sm={6}>
-                  <Typography variant="subtitle2" color="textSecondary">Full Name:</Typography>
-                  <Typography variant="body1" sx={{ fontWeight: 500 }}>{viewedStudent.name}</Typography>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <Typography variant="subtitle2" color="textSecondary">Father's Name:</Typography>
-                  <Typography variant="body1" sx={{ fontWeight: 500 }}>{viewedStudent.father_name}</Typography>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <Typography variant="subtitle2" color="textSecondary">Mother's Name:</Typography>
-                  <Typography variant="body1" sx={{ fontWeight: 500 }}>{viewedStudent.mother_name}</Typography>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <Typography variant="subtitle2" color="textSecondary">Date of Birth:</Typography>
-                  <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                    {viewedStudent.date_of_birth ? new Date(viewedStudent.date_of_birth).toLocaleDateString() : 'N/A'}
-                  </Typography>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <Typography variant="subtitle2" color="textSecondary">Gender:</Typography>
-                  <Typography variant="body1" sx={{ fontWeight: 500 }}>{viewedStudent.gender || 'N/A'}</Typography>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <Typography variant="subtitle2" color="textSecondary">Email:</Typography>
-                  <Typography variant="body1" sx={{ fontWeight: 500 }}>{viewedStudent.email || 'N/A'}</Typography>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <Typography variant="subtitle2" color="textSecondary">Phone:</Typography>
-                  <Typography variant="body1" sx={{ fontWeight: 500 }}>{viewedStudent.phone_number || 'N/A'}</Typography>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <Typography variant="subtitle2" color="textSecondary">Emergency Contact:</Typography>
-                  <Typography variant="body1" sx={{ fontWeight: 500 }}>{viewedStudent.emergency_contact_number || 'N/A'}</Typography>
-                </Grid>
-                <Grid item xs={12}>
-                  <Typography variant="subtitle2" color="textSecondary">Address:</Typography>
-                  <Typography variant="body1" sx={{ fontWeight: 500 }}>{viewedStudent.address || 'N/A'}</Typography>
-                </Grid>
-                <Grid item xs={12}>
-                  <Typography variant="subtitle2" color="textSecondary">Medical History:</Typography>
-                  <Typography variant="body1" sx={{ fontWeight: 500 }}>{viewedStudent.medical_history || 'None'}</Typography>
-                </Grid>
-              </Grid>
-            </Paper>
-          )}
-
-          {/* Academic Information Tab */}
-          {studentDetailsTabValue === 1 && (
-            <Paper sx={{ p: 3 }}>
-              <Typography variant="h6" gutterBottom sx={{ color: 'primary.main', fontWeight: 600 }}>
-                Academic Information
-              </Typography>
-              <Grid container spacing={3}>
-                <Grid item xs={12} sm={4}>
-                  <Typography variant="subtitle2" color="textSecondary">Class:</Typography>
-                  <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                    {classes.find(c => c.id === viewedStudent.class_id)?.class_name || 'N/A'}
-                  </Typography>
-                </Grid>
-                <Grid item xs={12} sm={4}>
-                  <Typography variant="subtitle2" color="textSecondary">Section:</Typography>
-                  <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                    {sections.find(s => s.id === viewedStudent.section_id)?.name || 'N/A'}
-                  </Typography>
-                </Grid>
-                <Grid item xs={12} sm={4}>
-                  <Typography variant="subtitle2" color="textSecondary">Academic Year:</Typography>
-                  <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                    {academicYears.find(ay => ay.id === viewedStudent.academic_year_id)?.year_name || 'N/A'}
-                  </Typography>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <Typography variant="subtitle2" color="textSecondary">Previous School:</Typography>
-                  <Typography variant="body1" sx={{ fontWeight: 500 }}>{viewedStudent.old_school_name || 'N/A'}</Typography>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <Typography variant="subtitle2" color="textSecondary">Status:</Typography>
-                  <Chip 
-                    label={viewedStudent.status} 
-                    color={viewedStudent.status === 'ACTIVE' ? 'success' : 'warning'}
-                    size="small"
-                    sx={{ fontWeight: 500 }}
-                  />
-                </Grid>
-              </Grid>
-            </Paper>
-          )}
-
-          {/* Fees & Facilities Tab */}
-          {studentDetailsTabValue === 2 && (
-            <Box>
-              {/* Fixed Fees Section */}
-              <Paper sx={{ p: 3, mb: 2 }}>
-                <Typography variant="h6" gutterBottom sx={{ color: 'primary.main', fontWeight: 600 }}>
-                  Fixed Fees (Non-Optional)
-                </Typography>
-                {studentFixedFees.length === 0 ? (
-                  <Typography variant="body2" color="textSecondary">No fixed fees assigned to this student.</Typography>
-                ) : (
-                  <Box sx={{ height: Math.min(studentFixedFees.length * 52 + 56, 300), width: '100%' }}>
-                    <DataGrid
-                      rows={studentFixedFees.map(fee => ({ ...fee, id: fee.id }))} 
-                      columns={fixedFeesColumns}
-                      pageSize={5}
-                      rowsPerPageOptions={[5, 10, 20]}
-                      disableSelectionOnClick
-                      loading={loading}
-                      getRowId={(row) => row.id}
-                      sx={{
-                        '& .MuiDataGrid-row:hover': {
-                          backgroundColor: 'action.hover'
-                        }
-                      }}
-                    />
-                  </Box>
-                )}
-              </Paper>
-
-              {/* Optional Facilities Section */}
-              <Paper sx={{ p: 3 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                  <Typography variant="h6" sx={{ color: 'primary.main', fontWeight: 600 }}>
-                    Optional Facilities
-                  </Typography>
-                  <Button
-                    variant="contained"
-                    size="small"
-                    startIcon={<AddIcon />}
-                    onClick={handleAddFacilitySubModalOpen}
-                    sx={{ borderRadius: 2 }}
-                  >
-                    Add New Facility
-                  </Button>
-                </Box>
-                {studentFacilities.length === 0 ? (
-                  <Typography variant="body2" color="textSecondary">No facilities enrolled yet.</Typography>
-                ) : (
-                  <Box sx={{ height: Math.min(studentFacilities.length * 52 + 56, 400), width: '100%' }}>
-                    <DataGrid
-                      rows={studentFacilities.map(facility => ({ 
-                        ...facility, 
-                        id: facility.id, 
-                        amount: facility.amount || (facility.fee && facility.fee.amount) || 'N/A', 
-                        concession_amount: facility.concession_amount || 0,
-                        status: facility.status || 'ACTIVE' 
-                      }))}
-                      columns={facilityColumns}
-                      pageSize={5}
-                      rowsPerPageOptions={[5, 10, 20]}
-                      disableSelectionOnClick
-                      loading={loading}
-                      getRowId={(row) => row.id}
-                      sx={{
-                        '& .MuiDataGrid-row:hover': {
-                          backgroundColor: 'action.hover'
-                        }
-                      }}
-                    />
-                  </Box>
-                )}
-              </Paper>
-            </Box>
-          )}
-
-          {/* Attendance Tab */}
-          {studentDetailsTabValue === 3 && (
-            <Paper sx={{ p: 2, minHeight: '600px' }}>
-              <StudentAttendance studentId={viewedStudent.id} />
-            </Paper>
-          )}
-        </Box>
+        <StudentDetails 
+          student={viewedStudent}
+          onBack={() => setTabValue(0)}
+          onEdit={handleAddEditModalOpen}
+        />
       )}
       {!viewedStudent && tabValue === 2 && (
         <Paper sx={{ p: 3, mb: 3, textAlign: 'center' }}>
