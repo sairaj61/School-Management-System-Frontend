@@ -236,30 +236,6 @@ const ConcessionTypeManager = () => {
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      {/* CSV Download/Upload Buttons */}
-      <Grid container spacing={2} alignItems="center" sx={{ mb: 2 }}>
-        <Grid item>
-          <Button variant="outlined" onClick={handleDownloadCSV}>
-            Download CSV
-          </Button>
-        </Grid>
-        <Grid item>
-          <Button
-            variant="outlined"
-            component="label"
-          >
-            Upload CSV
-            <input
-              type="file"
-              accept=".csv"
-              hidden
-              onChange={handleUploadCSV}
-              data-testid="upload-csv-input"
-            />
-          </Button>
-        </Grid>
-      </Grid>
-
       <Grid container spacing={3} sx={{ mb: 4 }}>
         <Grid item xs={12} sm={6} md={6}>
           <Card sx={{ bgcolor: 'primary.light', color: 'white' }}>
@@ -285,6 +261,7 @@ const ConcessionTypeManager = () => {
         </Grid>
       </Grid>
 
+      {/* Action buttons and search below stats, above table */}
       <Grid container spacing={2} alignItems="center" sx={{ mb: 3 }}>
         <Grid item xs>
           <Typography variant="h4">Concession Types</Typography>
@@ -303,6 +280,26 @@ const ConcessionTypeManager = () => {
             onClick={() => handleModalOpen()}
           >
             Add Concession Type
+          </Button>
+        </Grid>
+        <Grid item>
+          <Button variant="outlined" onClick={handleDownloadCSV}>
+            Download CSV
+          </Button>
+        </Grid>
+        <Grid item>
+          <Button
+            variant="outlined"
+            component="label"
+          >
+            Upload CSV
+            <input
+              type="file"
+              accept=".csv"
+              hidden
+              onChange={handleUploadCSV}
+              data-testid="upload-csv-input"
+            />
           </Button>
         </Grid>
       </Grid>
