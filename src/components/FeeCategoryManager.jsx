@@ -12,6 +12,7 @@ import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import CategoryIcon from '@mui/icons-material/Category';
 import ScheduleIcon from '@mui/icons-material/Schedule';
 import OptionalIcon from '@mui/icons-material/FactCheck'; // Using FactCheck for optional
+import Papa from 'papaparse'; // Add at the top for CSV parsing
 
 const FeeCategoryManager = () => {
   const [feeCategories, setFeeCategories] = useState([]);
@@ -209,6 +210,112 @@ const FeeCategoryManager = () => {
 
   const paymentScheduleOptions = Array.from({ length: 12 }, (_, i) => i + 1); // 1 to 12 months
 
+  // CSV Download Handler
+  const handleDownloadCSV = () => {
+    // Always include header, even if feeCategories is empty
+    const csvData =
+      feeCategories.length > 0
+        ? feeCategories.map(
+            ({
+              category_name,
+              payment_schedule,
+              is_optional,
+              is_class_specific_fee,
+              core_fee,
+              educational_supplies,
+            }) => ({
+              category_name,
+              payment_schedule,
+              is_optional,
+              is_class_specific_fee,
+              core_fee,
+              educational_supplies,
+            })
+          )
+        : [
+            {
+              category_name: '',
+              payment_schedule: '',
+              is_optional: '',
+              is_class_specific_fee: '',
+              core_fee: '',
+              educational_supplies: '',
+            },
+          ];
+    const csv = Papa.unparse(csvData, {
+      header: true,
+      skipEmptyLines: true,
+    });
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'fee_categories.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  // CSV Upload Handler
+  const handleUploadCSV = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: async (results) => {
+        try {
+          // Helper to parse boolean from CSV (handles TRUE/FALSE, true/false, 1/0, etc.)
+          const parseBool = (val) => {
+            if (typeof val === 'boolean') return val;
+            if (typeof val === 'number') return val === 1;
+            if (typeof val === 'string') {
+              const v = val.trim().toLowerCase();
+              return v === 'true' || v === '1';
+            }
+            return false;
+          };
+
+          const validRows = results.data.filter(
+            row =>
+              row.category_name &&
+              row.payment_schedule &&
+              row.is_optional !== undefined &&
+              row.is_class_specific_fee !== undefined &&
+              row.core_fee !== undefined &&
+              row.educational_supplies !== undefined
+          ).map(row => ({
+            category_name: row.category_name,
+            payment_schedule: Number(row.payment_schedule),
+            is_optional: parseBool(row.is_optional),
+            is_class_specific_fee: parseBool(row.is_class_specific_fee),
+            core_fee: parseBool(row.core_fee),
+            educational_supplies: parseBool(row.educational_supplies),
+          }));
+
+          if (validRows.length === 0) {
+            setAlert({ open: true, message: 'No valid rows found in CSV.', severity: 'error' });
+            return;
+          }
+          await axiosInstance.post(
+            `${appConfig.API_PREFIX_V1}/fees-management/fee-categories/bulk`,
+            validRows
+          );
+          setAlert({ open: true, message: 'Fee Categories uploaded successfully!', severity: 'success' });
+          fetchFeeCategories();
+        } catch (error) {
+          handleApiError(error, setAlert);
+        }
+      },
+      error: () => {
+        setAlert({ open: true, message: 'Failed to parse CSV file.', severity: 'error' });
+      }
+    });
+    // Reset input value so the same file can be uploaded again if needed
+    event.target.value = '';
+  };
+
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
       <Grid container spacing={3} sx={{ mb: 4 }}>
@@ -258,6 +365,7 @@ const FeeCategoryManager = () => {
         </Grid>
       </Grid>
 
+      {/* Action buttons and search below stats, above table */}
       <Grid container spacing={2} alignItems="center" sx={{ mb: 3 }}>
         <Grid item xs>
           <Typography variant="h4">Fee Categories</Typography>
@@ -276,6 +384,26 @@ const FeeCategoryManager = () => {
             onClick={() => handleModalOpen()}
           >
             Add Fee Category
+          </Button>
+        </Grid>
+        <Grid item>
+          <Button variant="outlined" onClick={handleDownloadCSV}>
+            Download CSV
+          </Button>
+        </Grid>
+        <Grid item>
+          <Button
+            variant="outlined"
+            component="label"
+          >
+            Upload CSV
+            <input
+              type="file"
+              accept=".csv"
+              hidden
+              onChange={handleUploadCSV}
+              data-testid="upload-csv-input"
+            />
           </Button>
         </Grid>
       </Grid>
