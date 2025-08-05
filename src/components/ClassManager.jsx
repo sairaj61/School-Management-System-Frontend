@@ -24,6 +24,7 @@ import ClassIcon from '@mui/icons-material/Class';
 import GroupIcon from '@mui/icons-material/Group';
 import AutoStoriesIcon from '@mui/icons-material/AutoStories';
 import SchoolIcon from '@mui/icons-material/School';
+import Papa from 'papaparse'; // Add at the top for CSV parsing
 
 const ClassManager = () => {
   const [classes, setClasses] = useState([]);
@@ -234,6 +235,60 @@ const ClassManager = () => {
     },
   ];
 
+  // CSV Download Handler
+  const handleDownloadCSV = () => {
+    // Always include header, even if classes is empty
+    const csvData =
+      classes.length > 0
+        ? classes.map(cls => {
+            const year = academicYears.find(y => y.id === cls.academic_year_id);
+            return {
+              class_name: cls.class_name,
+              academic_year: year ? year.year_name : '',
+            };
+          })
+        : [{ class_name: '', academic_year: '' }];
+    const csv = Papa.unparse(csvData, {
+      header: true,
+      skipEmptyLines: true,
+    });
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'classes.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  // CSV Upload Handler
+  const handleUploadCSV = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    const formData = new FormData();
+    formData.append('file', file, file.name);
+
+    try {
+      await axiosInstance.post(
+        `${appConfig.API_PREFIX_V1}/students-managements/classes/bulk_upload_csv/`,
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      );
+      setAlert({ open: true, message: 'Classes uploaded successfully!', severity: 'success' });
+      fetchClasses();
+    } catch (error) {
+      handleApiError(error, setAlert);
+    }
+    // Reset input value so the same file can be uploaded again if needed
+    event.target.value = '';
+  };
+
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
       <Grid container spacing={3} sx={{ mb: 4 }}>
@@ -283,6 +338,7 @@ const ClassManager = () => {
         </Grid>
       </Grid>
 
+      {/* Action buttons and search below stats, above table */}
       <Grid container spacing={2} alignItems="center" sx={{ mb: 3 }}>
         <Grid item xs>
           <Typography variant="h4">Classes</Typography>
@@ -301,6 +357,26 @@ const ClassManager = () => {
             onClick={() => handleModalOpen()}
           >
             Add Class
+          </Button>
+        </Grid>
+        <Grid item>
+          <Button variant="outlined" onClick={handleDownloadCSV}>
+            Download CSV
+          </Button>
+        </Grid>
+        <Grid item>
+          <Button
+            variant="outlined"
+            component="label"
+          >
+            Upload CSV
+            <input
+              type="file"
+              accept=".csv"
+              hidden
+              onChange={handleUploadCSV}
+              data-testid="upload-csv-input"
+            />
           </Button>
         </Grid>
       </Grid>
