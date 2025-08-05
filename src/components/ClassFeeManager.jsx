@@ -16,6 +16,7 @@ import RouteIcon from '@mui/icons-material/Route';
 import PersonIcon from '@mui/icons-material/Person';
 import MapIcon from '@mui/icons-material/Map';
 import VisibilityIcon from '@mui/icons-material/Visibility'; // Icon for view details button
+import Papa from 'papaparse'; // Add at the top for CSV parsing
 
 const ClassFeeManager = () => {
   const [fees, setFees] = useState([]);
@@ -327,6 +328,50 @@ const ClassFeeManager = () => {
 
   const paymentScheduleOptions = Array.from({ length: 12 }, (_, i) => i + 1);
 
+  // CSV Download Handler
+  const handleDownloadCSV = () => {
+    const csvData =
+      filteredFees.length > 0
+        ? filteredFees.map(fee => {
+            const category = feeCategories.find(cat => cat.id === fee.fee_category_id);
+            const cls = classes.find(c => c.id === fee.class_id);
+            const year = academicYears.find(y => y.id === fee.academic_year_id);
+            return {
+              fee_category: category ? category.category_name : '',
+              class_name: cls ? cls.class_name : '',
+              amount: fee.amount,
+              description: fee.description,
+              payment_schedule: fee.payment_schedule,
+              is_optional: fee.is_optional,
+              academic_year: year ? year.year_name : '',
+              status: fee.status,
+            };
+          })
+        : [{
+            fee_category: '',
+            class_name: '',
+            amount: '',
+            description: '',
+            payment_schedule: '',
+            is_optional: '',
+            academic_year: '',
+            status: '',
+          }];
+    const csv = Papa.unparse(csvData, {
+      header: true,
+      skipEmptyLines: true,
+    });
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'class_fees.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
       <Grid container spacing={3} sx={{ mb: 4 }}>
@@ -383,6 +428,11 @@ const ClassFeeManager = () => {
             onClick={() => handleModalOpen()}
           >
             Add Fee
+          </Button>
+        </Grid>
+        <Grid item>
+          <Button variant="outlined" onClick={handleDownloadCSV}>
+            Download CSV
           </Button>
         </Grid>
       </Grid>
