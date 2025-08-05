@@ -372,6 +372,32 @@ const ClassFeeManager = () => {
     URL.revokeObjectURL(url);
   };
 
+  // CSV Upload Handler
+  const handleUploadCSV = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    const formData = new FormData();
+    formData.append('file', file, file.name);
+
+    try {
+      await axiosInstance.post(
+        `${appConfig.API_PREFIX_V1}/fees/bulk-csv`,
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      );
+      setAlert({ open: true, message: 'Class fees uploaded successfully!', severity: 'success' });
+      fetchInitialData();
+    } catch (error) {
+      handleApiError(error, setAlert);
+    }
+    // Reset input value so the same file can be uploaded again if needed
+    event.target.value = '';
+  };
+
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
       <Grid container spacing={3} sx={{ mb: 4 }}>
@@ -433,6 +459,21 @@ const ClassFeeManager = () => {
         <Grid item>
           <Button variant="outlined" onClick={handleDownloadCSV}>
             Download CSV
+          </Button>
+        </Grid>
+        <Grid item>
+          <Button
+            variant="outlined"
+            component="label"
+          >
+            Upload CSV
+            <input
+              type="file"
+              accept=".csv"
+              hidden
+              onChange={handleUploadCSV}
+              data-testid="upload-csv-input"
+            />
           </Button>
         </Grid>
       </Grid>
