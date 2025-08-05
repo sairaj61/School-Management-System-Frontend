@@ -64,8 +64,6 @@ const StudentManager = () => {
   const [formData, setFormData] = useState({
     name: '',
     roll_number: '',
-    father_name: '',
-    mother_name: '',
     date_of_birth: '',
     gender: '',
     email: '',
@@ -77,7 +75,9 @@ const StudentManager = () => {
     medical_history: '',
     emergency_contact_number: '',
     old_school_name: '',
-    fee_categories_with_concession: [] // For Admit Student
+    enrollment_date: '',
+    fee_categories_with_concession: [],
+    parents: [], // <-- Add parents array
   });
 
   const [newFacilityForm, setNewFacilityForm] = useState({ // For adding new facilities
@@ -290,23 +290,22 @@ const StudentManager = () => {
 
   const resetFormData = () => {
     setFormData({
-      name: '', roll_number: '', father_name: '', mother_name: '',
-      date_of_birth: '', gender: '', email: '', phone_number: '', address: '',
-      class_id: '', section_id: '', academic_year_id: '',
-      medical_history: '', emergency_contact_number: '', old_school_name: '',
-      fee_categories_with_concession: []
+      name: '', roll_number: '', date_of_birth: '', gender: '', email: '', phone_number: '', address: '',
+      class_id: '', section_id: '', academic_year_id: '', medical_history: '', emergency_contact_number: '', old_school_name: '',
+      enrollment_date: '', fee_categories_with_concession: [], parents: []
     });
     setFilteredSectionsForDropdown([]);
     setClassFees([]);
     setOptionalFeesForSelectedClass([]);
+    setParentForm({ name: '', phone_number: '', email: '', relation: '' });
+    setParentEditIndex(null);
   };
 
   const handleAddEditModalOpen = (student = null) => {
     if (student) {
       setSelectedStudent(student);
       setFormData({
-        name: student.name, roll_number: student.roll_number, father_name: student.father_name, mother_name: student.mother_name,
-        date_of_birth: student.date_of_birth?.split('T')[0] || '', gender: student.gender || '', email: student.email || '', phone_number: student.phone_number || '', address: student.address,
+        name: student.name, roll_number: student.roll_number, date_of_birth: student.date_of_birth?.split('T')[0] || '', gender: student.gender || '', email: student.email || '', phone_number: student.phone_number || '', address: student.address,
         class_id: student.class_id, section_id: student.section_id, academic_year_id: student.academic_year_id,
         medical_history: student.medical_history || '', emergency_contact_number: student.emergency_contact_number || '', old_school_name: student.old_school_name || '',
         fee_categories_with_concession: []
@@ -467,8 +466,6 @@ const StudentManager = () => {
       const studentData = {
         name: formData.name.trim(),
         roll_number: formData.roll_number.trim(),
-        father_name: formData.father_name.trim(),
-        mother_name: formData.mother_name.trim(),
         date_of_birth: formData.date_of_birth,
         gender: formData.gender,
         email: formData.email.trim(),
@@ -503,8 +500,6 @@ const StudentManager = () => {
       const admitData = {
         name: formData.name.trim(),
         roll_number: formData.roll_number.trim(),
-        father_name: formData.father_name.trim(),
-        mother_name: formData.mother_name.trim(),
         date_of_birth: formData.date_of_birth,
         gender: formData.gender,
         email: formData.email.trim(),
@@ -516,6 +511,8 @@ const StudentManager = () => {
         medical_history: formData.medical_history.trim(),
         emergency_contact_number: formData.emergency_contact_number.trim(),
         old_school_name: formData.old_school_name.trim(),
+        enrollment_date: formData.enrollment_date,
+        parents: formData.parents, // <-- send parents array
         fee_categories_with_concession: formData.fee_categories_with_concession.map(fee => ({
           start_date: fee.start_date,
           end_date: fee.end_date || null,
@@ -635,8 +632,6 @@ const StudentManager = () => {
     const searchString = (
       student.name +
       student.roll_number +
-      student.father_name +
-      student.mother_name +
       student.email +
       student.phone_number +
       student.address +
@@ -663,7 +658,6 @@ const StudentManager = () => {
   const columns = [
     { field: 'name', headerName: 'Name', width: 160 },
     { field: 'roll_number', headerName: 'Roll No', width: 100 },
-    { field: 'father_name', headerName: 'Father Name', width: 160 },
     { field: 'phone_number', headerName: 'Contact', width: 120 },
     { field: 'email', headerName: 'Email', width: 200 },
     {
@@ -883,6 +877,56 @@ const StudentManager = () => {
     const selectedCategoryDetails = feeCategories.find(cat => cat.id === selectedFeeCategory);
     return selectedCategoryDetails?.category_name === 'TRANSPORT';
   })();
+
+
+  // Add these lines after your useState for formData:
+  const [parentForm, setParentForm] = useState({
+    name: '',
+    phone_number: '',
+    email: '',
+    relation: '',
+  });
+  const [parentEditIndex, setParentEditIndex] = useState(null);
+
+  const handleParentInputChange = (e) => {
+    const { name, value } = e.target;
+    setParentForm(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleAddParent = () => {
+    if (!parentForm.name || !parentForm.relation) return;
+    setFormData(prev => ({
+      ...prev,
+      parents: [...prev.parents, parentForm]
+    }));
+    setParentForm({ name: '', phone_number: '', email: '', relation: '' });
+    setParentEditIndex(null);
+  };
+
+  const handleEditParent = (idx) => {
+    setParentForm(formData.parents[idx]);
+    setParentEditIndex(idx);
+  };
+
+  const handleUpdateParent = () => {
+    if (parentEditIndex === null) return;
+    setFormData(prev => {
+      const updated = [...prev.parents];
+      updated[parentEditIndex] = parentForm;
+      return { ...prev, parents: updated };
+    });
+    setParentForm({ name: '', phone_number: '', email: '', relation: '' });
+    setParentEditIndex(null);
+  };
+
+  const handleRemoveParent = (idx) => {
+    setFormData(prev => ({
+      ...prev,
+      parents: prev.parents.filter((_, i) => i !== idx)
+    }));
+    setParentForm({ name: '', phone_number: '', email: '', relation: '' });
+    setParentEditIndex(null);
+  };
 
 
   return (
@@ -1168,12 +1212,6 @@ const StudentManager = () => {
                 <TextField fullWidth label="Roll Number" name="roll_number" value={formData.roll_number} onChange={handleInputChange} required />
               </Grid>
               <Grid item xs={12} sm={6}>
-                <TextField fullWidth label="Father's Name" name="father_name" value={formData.father_name} onChange={handleInputChange} required />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField fullWidth label="Mother's Name" name="mother_name" value={formData.mother_name} onChange={handleInputChange} required />
-              </Grid>
-              <Grid item xs={12} sm={6}>
                 <TextField fullWidth label="Date of Birth" name="date_of_birth" type="date" value={formData.date_of_birth} onChange={handleInputChange} required InputLabelProps={{ shrink: true }} />
               </Grid>
               <Grid item xs={12} sm={6}>
@@ -1280,12 +1318,6 @@ const StudentManager = () => {
                 <TextField fullWidth label="Roll Number" name="roll_number" value={formData.roll_number} onChange={handleInputChange} required />
               </Grid>
               <Grid item xs={12} sm={6}>
-                <TextField fullWidth label="Father's Name" name="father_name" value={formData.father_name} onChange={handleInputChange} required />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField fullWidth label="Mother's Name" name="mother_name" value={formData.mother_name} onChange={handleInputChange} required />
-              </Grid>
-              <Grid item xs={12} sm={6}>
                 <TextField fullWidth label="Date of Birth" name="date_of_birth" type="date" value={formData.date_of_birth} onChange={handleInputChange} required InputLabelProps={{ shrink: true }} />
               </Grid>
               <Grid item xs={12} sm={6}>
@@ -1361,6 +1393,82 @@ const StudentManager = () => {
               </Grid>
             </Grid>
 
+            {/* Parent List Section */}
+            <Box sx={{ mt: 3, mb: 2 }}>
+              <Typography variant="h6" gutterBottom>Parents</Typography>
+              <Grid container spacing={2} alignItems="center">
+                <Grid item xs={12} sm={3}>
+                  <TextField
+                    fullWidth
+                    label="Parent Name"
+                    name="name"
+                    value={parentForm.name}
+                    onChange={handleParentInputChange}
+                    required
+                  />
+                </Grid>
+                <Grid item xs={12} sm={3}>
+                  <TextField
+                    fullWidth
+                    label="Relation"
+                    name="relation"
+                    value={parentForm.relation}
+                    onChange={handleParentInputChange}
+                    required
+                  />
+                </Grid>
+                <Grid item xs={12} sm={3}>
+                  <TextField
+                    fullWidth
+                    label="Phone Number"
+                    name="phone_number"
+                    value={parentForm.phone_number}
+                    onChange={handleParentInputChange}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={3}>
+                  <TextField
+                    fullWidth
+                    label="Email"
+                    name="email"
+                    value={parentForm.email}
+                    onChange={handleParentInputChange}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={3}>
+                  {parentEditIndex === null ? (
+                    <Button variant="outlined" onClick={handleAddParent} sx={{ mt: { xs: 1, sm: 0 } }}>
+                      Add Parent
+                    </Button>
+                  ) : (
+                    <Button variant="contained" onClick={handleUpdateParent} sx={{ mt: { xs: 1, sm: 0 } }}>
+                      Update Parent
+                    </Button>
+                  )}
+                </Grid>
+              </Grid>
+              {/* List of added parents */}
+              {formData.parents.length > 0 && (
+                <Box sx={{ mt: 2 }}>
+                  <Typography variant="subtitle1">Added Parents:</Typography>
+                  <Grid container spacing={1}>
+                    {formData.parents.map((parent, idx) => (
+                      <Grid item xs={12} key={idx}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                          <Typography>
+                            {parent.name} ({parent.relation}) {parent.phone_number ? `- ${parent.phone_number}` : ''} {parent.email ? `- ${parent.email}` : ''}
+                          </Typography>
+                          <Button size="small" onClick={() => handleEditParent(idx)}>Edit</Button>
+                          <Button size="small" color="error" onClick={() => handleRemoveParent(idx)}>Remove</Button>
+                        </Box>
+                      </Grid>
+                    ))}
+                  </Grid>
+                </Box>
+              )}
+            </Box>
+
+            {/* Fee Details & Concessions section */}
             {formData.class_id && classFees.length > 0 && (
               <>
                 <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>Fee Details & Concessions</Typography>
