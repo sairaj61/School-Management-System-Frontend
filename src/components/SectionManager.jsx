@@ -12,6 +12,7 @@ import BarChartIcon from '@mui/icons-material/BarChart';
 import ClassIcon from '@mui/icons-material/Class';
 import axiosInstance from '../utils/axiosConfig';
 import appConfig from '../config/appConfig';
+import Papa from 'papaparse'; // Add at the top for CSV parsing
 
 const SectionManager = () => {
   const [sections, setSections] = useState([]);
@@ -32,11 +33,13 @@ const SectionManager = () => {
     averageStudents: 0,
     classesWithSections: 0
   });
+  const [academicYears, setAcademicYears] = useState([]); // Add this line
 
   useEffect(() => {
     fetchSections();
     fetchClasses();
     fetchStudents();
+    fetchAcademicYears(); // Add this line
   }, []);
 
   const fetchStudents = async () => {
@@ -65,6 +68,16 @@ const SectionManager = () => {
       // Assuming this endpoint returns objects with 'class_name' as previously discussed
       const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/students-managements/classes/`);
       setClasses(response.data);
+    } catch (error) {
+      handleApiError(error, setAlert);
+    }
+  };
+
+  // Add this function to fetch academic years
+  const fetchAcademicYears = async () => {
+    try {
+      const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/timetable/academic-years/`);
+      setAcademicYears(response.data);
     } catch (error) {
       handleApiError(error, setAlert);
     }
@@ -139,6 +152,36 @@ const SectionManager = () => {
         handleApiError(error, setAlert);
       }
     }
+  };
+
+  // CSV Download Handler
+  const handleDownloadCSV = () => {
+    // Always include header, even if sections is empty
+    const csvData =
+      sections.length > 0
+        ? sections.map(section => {
+            const cls = classes.find(c => c.id === section.class_id);
+            const year = cls && academicYears.find(y => y.id === cls.academic_year_id);
+            return {
+              class_name: cls ? cls.class_name : '',
+              section_name: section.name || '',
+              academic_year: year ? year.year_name : '',
+            };
+          })
+        : [{ class_name: '', section_name: '', academic_year: '' }];
+    const csv = Papa.unparse(csvData, {
+      header: true,
+      skipEmptyLines: true,
+    });
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'sections.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   const filteredSections = sections.filter(section => {
@@ -283,6 +326,11 @@ const SectionManager = () => {
             onClick={() => handleModalOpen()}
           >
             Add Section
+          </Button>
+        </Grid>
+        <Grid item>
+          <Button variant="outlined" onClick={handleDownloadCSV}>
+            Download CSV
           </Button>
         </Grid>
       </Grid>
