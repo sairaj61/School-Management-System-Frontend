@@ -184,6 +184,32 @@ const SectionManager = () => {
     URL.revokeObjectURL(url);
   };
 
+  // CSV Upload Handler
+  const handleUploadCSV = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    const formData = new FormData();
+    formData.append('file', file, file.name);
+
+    try {
+      await axiosInstance.post(
+        `${appConfig.API_PREFIX_V1}/students-managements/sections/bulk-csv`,
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      );
+      setAlert({ open: true, message: 'Sections uploaded successfully!', severity: 'success' });
+      fetchSections();
+    } catch (error) {
+      handleApiError(error, setAlert);
+    }
+    // Reset input value so the same file can be uploaded again if needed
+    event.target.value = '';
+  };
+
   const filteredSections = sections.filter(section => {
     // Access section.name directly as per the API response
     const sectionName = section.name ? section.name.toLowerCase() : '';
@@ -331,6 +357,21 @@ const SectionManager = () => {
         <Grid item>
           <Button variant="outlined" onClick={handleDownloadCSV}>
             Download CSV
+          </Button>
+        </Grid>
+        <Grid item>
+          <Button
+            variant="outlined"
+            component="label"
+          >
+            Upload CSV
+            <input
+              type="file"
+              accept=".csv"
+              hidden
+              onChange={handleUploadCSV}
+              data-testid="upload-csv-input"
+            />
           </Button>
         </Grid>
       </Grid>
