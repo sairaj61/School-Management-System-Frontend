@@ -48,6 +48,7 @@ import {
   ArrowBack as ArrowBackIcon
 } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
+import { DataGrid } from '@mui/x-data-grid';
 import axiosInstance from '../utils/axiosConfig';
 import appConfig from '../config/appConfig';
 import StudentAttendance from './StudentAttendance';
@@ -64,72 +65,49 @@ const StyledCard = styled(Card)(({ theme }) => ({
 
 const StudentDetails = ({ student, onBack, onEdit }) => {
   const [tabValue, setTabValue] = useState(0);
-  const [studentFacilities, setStudentFacilities] = useState([]);
-  const [studentFixedFees, setStudentFixedFees] = useState([]);
+  const [fixedFees, setFixedFees] = useState([]);
+  const [facilities, setFacilities] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [alert, setAlert] = useState({ open: false, message: '', severity: 'success' });
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [facilityToDelete, setFacilityToDelete] = useState(null);
 
+  // Fetch fixed fees and facilities when student changes
   useEffect(() => {
-    if (student?.id) {
-      fetchStudentFacilities();
-      fetchStudentFixedFees();
-    }
+    if (!student?.id) return;
+    setLoading(true);
+    Promise.all([
+      axiosInstance.get(`${appConfig.API_PREFIX_V1}/students-managements/students/${student.id}/fees`),
+      axiosInstance.get(`${appConfig.API_PREFIX_V1}/students-managements/students-facility/${student.id}/facilities`)
+    ])
+      .then(([feesRes, facilitiesRes]) => {
+        setFixedFees(feesRes.data.fixed_fees || []);
+        setFacilities(facilitiesRes.data || []);
+      })
+      .catch(() => {
+        setFixedFees([]);
+        setFacilities([]);
+      })
+      .finally(() => setLoading(false));
   }, [student?.id]);
 
-  const fetchStudentFacilities = async () => {
-    try {
-      setLoading(true);
-      const response = await axiosInstance.get(
-        `${appConfig.API_PREFIX_V1}/students-managements/student-fee-categories/${student.id}`
-      );
-      setStudentFacilities(response.data || []);
-    } catch (error) {
-      console.error('Error fetching student facilities:', error);
-      showAlert('Failed to fetch student facilities', 'error');
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Columns for fixed fees
+  const fixedFeesColumns = [
+    { field: 'fee_category', headerName: 'Fee Category', width: 150, valueGetter: (params) => params.row.fee_category?.category_name || 'N/A' },
+    { field: 'fee_description', headerName: 'Fee Name (Description)', width: 250, valueGetter: (params) => params.row.fee?.description || 'N/A' },
+    { field: 'concession_amount', headerName: 'Concession Amt', width: 130, valueFormatter: (params) => `₹${parseFloat(params.value || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}` },
+    { field: 'actual_amount', headerName: 'Actual Amount', width: 120, valueGetter: (params) => (params.row.amount || 0) - (params.row.concession_amount || 0), valueFormatter: (params) => `₹${parseFloat(params.value || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}` },
+    { field: 'created_at', headerName: 'Created At', width: 150, valueFormatter: (params) => params.value ? new Date(params.value).toLocaleDateString('en-IN') : 'N/A' },
+    { field: 'status', headerName: 'Status', width: 100 },
+  ];
 
-  const fetchStudentFixedFees = async () => {
-    try {
-      setLoading(true);
-      const response = await axiosInstance.get(
-        `${appConfig.API_PREFIX_V1}/students-managements/student-fixed-fees/${student.id}`
-      );
-      setStudentFixedFees(response.data || []);
-    } catch (error) {
-      console.error('Error fetching student fixed fees:', error);
-      showAlert('Failed to fetch student fixed fees', 'error');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDeleteFacility = async (facilityId) => {
-    try {
-      await axiosInstance.delete(
-        `${appConfig.API_PREFIX_V1}/students-managements/student-fee-categories/${facilityId}`
-      );
-      showAlert('Facility removed successfully', 'success');
-      fetchStudentFacilities();
-      setDeleteDialogOpen(false);
-      setFacilityToDelete(null);
-    } catch (error) {
-      console.error('Error deleting facility:', error);
-      showAlert('Failed to remove facility', 'error');
-    }
-  };
-
-  const showAlert = (message, severity = 'success') => {
-    setAlert({ open: true, message, severity });
-  };
-
-  const handleTabChange = (event, newValue) => {
-    setTabValue(newValue);
-  };
+  // Columns for facilities
+  const facilityColumns = [
+    { field: 'fee_category', headerName: 'Facility Type', width: 150, valueGetter: (params) => params.row.fee_category?.category_name || 'N/A' },
+    { field: 'start_date', headerName: 'Start Date', width: 120, valueFormatter: (params) => params.value ? new Date(params.value).toLocaleDateString('en-IN') : 'N/A' },
+    { field: 'end_date', headerName: 'End Date', width: 120, valueFormatter: (params) => params.value ? new Date(params.value).toLocaleDateString('en-IN') : 'N/A' },
+    { field: 'concession_amount', headerName: 'Concession Amt', width: 130, valueFormatter: (params) => `₹${parseFloat(params.value || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}` },
+    { field: 'amount', headerName: 'Fee Amount', width: 100, valueGetter: (params) => params.row.amount || (params.row.fee && params.row.fee.amount) || 'N/A', valueFormatter: (params) => params.value !== 'N/A' ? `₹${parseFloat(params.value).toLocaleString('en-IN', {minimumFractionDigits: 2})}` : 'N/A' },
+    { field: 'status', headerName: 'Status', width: 100, valueGetter: (params) => params.row.status || 'N/A' },
+    { field: 'created_at', headerName: 'Created At', width: 150, valueFormatter: (params) => params.value ? new Date(params.value).toLocaleDateString('en-IN') : 'N/A' },
+  ];
 
   if (!student) {
     return (
@@ -193,21 +171,13 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
             <PersonIcon sx={{ mr: 1 }} />
             Personal Information
           </Typography>
-          
           {/* Basic Info */}
           <Box sx={{ mb: 3 }}>
             <Typography variant="subtitle2" color="primary" sx={{ fontWeight: 600, mb: 1 }}>
               Basic Details
             </Typography>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-              <Box>
-                <Typography variant="caption" color="textSecondary">Father's Name</Typography>
-                <Typography variant="body2" sx={{ fontWeight: 500 }}>{student.father_name || 'N/A'}</Typography>
-              </Box>
-              <Box>
-                <Typography variant="caption" color="textSecondary">Mother's Name</Typography>
-                <Typography variant="body2" sx={{ fontWeight: 500 }}>{student.mother_name || 'N/A'}</Typography>
-              </Box>
+              {/* Only show basic fields, not fees/facilities */}
               <Box>
                 <Typography variant="caption" color="textSecondary">Date of Birth</Typography>
                 <Typography variant="body2" sx={{ fontWeight: 500 }}>
@@ -220,7 +190,6 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
               </Box>
             </Box>
           </Box>
-
           {/* Contact Info */}
           <Box sx={{ mb: 3 }}>
             <Typography variant="subtitle2" color="primary" sx={{ fontWeight: 600, mb: 1 }}>
@@ -250,7 +219,6 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
               </Box>
             </Box>
           </Box>
-
           {/* Address & Academic */}
           <Box sx={{ mb: 3 }}>
             <Typography variant="subtitle2" color="primary" sx={{ fontWeight: 600, mb: 1 }}>
@@ -273,155 +241,66 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
           </Box>
         </Box>
 
-        {/* Right Content Area - Tabbed Content */}
+        {/* Right Content Area - Tabs */}
         <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-          {/* Compact Tabs */}
           <Box sx={{ borderBottom: 1, borderColor: 'divider', bgcolor: 'white' }}>
             <Tabs
               value={tabValue}
-              onChange={handleTabChange}
+              onChange={(e, v) => setTabValue(v)}
               sx={{ minHeight: '48px' }}
             >
-              <Tab label="Fixed Fees" sx={{ minHeight: '48px' }} />
-              <Tab label="Facilities" sx={{ minHeight: '48px' }} />
+              <Tab label="Fee Details" sx={{ minHeight: '48px' }} />
               <Tab label="Attendance" sx={{ minHeight: '48px' }} />
             </Tabs>
           </Box>
-
-          {/* Tab Content */}
           <Box sx={{ flex: 1, overflow: 'auto', p: 2 }}>
-            {/* Fixed Fees Tab */}
+            {/* Fee Details Tab */}
             {tabValue === 0 && (
               <Box>
-                <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center' }}>
-                  <PaymentIcon sx={{ mr: 1 }} />
-                  Fixed Fees
-                </Typography>
-                
-                <TableContainer component={Paper} sx={{ borderRadius: 1 }}>
-                  <Table size="small">
-                    <TableHead>
-                      <TableRow sx={{ bgcolor: 'grey.100' }}>
-                        <TableCell>Fee Category</TableCell>
-                        <TableCell>Fee Name</TableCell>
-                        <TableCell align="right">Concession</TableCell>
-                        <TableCell align="right">Actual Amount</TableCell>
-                        <TableCell>Created At</TableCell>
-                        <TableCell>Status</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {studentFixedFees.map((fee, index) => (
-                        <TableRow key={index} hover>
-                          <TableCell>{fee.fee_category?.category_name || 'N/A'}</TableCell>
-                          <TableCell>{fee.fee?.description || 'N/A'}</TableCell>
-                          <TableCell align="right">
-                            ₹{parseFloat(fee.concession_amount || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}
-                          </TableCell>
-                          <TableCell align="right">
-                            ₹{parseFloat((fee.amount || 0) - (fee.concession_amount || 0)).toLocaleString('en-IN', {minimumFractionDigits: 2})}
-                          </TableCell>
-                          <TableCell>{new Date(fee.created_at).toLocaleDateString('en-IN')}</TableCell>
-                          <TableCell>
-                            <Chip
-                              label={fee.status}
-                              color={fee.status === 'ACTIVE' ? 'success' : 'default'}
-                              size="small"
-                            />
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                      {studentFixedFees.length === 0 && (
-                        <TableRow>
-                          <TableCell colSpan={6} align="center" sx={{ py: 4, color: 'text.secondary' }}>
-                            No fixed fees found
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-              </Box>
-            )}
-
-            {/* Facilities Tab */}
-            {tabValue === 1 && (
-              <Box>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                  <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center' }}>
-                    <BusIcon sx={{ mr: 1 }} />
-                    Student Facilities
-                  </Typography>
+                <Typography variant="h6" sx={{ mb: 2 }}>Fixed Fees</Typography>
+                <Box sx={{ height: Math.min((fixedFees.length || 1) * 52 + 56, 300), width: '100%', mb: 4 }}>
+                  <DataGrid
+                    rows={fixedFees.map(fee => ({ ...fee, id: fee.id }))}
+                    columns={fixedFeesColumns}
+                    pageSize={5}
+                    rowsPerPageOptions={[5, 10, 20]}
+                    disableSelectionOnClick
+                    loading={loading}
+                    getRowId={(row) => row.id}
+                    sx={{
+                      '& .MuiDataGrid-row:hover': {
+                        backgroundColor: 'action.hover'
+                      }
+                    }}
+                  />
                 </Box>
-                
-                <TableContainer component={Paper} sx={{ borderRadius: 1 }}>
-                  <Table size="small">
-                    <TableHead>
-                      <TableRow sx={{ bgcolor: 'grey.100' }}>
-                        <TableCell>Facility Type</TableCell>
-                        <TableCell>Start Date</TableCell>
-                        <TableCell>End Date</TableCell>
-                        <TableCell align="right">Concession</TableCell>
-                        <TableCell align="right">Fee Amount</TableCell>
-                        <TableCell>Status</TableCell>
-                        <TableCell>Created At</TableCell>
-                        <TableCell align="center">Actions</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {studentFacilities.map((facility) => (
-                        <TableRow key={facility.id} hover>
-                          <TableCell>{facility.fee_category?.category_name || 'N/A'}</TableCell>
-                          <TableCell>{new Date(facility.start_date).toLocaleDateString('en-IN')}</TableCell>
-                          <TableCell>{facility.end_date ? new Date(facility.end_date).toLocaleDateString('en-IN') : 'N/A'}</TableCell>
-                          <TableCell align="right">
-                            ₹{parseFloat(facility.concession_amount || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}
-                          </TableCell>
-                          <TableCell align="right">
-                            {facility.fee_category?.fees?.length > 0 
-                              ? `₹${parseFloat(facility.fee_category.fees[0].amount).toLocaleString('en-IN', {minimumFractionDigits: 2})}` 
-                              : 'N/A'
-                            }
-                          </TableCell>
-                          <TableCell>
-                            <Chip
-                              label={facility.status || 'ACTIVE'}
-                              color={facility.status === 'ACTIVE' ? 'success' : 'default'}
-                              size="small"
-                            />
-                          </TableCell>
-                          <TableCell>{new Date(facility.created_at).toLocaleDateString('en-IN')}</TableCell>
-                          <TableCell align="center">
-                            <Tooltip title="Remove Facility">
-                              <IconButton
-                                color="error"
-                                size="small"
-                                onClick={() => {
-                                  setFacilityToDelete(facility);
-                                  setDeleteDialogOpen(true);
-                                }}
-                              >
-                                <DeleteIcon fontSize="small" />
-                              </IconButton>
-                            </Tooltip>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                      {studentFacilities.length === 0 && (
-                        <TableRow>
-                          <TableCell colSpan={8} align="center" sx={{ py: 4, color: 'text.secondary' }}>
-                            No facilities found
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
+                <Typography variant="h6" sx={{ mb: 2 }}>Facilities</Typography>
+                <Box sx={{ height: Math.min((facilities.length || 1) * 52 + 56, 300), width: '100%' }}>
+                  <DataGrid
+                    rows={facilities.map(facility => ({
+                      ...facility,
+                      id: facility.id,
+                      amount: facility.amount || (facility.fee && facility.fee.amount) || 'N/A',
+                      concession_amount: facility.concession_amount || 0,
+                      status: facility.status || 'ACTIVE'
+                    }))}
+                    columns={facilityColumns}
+                    pageSize={5}
+                    rowsPerPageOptions={[5, 10, 20]}
+                    disableSelectionOnClick
+                    loading={loading}
+                    getRowId={(row) => row.id}
+                    sx={{
+                      '& .MuiDataGrid-row:hover': {
+                        backgroundColor: 'action.hover'
+                      }
+                    }}
+                  />
+                </Box>
               </Box>
             )}
-
             {/* Attendance Tab */}
-            {tabValue === 2 && (
+            {tabValue === 1 && (
               <Box sx={{ height: '100%' }}>
                 <StudentAttendance studentId={student.id} />
               </Box>
@@ -429,41 +308,6 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
           </Box>
         </Box>
       </Box>
-
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
-        <DialogTitle>Confirm Delete</DialogTitle>
-        <DialogContent>
-          <Typography>
-            Are you sure you want to remove this facility? This action cannot be undone.
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
-          <Button
-            onClick={() => handleDeleteFacility(facilityToDelete?.id)}
-            color="error"
-            variant="contained"
-          >
-            Delete
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Alert Snackbar */}
-      <Snackbar
-        open={alert.open}
-        autoHideDuration={6000}
-        onClose={() => setAlert({ ...alert, open: false })}
-      >
-        <Alert
-          onClose={() => setAlert({ ...alert, open: false })}
-          severity={alert.severity}
-          sx={{ width: '100%' }}
-        >
-          {alert.message}
-        </Alert>
-      </Snackbar>
     </Box>
   );
 };
