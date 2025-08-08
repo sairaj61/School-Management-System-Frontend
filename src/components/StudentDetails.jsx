@@ -73,19 +73,26 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
   useEffect(() => {
     if (!student?.id) return;
     setLoading(true);
-    Promise.all([
-      axiosInstance.get(`${appConfig.API_PREFIX_V1}/students-managements/students/${student.id}/fees`),
-      axiosInstance.get(`${appConfig.API_PREFIX_V1}/students-managements/students-facility/${student.id}/facilities`)
-    ])
-      .then(([feesRes, facilitiesRes]) => {
-        setFixedFees(feesRes.data.fixed_fees || []);
-        setFacilities(facilitiesRes.data || []);
+    axiosInstance
+      .get(`${appConfig.API_PREFIX_V1}/students-managements/students/${student.id}/fees`)
+      .then((feesRes) => {
+        // The API returns { student_details, fixed_fees }
+        setFixedFees(Array.isArray(feesRes.data.fixed_fees) ? feesRes.data.fixed_fees : []);
       })
       .catch(() => {
         setFixedFees([]);
-        setFacilities([]);
       })
       .finally(() => setLoading(false));
+
+    // Facilities API is separate
+    axiosInstance
+      .get(`${appConfig.API_PREFIX_V1}/students-managements/students-facility/${student.id}/facilities`)
+      .then((facilitiesRes) => {
+        setFacilities(Array.isArray(facilitiesRes.data) ? facilitiesRes.data : []);
+      })
+      .catch(() => {
+        setFacilities([]);
+      });
   }, [student?.id]);
 
   // Columns for fixed fees
@@ -273,6 +280,11 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                       }
                     }}
                   />
+                  {(!loading && fixedFees.length === 0) && (
+                    <Typography variant="body2" color="textSecondary" sx={{ mt: 2 }}>
+                      No fixed fees found for this student.
+                    </Typography>
+                  )}
                 </Box>
                 <Typography variant="h6" sx={{ mb: 2 }}>Facilities</Typography>
                 <Box sx={{ height: Math.min((facilities.length || 1) * 52 + 56, 300), width: '100%' }}>
@@ -296,6 +308,11 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                       }
                     }}
                   />
+                  {(!loading && facilities.length === 0) && (
+                    <Typography variant="body2" color="textSecondary" sx={{ mt: 2 }}>
+                      No facilities found for this student.
+                    </Typography>
+                  )}
                 </Box>
               </Box>
             )}
