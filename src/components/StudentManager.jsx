@@ -9,6 +9,9 @@ import axiosInstance from '../utils/axiosConfig';
 import appConfig from '../config/appConfig';
 import StudentAttendance from './StudentAttendance';
 import StudentDetails from './StudentDetails';
+import JSZip from 'jszip';
+import Papa from 'papaparse';
+import * as XLSX from 'xlsx';
 
 // Icons
 import PeopleIcon from '@mui/icons-material/People';
@@ -929,8 +932,58 @@ const StudentManager = () => {
   };
 
 
+  // Download Student Manager handler
+  const handleDownloadStudentManager = async () => {
+    try {
+      setLoading(true);
+      const response = await axiosInstance.get(
+        `${appConfig.API_PREFIX_V1}/students-managements/students/all-student-parent-fee-list`
+      );
+      // Always default to empty array if undefined
+      const students = Array.isArray(response.data.students) ? response.data.students : [];
+      const parents = Array.isArray(response.data.parents) ? response.data.parents : [];
+      const fees = Array.isArray(response.data.fees) ? response.data.fees : [];
+
+      // Prepare workbook with three sheets
+      const wb = XLSX.utils.book_new();
+      // Always create the sheets, even if empty, to avoid undefined errors
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(students), 'students');
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(parents), 'parents');
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(fees), 'fees');
+
+      // Write workbook to binary and trigger download
+      const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+      const blob = new Blob([wbout], { type: 'application/octet-stream' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'student_manager_export.xlsx';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+
+      setAlert({ open: true, message: 'Download started!', severity: 'success' });
+    } catch (error) {
+      handleApiError(error, setAlert);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+      {/* Download Button */}
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+        <Button
+          variant="outlined"
+          color="primary"
+          onClick={handleDownloadStudentManager}
+        >
+          Download Student Manager
+        </Button>
+      </Box>
+
       {/* Statistics Cards - Only show for "All Students" and "Students by Category" tabs */}
       {tabValue !== 2 && (
         <Grid container spacing={3} sx={{ mb: 4 }}>
@@ -1262,6 +1315,11 @@ const StudentManager = () => {
                 <FormControl fullWidth required>
                   <InputLabel id="class-label">Class</InputLabel>
                   <Select labelId="class-label" name="class_id" value={formData.class_id} onChange={handleInputChange} label="Class">
+                    {classes.map((cls) => (
+                      <MenuItem key={cls.id} value={cls.id}>
+                        {cls.class_name}
+                      </MenuItem>
+                    ))}
                     {classes.map((cls) => (
                       <MenuItem key={cls.id} value={cls.id}>
                         {cls.class_name}

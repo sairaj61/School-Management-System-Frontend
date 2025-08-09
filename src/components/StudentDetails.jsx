@@ -29,7 +29,12 @@ import {
   TableCell,
   TableContainer,
   TableHead,
-  TableRow
+  TableRow,
+  FormControl,
+  InputLabel,
+  Select, // <-- already present
+  MenuItem, // <-- add this import
+  TextField
 } from '@mui/material';
 import {
   Person as PersonIcon,
@@ -69,6 +74,23 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
   const [facilities, setFacilities] = useState([]);
   const [loading, setLoading] = useState(false);
 
+  // Add state for add facility modal and form
+  const [addFacilityOpen, setAddFacilityOpen] = useState(false);
+  const [optionalFees, setOptionalFees] = useState([]);
+  const [concessionTypes, setConcessionTypes] = useState([]);
+  const [routes, setRoutes] = useState([]);
+  const [drivers, setDrivers] = useState([]);
+  const [facilityForm, setFacilityForm] = useState({
+    fee_category_id: '',
+    start_date: new Date().toISOString().split('T')[0],
+    end_date: '',
+    concession_type_id: '',
+    concession_amount: 0,
+    route_id: '',
+    driver_id: ''
+  });
+  const [alert, setAlert] = useState({ open: false, message: '', severity: 'success' });
+
   // Fetch fixed fees and facilities when student changes
   useEffect(() => {
     if (!student?.id) return;
@@ -95,6 +117,32 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
       });
   }, [student?.id]);
 
+  // Fetch optional fees, concession types, routes, drivers when modal opens
+  useEffect(() => {
+    if (!addFacilityOpen || !student?.class_id) return;
+    axiosInstance.get(`${appConfig.API_PREFIX_V1}/fees/by-class/${student.class_id}`)
+      .then(res => setOptionalFees(res.data.filter(fee => fee.is_optional)))
+      .catch(() => setOptionalFees([]));
+    axiosInstance.get(`${appConfig.API_PREFIX_V1}/concessions-management/concession-types/`)
+      .then(res => setConcessionTypes(res.data))
+      .catch(() => setConcessionTypes([]));
+    axiosInstance.get(`${appConfig.API_PREFIX_V1}/students-managements/transport/routes`)
+      .then(res => setRoutes(res.data))
+      .catch(() => setRoutes([]));
+    axiosInstance.get(`${appConfig.API_PREFIX_V1}/students-managements/transport/drivers/`)
+      .then(res => setDrivers(res.data))
+      .catch(() => setDrivers([]));
+    setFacilityForm({
+      fee_category_id: '',
+      start_date: new Date().toISOString().split('T')[0],
+      end_date: '',
+      concession_type_id: '',
+      concession_amount: 0,
+      route_id: '',
+      driver_id: ''
+    });
+  }, [addFacilityOpen, student?.class_id]);
+
   // Columns for fixed fees
   const fixedFeesColumns = [
     { field: 'fee_category', headerName: 'Fee Category', width: 150, valueGetter: (params) => params.row.fee_category?.category_name || 'N/A' },
@@ -115,6 +163,88 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
     { field: 'status', headerName: 'Status', width: 100, valueGetter: (params) => params.row.status || 'N/A' },
     { field: 'created_at', headerName: 'Created At', width: 150, valueFormatter: (params) => params.value ? new Date(params.value).toLocaleDateString('en-IN') : 'N/A' },
   ];
+
+  // Helper: get fee category name
+  const getFeeCategoryName = (fee_category_id) => {
+    const fee = optionalFees.find(f => f.id === fee_category_id);
+    return fee ? fee.fee_category?.category_name || 'N/A' : 'N/A';
+  };
+
+  // Helper: is selected facility transport
+  const isFacilityTransport = (() => {
+    const selectedFee = optionalFees.find(f => f.id === facilityForm.fee_category_id);
+    if (!selectedFee) return false;
+    return selectedFee.fee_category?.category_name === 'TRANSPORT';
+  })();
+
+  // Handle add facility form change
+  const handleFacilityFormChange = (e) => {
+    const { name, value } = e.target;
+    setFacilityForm(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  // Handle add facility submit
+  const handleAddFacility = async (e) => {
+    e.preventDefault();
+    const selectedFee = optionalFees.find(f => f.id === facilityForm.fee_category_id);
+    if (!selectedFee) {
+      setAlert({ open: true, message: 'Please select a facility.', severity: 'error' });
+      return;
+    }
+    try {
+      if (selectedFee.fee_category?.category_name === 'TRANSPORT') {
+        // Transport assignment
+        await axiosInstance.post(
+          `${appConfig.API_PREFIX_V1}/students-managements/students-facility/${student.id}/transport-assignment`,
+          {
+            student_id: student.id,
+            route_id: facilityForm.route_id,
+            driver_id: facilityForm.driver_id,
+            fee_categories_with_concession: {
+              start_date: facilityForm.start_date,
+              end_date: facilityForm.end_date || null,
+              fee_category_id: selectedFee.fee_category_id,
+              concession_type_id: facilityForm.concession_type_id || null,
+              concession_amount: parseFloat(facilityForm.concession_amount) || 0
+            }
+          }
+        );
+      } else {
+        // Generic facility
+        await axiosInstance.post(
+          `${appConfig.API_PREFIX_V1}/students-managements/students-facility/${student.id}/facilities`,
+          {
+            student_id: student.id,
+            fee_categories_with_concession: [{
+              start_date: facilityForm.start_date,
+              end_date: facilityForm.end_date || null,
+              fee_category_id: selectedFee.fee_category_id,
+              concession_type_id: facilityForm.concession_type_id || null,
+              concession_amount: parseFloat(facilityForm.concession_amount) || 0
+            }]
+          }
+        );
+      }
+      setAlert({ open: true, message: 'Facility added successfully!', severity: 'success' });
+      setAddFacilityOpen(false);
+      // Refresh data
+      axiosInstance
+        .get(`${appConfig.API_PREFIX_V1}/students-managements/students-facility/${student.id}/facilities`)
+        .then((facilitiesRes) => {
+          setFacilities(Array.isArray(facilitiesRes.data) ? facilitiesRes.data : []);
+        });
+      axiosInstance
+        .get(`${appConfig.API_PREFIX_V1}/students-managements/students/${student.id}/fees`)
+        .then((feesRes) => {
+          setFixedFees(Array.isArray(feesRes.data.fixed_fees) ? feesRes.data.fixed_fees : []);
+        });
+    } catch (error) {
+      setAlert({ open: true, message: 'Failed to add facility.', severity: 'error' });
+    }
+  };
 
   if (!student) {
     return (
@@ -286,7 +416,17 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                     </Typography>
                   )}
                 </Box>
-                <Typography variant="h6" sx={{ mb: 2 }}>Facilities</Typography>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                  <Typography variant="h6">Facilities</Typography>
+                  <Button
+                    variant="contained"
+                    size="small"
+                    startIcon={<AddIcon />}
+                    onClick={() => setAddFacilityOpen(true)}
+                  >
+                    Add Facility
+                  </Button>
+                </Box>
                 <Box sx={{ height: Math.min((facilities.length || 1) * 52 + 56, 300), width: '100%' }}>
                   <DataGrid
                     rows={facilities.map(facility => ({
@@ -325,6 +465,151 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
           </Box>
         </Box>
       </Box>
+      {/* Add Facility Modal */}
+      <Dialog open={addFacilityOpen} onClose={() => setAddFacilityOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>
+          Add Facility for {student.name}
+        </DialogTitle>
+        <form onSubmit={handleAddFacility}>
+          <DialogContent dividers>
+            <Grid container spacing={2}>
+              <Grid item xs={12}>
+                <FormControl fullWidth required>
+                  <InputLabel id="facility-category-label">Select Facility (Optional Fee)</InputLabel>
+                  <Select
+                    labelId="facility-category-label"
+                    name="fee_category_id"
+                    value={facilityForm.fee_category_id}
+                    onChange={handleFacilityFormChange}
+                    label="Select Facility (Optional Fee)"
+                  >
+                    <MenuItem value=""><em>None</em></MenuItem>
+                    {optionalFees.map((fee) => (
+                      <MenuItem key={fee.id} value={fee.id}>
+                        {fee.fee_category?.category_name || 'N/A'} (Amount: ₹{fee.amount})
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Start Date"
+                  name="start_date"
+                  type="date"
+                  value={facilityForm.start_date}
+                  onChange={handleFacilityFormChange}
+                  required
+                  InputLabelProps={{ shrink: true }}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="End Date (Optional)"
+                  name="end_date"
+                  type="date"
+                  value={facilityForm.end_date}
+                  onChange={handleFacilityFormChange}
+                  InputLabelProps={{ shrink: true }}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <FormControl fullWidth>
+                  <InputLabel id="concession-type-label">Concession Type (Optional)</InputLabel>
+                  <Select
+                    labelId="concession-type-label"
+                    name="concession_type_id"
+                    value={facilityForm.concession_type_id}
+                    onChange={handleFacilityFormChange}
+                    label="Concession Type (Optional)"
+                  >
+                    <MenuItem value=""><em>None</em></MenuItem>
+                    {concessionTypes.map((concession) => (
+                      <MenuItem key={concession.id} value={concession.id}>
+                        {concession.concession_name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Concession Amount (Optional)"
+                  name="concession_amount"
+                  type="number"
+                  value={facilityForm.concession_amount}
+                  onChange={handleFacilityFormChange}
+                  inputProps={{ min: 0, step: "0.01" }}
+                />
+              </Grid>
+              {isFacilityTransport && (
+                <>
+                  <Grid item xs={12} sm={6}>
+                    <FormControl fullWidth required>
+                      <InputLabel id="route-label">Transport Route</InputLabel>
+                      <Select
+                        labelId="route-label"
+                        name="route_id"
+                        value={facilityForm.route_id}
+                        onChange={handleFacilityFormChange}
+                        label="Transport Route"
+                      >
+                        <MenuItem value=""><em>None</em></MenuItem>
+                        {routes.map((route) => (
+                          <MenuItem key={route.id} value={route.id}>
+                            {route.route_name}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <FormControl fullWidth required>
+                      <InputLabel id="driver-label">Assign Driver</InputLabel>
+                      <Select
+                        labelId="driver-label"
+                        name="driver_id"
+                        value={facilityForm.driver_id}
+                        onChange={handleFacilityFormChange}
+                        label="Assign Driver"
+                      >
+                        <MenuItem value=""><em>None</em></MenuItem>
+                        {drivers.map((driver) => (
+                          <MenuItem key={driver.id} value={driver.id}>
+                            {driver.driver_name}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                </>
+              )}
+            </Grid>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setAddFacilityOpen(false)}>Cancel</Button>
+            <Button type="submit" variant="contained" color="primary" startIcon={<AddIcon />}>
+              Add Facility
+            </Button>
+          </DialogActions>
+        </form>
+      </Dialog>
+      <Snackbar
+        open={alert.open}
+        autoHideDuration={6000}
+        onClose={() => setAlert({ ...alert, open: false })}
+      >
+        <Alert
+          onClose={() => setAlert({ ...alert, open: false })}
+          severity={alert.severity}
+          sx={{ width: '100%', whiteSpace: 'pre-line' }}
+        >
+          {alert.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };
