@@ -109,6 +109,8 @@ const StudentManager = () => {
   const [filterRoute, setFilterRoute] = useState(''); 
   const [filterDriver, setFilterDriver] = useState(''); 
 
+  // Add state for upload
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     fetchInitialData();
@@ -940,13 +942,21 @@ const StudentManager = () => {
         `${appConfig.API_PREFIX_V1}/students-managements/students/all-student-parent-fee-list`
       );
       // Always default to empty array if undefined
-      const students = Array.isArray(response.data.students) ? response.data.students : [];
-      const parents = Array.isArray(response.data.parents) ? response.data.parents : [];
-      const fees = Array.isArray(response.data.fees) ? response.data.fees : [];
+      let students = Array.isArray(response.data.students) ? response.data.students : [];
+      let parents = Array.isArray(response.data.parents) ? response.data.parents : [];
+      let fees = Array.isArray(response.data.fees) ? response.data.fees : [];
+
+      // Remove 'id' from students
+      students = students.map(({ id, ...rest }) => ({ ...rest }));
+
+      // Remove 'parent_id' and 'student_id' from parents
+      parents = parents.map(({ parent_id, student_id, ...rest }) => ({ ...rest }));
+
+      // Remove 'student_id' from fees
+      fees = fees.map(({ student_id, ...rest }) => ({ ...rest }));
 
       // Prepare workbook with three sheets
       const wb = XLSX.utils.book_new();
-      // Always create the sheets, even if empty, to avoid undefined errors
       XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(students), 'students');
       XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(parents), 'parents');
       XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(fees), 'fees');
@@ -971,19 +981,53 @@ const StudentManager = () => {
     }
   };
 
+  // Upload Student Manager handler
+  const handleUploadStudentManager = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      // Read the Excel file
+      const data = await file.arrayBuffer();
+      const workbook = XLSX.read(data, { type: 'array' });
+
+      // Parse sheets
+      const studentsSheet = workbook.Sheets['students'];
+      const parentsSheet = workbook.Sheets['parents'];
+      const feesSheet = workbook.Sheets['fees'];
+
+      let students = studentsSheet ? XLSX.utils.sheet_to_json(studentsSheet) : [];
+      let parents = parentsSheet ? XLSX.utils.sheet_to_json(parentsSheet) : [];
+      let fees = feesSheet ? XLSX.utils.sheet_to_json(feesSheet) : [];
+
+      // Send to API
+      await axiosInstance.post(
+        `${appConfig.API_PREFIX_V1}/students-managements/students/bulk-admit-int-id`,
+        {
+          students: students.map(s => ({
+            ...s,
+            academic_year_id: s.academic_year_id !== undefined && s.academic_year_id !== null
+              ? String(s.academic_year_id)
+              : s.academic_year_id
+          })),
+          parents,
+          fees
+        }
+      );
+      setAlert({ open: true, message: 'Bulk student upload successful!', severity: 'success' });
+      // Optionally refresh students list
+      fetchStudents(filterStatus, filterAcademicYear);
+    } catch (error) {
+      handleApiError(error, setAlert);
+    } finally {
+      setUploading(false);
+      // Reset input so same file can be uploaded again
+      event.target.value = '';
+    }
+  };
+
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      {/* Download Button */}
-      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
-        <Button
-          variant="outlined"
-          color="primary"
-          onClick={handleDownloadStudentManager}
-        >
-          Download Student Manager
-        </Button>
-      </Box>
-
       {/* Statistics Cards - Only show for "All Students" and "Students by Category" tabs */}
       {tabValue !== 2 && (
         <Grid container spacing={3} sx={{ mb: 4 }}>
@@ -1040,7 +1084,7 @@ const StudentManager = () => {
         <Tabs value={tabValue} onChange={(e, newValue) => setTabValue(newValue)} aria-label="student management tabs">
           <Tab label="All Students" />
           <Tab label="Students by Category" />
-          <Tab label="Student Details" disabled={!viewedStudent} /> {/* New Tab, disabled if no student is selected */}
+          <Tab label="Student Details" disabled={!viewedStudent} />
         </Tabs>
       </Box>
 
@@ -1109,13 +1153,38 @@ const StudentManager = () => {
             </Grid>
           </Paper>
 
+          {/* Download & Upload Student Manager Buttons */}
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mb: 2 }}>
+            <Button
+              variant="outlined"
+              color="primary"
+              onClick={handleDownloadStudentManager}
+            >
+              Download Student Manager
+            </Button>
+            <Button
+              variant="outlined"
+              color="secondary"
+              component="label"
+              disabled={uploading}
+            >
+              Upload Student Manager
+              <input
+                type="file"
+                accept=".xlsx"
+                hidden
+                onChange={handleUploadStudentManager}
+              />
+            </Button>
+          </Box>
+
           {/* Data Grid */}
-          <Paper sx={{ height: 600, width: '100%' }}> 
+          <Paper sx={{ height: 600, width: '100%' }}>
             <DataGrid
               rows={filteredStudents}
               columns={columns}
-              pageSize={10} 
-              rowsPerPageOptions={[10, 20, 50]} 
+              pageSize={10}
+              rowsPerPageOptions={[10, 20, 50]}
               disableSelectionOnClick
               loading={loading}
               getRowId={(row) => row.id}
