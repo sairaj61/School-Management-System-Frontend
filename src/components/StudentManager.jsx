@@ -987,41 +987,26 @@ const StudentManager = () => {
     if (!file) return;
     setUploading(true);
     try {
-      // Read the Excel file
-      const data = await file.arrayBuffer();
-      const workbook = XLSX.read(data, { type: 'array' });
+      // Prepare FormData for file upload
+      const formData = new FormData();
+      formData.append('file', file);
 
-      // Parse sheets
-      const studentsSheet = workbook.Sheets['students'];
-      const parentsSheet = workbook.Sheets['parents'];
-      const feesSheet = workbook.Sheets['fees'];
-
-      let students = studentsSheet ? XLSX.utils.sheet_to_json(studentsSheet) : [];
-      let parents = parentsSheet ? XLSX.utils.sheet_to_json(parentsSheet) : [];
-      let fees = feesSheet ? XLSX.utils.sheet_to_json(feesSheet) : [];
-
-      // Send to API
+      // Send file directly to backend API
       await axiosInstance.post(
-        `${appConfig.API_PREFIX_V1}/students-managements/students/bulk-admit-int-id`,
+        `${appConfig.API_PREFIX_V1}/students-managements/students/bulk-admit-int-id-file`,
+        formData,
         {
-          students: students.map(s => ({
-            ...s,
-            academic_year_id: s.academic_year_id !== undefined && s.academic_year_id !== null
-              ? String(s.academic_year_id)
-              : s.academic_year_id
-          })),
-          parents,
-          fees
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
         }
       );
       setAlert({ open: true, message: 'Bulk student upload successful!', severity: 'success' });
-      // Optionally refresh students list
       fetchStudents(filterStatus, filterAcademicYear);
     } catch (error) {
       handleApiError(error, setAlert);
     } finally {
       setUploading(false);
-      // Reset input so same file can be uploaded again
       event.target.value = '';
     }
   };
