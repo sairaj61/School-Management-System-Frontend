@@ -11,6 +11,7 @@ import LocalOfferIcon from '@mui/icons-material/LocalOffer'; // Icon for concess
 import GavelIcon from '@mui/icons-material/Gavel'; // Another relevant icon
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'; // For active
 import InfoIcon from '@mui/icons-material/Info'; // For description
+import Papa from 'papaparse'; // Add at the top for CSV parsing
 
 const ConcessionTypeManager = () => {
   const [concessionTypes, setConcessionTypes] = useState([]);
@@ -143,6 +144,64 @@ const ConcessionTypeManager = () => {
     }
   }, [concessionTypes]);
 
+  const handleDownloadCSV = () => {
+    // Always include header, even if concessionTypes is empty
+    const csvData =
+      concessionTypes.length > 0
+        ? concessionTypes.map(({ concession_name, description }) => ({
+            concession_name,
+            description,
+          }))
+        : [{ concession_name: '', description: '' }];
+    const csv = Papa.unparse(csvData, {
+      header: true,
+      skipEmptyLines: true,
+    });
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'concession_types.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleUploadCSV = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: async (results) => {
+        try {
+          // Validate required fields
+          const validRows = results.data.filter(
+            row => row.concession_name && row.description !== undefined
+          );
+          if (validRows.length === 0) {
+            setAlert({ open: true, message: 'No valid rows found in CSV.', severity: 'error' });
+            return;
+          }
+          await axiosInstance.post(
+            `${appConfig.API_PREFIX_V1}/concessions-management/concession-types/bulk`,
+            validRows
+          );
+          setAlert({ open: true, message: 'Concession Types uploaded successfully!', severity: 'success' });
+          fetchConcessionTypes();
+        } catch (error) {
+          handleApiError(error, setAlert);
+        }
+      },
+      error: () => {
+        setAlert({ open: true, message: 'Failed to parse CSV file.', severity: 'error' });
+      }
+    });
+    // Reset input value so the same file can be uploaded again if needed
+    event.target.value = '';
+  };
+
   const columns = [
     { field: 'concession_name', headerName: 'Concession Name', width: 200 },
     { field: 'description', headerName: 'Description', width: 300 },
@@ -202,6 +261,7 @@ const ConcessionTypeManager = () => {
         </Grid>
       </Grid>
 
+      {/* Action buttons and search below stats, above table */}
       <Grid container spacing={2} alignItems="center" sx={{ mb: 3 }}>
         <Grid item xs>
           <Typography variant="h4">Concession Types</Typography>
@@ -220,6 +280,26 @@ const ConcessionTypeManager = () => {
             onClick={() => handleModalOpen()}
           >
             Add Concession Type
+          </Button>
+        </Grid>
+        <Grid item>
+          <Button variant="outlined" onClick={handleDownloadCSV}>
+            Download CSV
+          </Button>
+        </Grid>
+        <Grid item>
+          <Button
+            variant="outlined"
+            component="label"
+          >
+            Upload CSV
+            <input
+              type="file"
+              accept=".csv"
+              hidden
+              onChange={handleUploadCSV}
+              data-testid="upload-csv-input"
+            />
           </Button>
         </Grid>
       </Grid>

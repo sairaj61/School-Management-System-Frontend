@@ -1,12 +1,17 @@
 import { useState, useEffect } from 'react';
 import {
   Container, Typography, TextField, Button, MenuItem, Grid, Snackbar, Alert,
-  Dialog, DialogTitle, DialogContent, DialogActions, Box, Paper, Card, CardContent, FormControl, InputLabel, Select, IconButton, List, ListItem, ListItemText, Tooltip, Divider, Tabs, Tab
+  Dialog, DialogTitle, DialogContent, DialogActions, Box, Paper, Card, CardContent, FormControl, InputLabel, Select, IconButton, List, ListItem, ListItemText, Tooltip, Divider, Tabs, Tab, Chip
 } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
 import { handleApiError } from '../utils/errorHandler';
 import axiosInstance from '../utils/axiosConfig';
 import appConfig from '../config/appConfig';
+import StudentAttendance from './StudentAttendance';
+import StudentDetails from './StudentDetails';
+import JSZip from 'jszip';
+import Papa from 'papaparse';
+import * as XLSX from 'xlsx';
 
 // Icons
 import PeopleIcon from '@mui/icons-material/People';
@@ -22,6 +27,8 @@ import CloseIcon from '@mui/icons-material/Close';
 import ArchiveIcon from '@mui/icons-material/Archive'; // For Dropout
 import UnarchiveIcon from '@mui/icons-material/Unarchive'; // For Activate
 import AssignmentIcon from '@mui/icons-material/Assignment'; // For Manage Facilities (alternative to VisibilityIcon)
+import CalendarTodayIcon from '@mui/icons-material/CalendarToday'; // For Attendance
+import ArrowBackIcon from '@mui/icons-material/ArrowBack'; // For back navigation
 
 const StudentManager = () => {
   const [students, setStudents] = useState([]);
@@ -55,12 +62,11 @@ const StudentManager = () => {
   
   // New state to hold the student whose details are currently being viewed in the dedicated tab
   const [viewedStudent, setViewedStudent] = useState(null); 
+  const [studentDetailsTabValue, setStudentDetailsTabValue] = useState(0); // For sub-tabs within student details 
 
   const [formData, setFormData] = useState({
     name: '',
     roll_number: '',
-    father_name: '',
-    mother_name: '',
     date_of_birth: '',
     gender: '',
     email: '',
@@ -72,7 +78,9 @@ const StudentManager = () => {
     medical_history: '',
     emergency_contact_number: '',
     old_school_name: '',
-    fee_categories_with_concession: [] // For Admit Student
+    enrollment_date: '',
+    fee_categories_with_concession: [],
+    parents: [], // <-- Add parents array
   });
 
   const [newFacilityForm, setNewFacilityForm] = useState({ // For adding new facilities
@@ -101,6 +109,8 @@ const StudentManager = () => {
   const [filterRoute, setFilterRoute] = useState(''); 
   const [filterDriver, setFilterDriver] = useState(''); 
 
+  // Add state for upload
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     fetchInitialData();
@@ -285,23 +295,22 @@ const StudentManager = () => {
 
   const resetFormData = () => {
     setFormData({
-      name: '', roll_number: '', father_name: '', mother_name: '',
-      date_of_birth: '', gender: '', email: '', phone_number: '', address: '',
-      class_id: '', section_id: '', academic_year_id: '',
-      medical_history: '', emergency_contact_number: '', old_school_name: '',
-      fee_categories_with_concession: []
+      name: '', roll_number: '', date_of_birth: '', gender: '', email: '', phone_number: '', address: '',
+      class_id: '', section_id: '', academic_year_id: '', medical_history: '', emergency_contact_number: '', old_school_name: '',
+      enrollment_date: '', fee_categories_with_concession: [], parents: []
     });
     setFilteredSectionsForDropdown([]);
     setClassFees([]);
     setOptionalFeesForSelectedClass([]);
+    setParentForm({ name: '', phone_number: '', email: '', relation: '' });
+    setParentEditIndex(null);
   };
 
   const handleAddEditModalOpen = (student = null) => {
     if (student) {
       setSelectedStudent(student);
       setFormData({
-        name: student.name, roll_number: student.roll_number, father_name: student.father_name, mother_name: student.mother_name,
-        date_of_birth: student.date_of_birth?.split('T')[0] || '', gender: student.gender || '', email: student.email || '', phone_number: student.phone_number || '', address: student.address,
+        name: student.name, roll_number: student.roll_number, date_of_birth: student.date_of_birth?.split('T')[0] || '', gender: student.gender || '', email: student.email || '', phone_number: student.phone_number || '', address: student.address,
         class_id: student.class_id, section_id: student.section_id, academic_year_id: student.academic_year_id,
         medical_history: student.medical_history || '', emergency_contact_number: student.emergency_contact_number || '', old_school_name: student.old_school_name || '',
         fee_categories_with_concession: []
@@ -334,7 +343,15 @@ const StudentManager = () => {
 
   // New: Handle opening the main student details tab
   const handleViewStudentDetails = (student) => {
-    setViewedStudent(student); // Set the student object for the dedicated tab
+    // Enrich student object with computed fields for StudentDetails component
+    const enrichedStudent = {
+      ...student,
+      class_name: classes.find(c => c.id === student.class_id)?.class_name || 'N/A',
+      section_name: sections.find(s => s.id === student.section_id)?.name || 'N/A', 
+      academic_year_name: academicYears.find(ay => ay.id === student.academic_year_id)?.year_name || 'N/A'
+    };
+    
+    setViewedStudent(enrichedStudent); // Set the enriched student object for the dedicated tab
     fetchStudentFacilities(student.id); 
     fetchStudentFixedFees(student.id); 
     if (student.class_id) {
@@ -343,6 +360,28 @@ const StudentManager = () => {
       setOptionalFeesForSelectedClass([]);
     }
     setTabValue(2); // Switch to the "Student Details" tab (assuming it's the 3rd tab, index 2)
+  };
+
+  // New: Handle opening the student attendance tab
+  const handleViewStudentAttendance = (student) => {
+    // Enrich student object with computed fields for StudentDetails component
+    const enrichedStudent = {
+      ...student,
+      class_name: classes.find(c => c.id === student.class_id)?.class_name || 'N/A',
+      section_name: sections.find(s => s.id === student.section_id)?.name || 'N/A', 
+      academic_year_name: academicYears.find(ay => ay.id === student.academic_year_id)?.year_name || 'N/A'
+    };
+    
+    setViewedStudent(enrichedStudent); // Set the enriched student object for the dedicated tab
+    fetchStudentFacilities(student.id); 
+    fetchStudentFixedFees(student.id); 
+    if (student.class_id) {
+      fetchOptionalFeesByClass(student.class_id); 
+    } else {
+      setOptionalFeesForSelectedClass([]);
+    }
+    setStudentDetailsTabValue(3); // Switch to the "Attendance" sub-tab (index 3)
+    setTabValue(2); // Switch to the "Student Details" tab (index 2)
   };
 
   // No separate close function for the tab, as it's part of the main tab system.
@@ -432,8 +471,6 @@ const StudentManager = () => {
       const studentData = {
         name: formData.name.trim(),
         roll_number: formData.roll_number.trim(),
-        father_name: formData.father_name.trim(),
-        mother_name: formData.mother_name.trim(),
         date_of_birth: formData.date_of_birth,
         gender: formData.gender,
         email: formData.email.trim(),
@@ -468,8 +505,6 @@ const StudentManager = () => {
       const admitData = {
         name: formData.name.trim(),
         roll_number: formData.roll_number.trim(),
-        father_name: formData.father_name.trim(),
-        mother_name: formData.mother_name.trim(),
         date_of_birth: formData.date_of_birth,
         gender: formData.gender,
         email: formData.email.trim(),
@@ -481,6 +516,8 @@ const StudentManager = () => {
         medical_history: formData.medical_history.trim(),
         emergency_contact_number: formData.emergency_contact_number.trim(),
         old_school_name: formData.old_school_name.trim(),
+        enrollment_date: formData.enrollment_date,
+        parents: formData.parents, // <-- send parents array
         fee_categories_with_concession: formData.fee_categories_with_concession.map(fee => ({
           start_date: fee.start_date,
           end_date: fee.end_date || null,
@@ -600,8 +637,6 @@ const StudentManager = () => {
     const searchString = (
       student.name +
       student.roll_number +
-      student.father_name +
-      student.mother_name +
       student.email +
       student.phone_number +
       student.address +
@@ -628,7 +663,6 @@ const StudentManager = () => {
   const columns = [
     { field: 'name', headerName: 'Name', width: 160 },
     { field: 'roll_number', headerName: 'Roll No', width: 100 },
-    { field: 'father_name', headerName: 'Father Name', width: 160 },
     { field: 'phone_number', headerName: 'Contact', width: 120 },
     { field: 'email', headerName: 'Email', width: 200 },
     {
@@ -652,7 +686,7 @@ const StudentManager = () => {
     {
       field: 'actions',
       headerName: 'Actions',
-      width: 200, 
+      width: 250, 
       renderCell: (params) => (
         <Box sx={{ display: 'flex', gap: 0.5 }}>
           <Tooltip title="View Details">
@@ -662,6 +696,15 @@ const StudentManager = () => {
               onClick={() => handleViewStudentDetails(params.row)} // Changed to new handler
             >
               <VisibilityIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="View Attendance">
+            <IconButton
+              color="secondary"
+              size="small"
+              onClick={() => handleViewStudentAttendance(params.row)}
+            >
+              <CalendarTodayIcon fontSize="small" />
             </IconButton>
           </Tooltip>
           <Tooltip title="Edit Student">
@@ -738,17 +781,28 @@ const StudentManager = () => {
     {
       field: 'actions',
       headerName: 'Actions',
-      width: 100,
+      width: 150,
       renderCell: (params) => (
-        <Tooltip title="View Details">
-          <IconButton
-            color="primary"
-            size="small"
-            onClick={() => handleViewStudentDetails(params.row.student_details)} // Changed to new handler
-          >
-            <VisibilityIcon fontSize="small" />
-          </IconButton>
-        </Tooltip>
+        <Box sx={{ display: 'flex', gap: 0.5 }}>
+          <Tooltip title="View Details">
+            <IconButton
+              color="primary"
+              size="small"
+              onClick={() => handleViewStudentDetails(params.row.student_details)} // Changed to new handler
+            >
+              <VisibilityIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="View Attendance">
+            <IconButton
+              color="secondary"
+              size="small"
+              onClick={() => handleViewStudentAttendance(params.row.student_details)}
+            >
+              <CalendarTodayIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        </Box>
       ),
     },
   ];
@@ -830,63 +884,192 @@ const StudentManager = () => {
   })();
 
 
+  // Add these lines after your useState for formData:
+  const [parentForm, setParentForm] = useState({
+    name: '',
+    phone_number: '',
+    email: '',
+    relation: '',
+  });
+  const [parentEditIndex, setParentEditIndex] = useState(null);
+
+  const handleParentInputChange = (e) => {
+    const { name, value } = e.target;
+    setParentForm(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleAddParent = () => {
+    if (!parentForm.name || !parentForm.relation) return;
+    setFormData(prev => ({
+      ...prev,
+      parents: [...prev.parents, parentForm]
+    }));
+    setParentForm({ name: '', phone_number: '', email: '', relation: '' });
+    setParentEditIndex(null);
+  };
+
+  const handleEditParent = (idx) => {
+    setParentForm(formData.parents[idx]);
+    setParentEditIndex(idx);
+  };
+
+  const handleUpdateParent = () => {
+    if (parentEditIndex === null) return;
+    setFormData(prev => {
+      const updated = [...prev.parents];
+      updated[parentEditIndex] = parentForm;
+      return { ...prev, parents: updated };
+    });
+    setParentForm({ name: '', phone_number: '', email: '', relation: '' });
+    setParentEditIndex(null);
+  };
+
+  const handleRemoveParent = (idx) => {
+    setFormData(prev => ({
+      ...prev,
+      parents: prev.parents.filter((_, i) => i !== idx)
+    }));
+    setParentForm({ name: '', phone_number: '', email: '', relation: '' });
+    setParentEditIndex(null);
+  };
+
+
+  // Download Student Manager handler
+  const handleDownloadStudentManager = async () => {
+    try {
+      setLoading(true);
+      const response = await axiosInstance.get(
+        `${appConfig.API_PREFIX_V1}/students-managements/students/all-student-parent-fee-list`
+      );
+      // Always default to empty array if undefined
+      let students = Array.isArray(response.data.students) ? response.data.students : [];
+      let parents = Array.isArray(response.data.parents) ? response.data.parents : [];
+      let fees = Array.isArray(response.data.fees) ? response.data.fees : [];
+
+      // Remove 'id' from students
+      students = students.map(({ id, ...rest }) => ({ ...rest }));
+
+      // Remove 'parent_id' and 'student_id' from parents
+      parents = parents.map(({ parent_id, student_id, ...rest }) => ({ ...rest }));
+
+      // Remove 'student_id' from fees
+      fees = fees.map(({ student_id, ...rest }) => ({ ...rest }));
+
+      // Prepare workbook with three sheets
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(students), 'students');
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(parents), 'parents');
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(fees), 'fees');
+
+      // Write workbook to binary and trigger download
+      const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+      const blob = new Blob([wbout], { type: 'application/octet-stream' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'student_manager_export.xlsx';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+
+      setAlert({ open: true, message: 'Download started!', severity: 'success' });
+    } catch (error) {
+      handleApiError(error, setAlert);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Upload Student Manager handler
+  const handleUploadStudentManager = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      // Prepare FormData for file upload
+      const formData = new FormData();
+      formData.append('file', file);
+
+      // Send file directly to backend API
+      await axiosInstance.post(
+        `${appConfig.API_PREFIX_V1}/students-managements/students/bulk-admit-int-id-file`,
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        }
+      );
+      setAlert({ open: true, message: 'Bulk student upload successful!', severity: 'success' });
+      fetchStudents(filterStatus, filterAcademicYear);
+    } catch (error) {
+      handleApiError(error, setAlert);
+    } finally {
+      setUploading(false);
+      event.target.value = '';
+    }
+  };
+
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      {/* Statistics Cards */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={6} md={4}> 
-          <Card sx={{ bgcolor: 'primary.light', color: 'primary.contrastText' }}>
-            <CardContent>
-              <Box display="flex" alignItems="center" mb={1}>
-                <PeopleIcon sx={{ mr: 1 }} />
-                <Typography variant="h6" gutterBottom>
-                  Total Students
+      {/* Statistics Cards - Only show for "All Students" and "Students by Category" tabs */}
+      {tabValue !== 2 && (
+        <Grid container spacing={3} sx={{ mb: 4 }}>
+          <Grid item xs={12} sm={6} md={4}> 
+            <Card sx={{ bgcolor: 'primary.light', color: 'primary.contrastText' }}>
+              <CardContent>
+                <Box display="flex" alignItems="center" mb={1}>
+                  <PeopleIcon sx={{ mr: 1 }} />
+                  <Typography variant="h6" gutterBottom>
+                    Total Students
+                  </Typography>
+                </Box>
+                <Typography variant="h3">
+                  {stats.totalStudents}
                 </Typography>
-              </Box>
-              <Typography variant="h3">
-                {stats.totalStudents}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={4}> 
-          <Card sx={{ bgcolor: 'success.light', color: 'success.contrastText' }}>
-            <CardContent>
-              <Box display="flex" alignItems="center" mb={1}>
-                <SchoolIcon sx={{ mr: 1 }} />
-                <Typography variant="h6" gutterBottom>
-                  Total Classes
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={12} sm={6} md={4}> 
+            <Card sx={{ bgcolor: 'success.light', color: 'success.contrastText' }}>
+              <CardContent>
+                <Box display="flex" alignItems="center" mb={1}>
+                  <SchoolIcon sx={{ mr: 1 }} />
+                  <Typography variant="h6" gutterBottom>
+                    Total Classes
+                  </Typography>
+                </Box>
+                <Typography variant="h3">
+                  {stats.totalClasses}
                 </Typography>
-              </Box>
-              <Typography variant="h3">
-                {stats.totalClasses}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={4}> 
-          <Card sx={{ bgcolor: 'info.light', color: 'info.contrastText' }}>
-            <CardContent>
-              <Box display="flex" alignItems="center" mb={1}>
-                <ViewWeekIcon sx={{ mr: 1 }} />
-                <Typography variant="h6" gutterBottom>
-                  Total Sections
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={12} sm={6} md={4}> 
+            <Card sx={{ bgcolor: 'info.light', color: 'info.contrastText' }}>
+              <CardContent>
+                <Box display="flex" alignItems="center" mb={1}>
+                  <ViewWeekIcon sx={{ mr: 1 }} />
+                  <Typography variant="h6" gutterBottom>
+                    Total Sections
+                  </Typography>
+                </Box>
+                <Typography variant="h3">
+                  {stats.totalSections}
                 </Typography>
-              </Box>
-              <Typography variant="h3">
-                {stats.totalSections}
-              </Typography>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </Grid>
         </Grid>
-      </Grid>
+      )}
 
       {/* Main Tabs */}
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
         <Tabs value={tabValue} onChange={(e, newValue) => setTabValue(newValue)} aria-label="student management tabs">
           <Tab label="All Students" />
           <Tab label="Students by Category" />
-          <Tab label="Student Details" disabled={!viewedStudent} /> {/* New Tab, disabled if no student is selected */}
+          <Tab label="Student Details" disabled={!viewedStudent} />
         </Tabs>
       </Box>
 
@@ -955,13 +1138,38 @@ const StudentManager = () => {
             </Grid>
           </Paper>
 
+          {/* Download & Upload Student Manager Buttons */}
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mb: 2 }}>
+            <Button
+              variant="outlined"
+              color="primary"
+              onClick={handleDownloadStudentManager}
+            >
+              Download Student Manager
+            </Button>
+            <Button
+              variant="outlined"
+              color="secondary"
+              component="label"
+              disabled={uploading}
+            >
+              Upload Student Manager
+              <input
+                type="file"
+                accept=".xlsx"
+                hidden
+                onChange={handleUploadStudentManager}
+              />
+            </Button>
+          </Box>
+
           {/* Data Grid */}
-          <Paper sx={{ height: 600, width: '100%' }}> 
+          <Paper sx={{ height: 600, width: '100%' }}>
             <DataGrid
               rows={filteredStudents}
               columns={columns}
-              pageSize={10} 
-              rowsPerPageOptions={[10, 20, 50]} 
+              pageSize={10}
+              rowsPerPageOptions={[10, 20, 50]}
               disableSelectionOnClick
               loading={loading}
               getRowId={(row) => row.id}
@@ -1075,145 +1283,11 @@ const StudentManager = () => {
 
       {/* New: Content for "Student Details" Tab */}
       {tabValue === 2 && viewedStudent && (
-        <Paper sx={{ p: 3, mb: 3 }}>
-          <Typography variant="h5" gutterBottom>Details for {viewedStudent.name}</Typography>
-
-          <Box mb={4}>
-            <Typography variant="h6" gutterBottom>Personal Information</Typography>
-            <Grid container spacing={2}>
-              {/* Row 1 */}
-              <Grid item xs={12} sm={6}>
-                <Typography variant="subtitle2" color="textSecondary">Roll No:</Typography>
-                <Typography variant="body1">{viewedStudent.roll_number}</Typography>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <Typography variant="subtitle2" color="textSecondary">Father's Name:</Typography>
-                <Typography variant="body1">{viewedStudent.father_name}</Typography>
-              </Grid>
-              {/* Row 2 */}
-              <Grid item xs={12} sm={6}>
-                <Typography variant="subtitle2" color="textSecondary">Mother's Name:</Typography>
-                <Typography variant="body1">{viewedStudent.mother_name}</Typography>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <Typography variant="subtitle2" color="textSecondary">Date of Birth:</Typography>
-                <Typography variant="body1">{viewedStudent.date_of_birth ? new Date(viewedStudent.date_of_birth).toLocaleDateString() : 'N/A'}</Typography>
-              </Grid>
-              {/* Row 3 */}
-              <Grid item xs={12} sm={6}>
-                <Typography variant="subtitle2" color="textSecondary">Gender:</Typography>
-                <Typography variant="body1">{viewedStudent.gender || 'N/A'}</Typography>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <Typography variant="subtitle2" color="textSecondary">Email:</Typography>
-                <Typography variant="body1">{viewedStudent.email || 'N/A'}</Typography>
-              </Grid>
-              {/* Row 4 */}
-              <Grid item xs={12} sm={6}>
-                <Typography variant="subtitle2" color="textSecondary">Phone:</Typography>
-                <Typography variant="body1">{viewedStudent.phone_number || 'N/A'}</Typography>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <Typography variant="subtitle2" color="textSecondary">Emergency Contact:</Typography>
-                <Typography variant="body1">{viewedStudent.emergency_contact_number || 'N/A'}</Typography>
-              </Grid>
-              {/* Row 5 */}
-              <Grid item xs={12}>
-                <Typography variant="subtitle2" color="textSecondary">Address:</Typography>
-                <Typography variant="body1">{viewedStudent.address || 'N/A'}</Typography>
-              </Grid>
-              {/* Row 6 */}
-              <Grid item xs={12}>
-                <Typography variant="subtitle2" color="textSecondary">Medical History:</Typography>
-                <Typography variant="body1">{viewedStudent.medical_history || 'N/A'}</Typography>
-              </Grid>
-              {/* Row 7 */}
-              <Grid item xs={12} sm={6}>
-                <Typography variant="subtitle2" color="textSecondary">Class:</Typography>
-                <Typography variant="body1">{classes.find(c => c.id === viewedStudent.class_id)?.class_name || 'N/A'}</Typography>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <Typography variant="subtitle2" color="textSecondary">Section:</Typography>
-                <Typography variant="body1">{sections.find(s => s.id === viewedStudent.section_id)?.name || 'N/A'}</Typography>
-              </Grid>
-              {/* Row 8 */}
-              <Grid item xs={12} sm={6}>
-                <Typography variant="subtitle2" color="textSecondary">Academic Year:</Typography>
-                <Typography variant="body1">{academicYears.find(ay => ay.id === viewedStudent.academic_year_id)?.year_name || 'N/A'}</Typography>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <Typography variant="subtitle2" color="textSecondary">Status:</Typography>
-                <Typography variant="body1">{viewedStudent.status || 'N/A'}</Typography>
-              </Grid>
-            </Grid>
-          </Box>
-
-          <Divider sx={{ my: 3 }} />
-
-          <Box mb={4}>
-            <Typography variant="h6" gutterBottom>Fixed Fees</Typography>
-            {studentFixedFees.length === 0 ? (
-              <Typography variant="body2" color="textSecondary">No fixed fees assigned to this student.</Typography>
-            ) : (
-              <Box sx={{ height: Math.min(studentFixedFees.length * 52 + 56, 300), width: '100%' }}>
-                <DataGrid
-                  rows={studentFixedFees.map(fee => ({ ...fee, id: fee.id }))} 
-                  columns={fixedFeesColumns}
-                  pageSize={5}
-                  rowsPerPageOptions={[5, 10, 20]}
-                  disableSelectionOnClick
-                  loading={loading}
-                  getRowId={(row) => row.id} // Ensure unique ID for DataGrid
-                  sx={{
-                    '& .MuiDataGrid-row:hover': {
-                      backgroundColor: 'action.hover'
-                    }
-                  }}
-                />
-              </Box>
-            )}
-          </Box>
-          <Divider sx={{ my: 3 }} />
-
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-            <Typography variant="h6">Enrolled Facilities</Typography>
-            <Button
-              variant="contained"
-              size="small"
-              startIcon={<AddIcon />}
-              onClick={handleAddFacilitySubModalOpen}
-            >
-              Add New Facility
-            </Button>
-          </Box>
-
-          {studentFacilities.length === 0 ? (
-            <Typography variant="body2" color="textSecondary">No facilities enrolled yet.</Typography>
-          ) : (
-            <Box sx={{ height: Math.min(studentFacilities.length * 52 + 56, 400), width: '100%' }}>
-              <DataGrid
-                rows={studentFacilities.map(facility => ({ 
-                  ...facility, 
-                  id: facility.id, 
-                  amount: facility.amount || (facility.fee && facility.fee.amount) || 'N/A', 
-                  concession_amount: facility.concession_amount || 0,
-                  status: facility.status || 'ACTIVE' 
-                }))}
-                columns={facilityColumns}
-                pageSize={5}
-                rowsPerPageOptions={[5, 10, 20]}
-                disableSelectionOnClick
-                loading={loading}
-                getRowId={(row) => row.id} // Ensure unique ID for DataGrid
-                sx={{
-                  '& .MuiDataGrid-row:hover': {
-                    backgroundColor: 'action.hover'
-                  }
-                }}
-              />
-            </Box>
-          )}
-        </Paper>
+        <StudentDetails 
+          student={viewedStudent}
+          onBack={() => setTabValue(0)}
+          onEdit={handleAddEditModalOpen}
+        />
       )}
       {!viewedStudent && tabValue === 2 && (
         <Paper sx={{ p: 3, mb: 3, textAlign: 'center' }}>
@@ -1243,12 +1317,6 @@ const StudentManager = () => {
               </Grid>
               <Grid item xs={12} sm={6}>
                 <TextField fullWidth label="Roll Number" name="roll_number" value={formData.roll_number} onChange={handleInputChange} required />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField fullWidth label="Father's Name" name="father_name" value={formData.father_name} onChange={handleInputChange} required />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField fullWidth label="Mother's Name" name="mother_name" value={formData.mother_name} onChange={handleInputChange} required />
               </Grid>
               <Grid item xs={12} sm={6}>
                 <TextField fullWidth label="Date of Birth" name="date_of_birth" type="date" value={formData.date_of_birth} onChange={handleInputChange} required InputLabelProps={{ shrink: true }} />
@@ -1306,6 +1374,11 @@ const StudentManager = () => {
                         {cls.class_name}
                       </MenuItem>
                     ))}
+                    {classes.map((cls) => (
+                      <MenuItem key={cls.id} value={cls.id}>
+                        {cls.class_name}
+                      </MenuItem>
+                    ))}
                   </Select>
                 </FormControl>
               </Grid>
@@ -1355,12 +1428,6 @@ const StudentManager = () => {
               </Grid>
               <Grid item xs={12} sm={6}>
                 <TextField fullWidth label="Roll Number" name="roll_number" value={formData.roll_number} onChange={handleInputChange} required />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField fullWidth label="Father's Name" name="father_name" value={formData.father_name} onChange={handleInputChange} required />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField fullWidth label="Mother's Name" name="mother_name" value={formData.mother_name} onChange={handleInputChange} required />
               </Grid>
               <Grid item xs={12} sm={6}>
                 <TextField fullWidth label="Date of Birth" name="date_of_birth" type="date" value={formData.date_of_birth} onChange={handleInputChange} required InputLabelProps={{ shrink: true }} />
@@ -1438,6 +1505,82 @@ const StudentManager = () => {
               </Grid>
             </Grid>
 
+            {/* Parent List Section */}
+            <Box sx={{ mt: 3, mb: 2 }}>
+              <Typography variant="h6" gutterBottom>Parents</Typography>
+              <Grid container spacing={2} alignItems="center">
+                <Grid item xs={12} sm={3}>
+                  <TextField
+                    fullWidth
+                    label="Parent Name"
+                    name="name"
+                    value={parentForm.name}
+                    onChange={handleParentInputChange}
+                    required
+                  />
+                </Grid>
+                <Grid item xs={12} sm={3}>
+                  <TextField
+                    fullWidth
+                    label="Relation"
+                    name="relation"
+                    value={parentForm.relation}
+                    onChange={handleParentInputChange}
+                    required
+                  />
+                </Grid>
+                <Grid item xs={12} sm={3}>
+                  <TextField
+                    fullWidth
+                    label="Phone Number"
+                    name="phone_number"
+                    value={parentForm.phone_number}
+                    onChange={handleParentInputChange}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={3}>
+                  <TextField
+                    fullWidth
+                    label="Email"
+                    name="email"
+                    value={parentForm.email}
+                    onChange={handleParentInputChange}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={3}>
+                  {parentEditIndex === null ? (
+                    <Button variant="outlined" onClick={handleAddParent} sx={{ mt: { xs: 1, sm: 0 } }}>
+                      Add Parent
+                    </Button>
+                  ) : (
+                    <Button variant="contained" onClick={handleUpdateParent} sx={{ mt: { xs: 1, sm: 0 } }}>
+                      Update Parent
+                    </Button>
+                  )}
+                </Grid>
+              </Grid>
+              {/* List of added parents */}
+              {formData.parents.length > 0 && (
+                <Box sx={{ mt: 2 }}>
+                  <Typography variant="subtitle1">Added Parents:</Typography>
+                  <Grid container spacing={1}>
+                    {formData.parents.map((parent, idx) => (
+                      <Grid item xs={12} key={idx}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                          <Typography>
+                            {parent.name} ({parent.relation}) {parent.phone_number ? `- ${parent.phone_number}` : ''} {parent.email ? `- ${parent.email}` : ''}
+                          </Typography>
+                          <Button size="small" onClick={() => handleEditParent(idx)}>Edit</Button>
+                          <Button size="small" color="error" onClick={() => handleRemoveParent(idx)}>Remove</Button>
+                        </Box>
+                      </Grid>
+                    ))}
+                  </Grid>
+                </Box>
+              )}
+            </Box>
+
+            {/* Fee Details & Concessions section */}
             {formData.class_id && classFees.length > 0 && (
               <>
                 <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>Fee Details & Concessions</Typography>
