@@ -23,8 +23,6 @@ import RouteManager from './components/RouteManager';
 import StaffManager from './components/StaffManager';
 import ExpenditureManager from './components/ExpenditureManager';
 import ExpenditureCategoryManager from './components/ExpenditureCategoryManager';
-import ManagementDashboard from './components/ManagementDashboard'; // Import ManagementDashboard
-import SuperUserLogin from './components/SuperUserLogin'; // Import SuperUserLogin
 
 const App = () => {
   const [token, setToken] = useState(localStorage.getItem('token'));
@@ -77,7 +75,7 @@ const App = () => {
       />
       <GlobalAlert open={alert.open} severity={alert.severity} message={alert.message} onClose={() => setAlert(a => ({ ...a, open: false }))} />
       <Routes>
-        <Route path="/superuser-login" element={<SuperUserLogin />} />
+  {/* <Route path="/superuser-login" element={<SuperUserLogin />} /> Removed: Super admin code segregated */}
         {token ? (
           <Route path="/*" element={<AuthenticatedApp onLogout={handleLogout} />} />
         ) : (

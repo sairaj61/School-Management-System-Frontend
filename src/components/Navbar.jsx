@@ -52,8 +52,8 @@ const Navbar = () => {
   const [transportAnchorEl, setTransportAnchorEl] = useState(null);
   const [adminAnchorEl, setAdminAnchorEl] = useState(null); // New state for Administrative menu
   const [userMenuAnchorEl, setUserMenuAnchorEl] = useState(null);
-  const username = localStorage.getItem('username') || 'Superuser'; // Replace with real user logic if available
-  const isSuperuser = (localStorage.getItem('role') || 'superuser') === 'superuser';
+  const username = localStorage.getItem('username') || ''; // Superuser logic removed
+  // const isSuperuser = (localStorage.getItem('role') || 'superuser') === 'superuser'; // Superuser logic removed
 
   const handleAcademicMenuOpen = (event) => {
     setAcademicAnchorEl(event.currentTarget);
