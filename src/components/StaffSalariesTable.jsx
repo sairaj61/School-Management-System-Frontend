@@ -259,7 +259,7 @@ const StaffSalariesTable = ({ staff, onBack }) => {
         </TableContainer>
       </Paper>
 
-      {/* CTC Structures Table */}
+      {/* CTC Structures Table with inline components */}
       <Paper elevation={3} sx={{ mb: 4 }}>
         <TableContainer>
           <Table stickyHeader aria-label="ctc structures table">
@@ -268,24 +268,54 @@ const StaffSalariesTable = ({ staff, onBack }) => {
                 <TableCell>Total CTC</TableCell>
                 <TableCell>Effective From</TableCell>
                 <TableCell>Effective To</TableCell>
+                <TableCell>Components</TableCell>
                 <TableCell align="center">Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {ctcStructures.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} align="center">No CTC structures found.</TableCell>
+                  <TableCell colSpan={5} align="center">No CTC structures found.</TableCell>
                 </TableRow>
               ) : (
                 ctcStructures.map((ctc) => (
-                  <TableRow key={ctc.id}>
-                    <TableCell>${parseFloat(ctc.total_ctc).toFixed(2)}</TableCell>
-                    <TableCell>{ctc.effective_from ? new Date(ctc.effective_from).toLocaleDateString() : 'N/A'}</TableCell>
-                    <TableCell>{ctc.effective_to ? new Date(ctc.effective_to).toLocaleDateString() : 'N/A'}</TableCell>
-                    <TableCell align="center">
-                      <Button variant="outlined" size="small" onClick={() => handleOpenCtcComponentDialog(ctc.id)}>View & Add Components</Button>
-                    </TableCell>
-                  </TableRow>
+                  <React.Fragment key={ctc.id}>
+                    <TableRow>
+                      <TableCell>${parseFloat(ctc.total_ctc).toFixed(2)}</TableCell>
+                      <TableCell>{ctc.effective_from ? new Date(ctc.effective_from).toLocaleDateString() : 'N/A'}</TableCell>
+                      <TableCell>{ctc.effective_to ? new Date(ctc.effective_to).toLocaleDateString() : 'N/A'}</TableCell>
+                      <TableCell>
+                        <Table size="small" sx={{ mb: 1 }}>
+                          <TableHead>
+                            <TableRow>
+                              <TableCell>Name</TableCell>
+                              <TableCell>Amount</TableCell>
+                              <TableCell>Type</TableCell>
+                            </TableRow>
+                          </TableHead>
+                          <TableBody>
+                            {ctcComponents && selectedCtcId === ctc.id && ctcComponents.length > 0 ? (
+                              ctcComponents.map((comp) => (
+                                <TableRow key={comp.id}>
+                                  <TableCell>{comp.name}</TableCell>
+                                  <TableCell>${parseFloat(comp.amount).toFixed(2)}</TableCell>
+                                  <TableCell>{comp.component_type}</TableCell>
+                                </TableRow>
+                              ))
+                            ) : (
+                              <TableRow>
+                                <TableCell colSpan={3} align="center">No components found.</TableCell>
+                              </TableRow>
+                            )}
+                          </TableBody>
+                        </Table>
+                        <Button variant="contained" size="small" onClick={() => { setSelectedCtcId(ctc.id); setOpenCtcComponentDialog(true); fetchCtcComponents(ctc.id); }}>Add Component</Button>
+                      </TableCell>
+                      <TableCell align="center">
+                        {/* ...existing actions if any... */}
+                      </TableCell>
+                    </TableRow>
+                  </React.Fragment>
                 ))
               )}
             </TableBody>
