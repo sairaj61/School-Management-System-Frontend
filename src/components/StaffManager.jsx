@@ -31,13 +31,6 @@ const StaffSchema = Yup.object().shape({
   phone_number: Yup.string().max(20, 'Phone number too long').nullable(),
   address: Yup.string().max(255, 'Address too long').nullable(),
   qualification: Yup.string().max(255, 'Qualification too long').nullable(),
-  actual_salary: Yup.number().positive('Salary must be positive').required('Actual salary is required'),
-  // Conditionally require licence field based on staff_type
-  licence_number: Yup.string().when('staff_type', {
-    is: StaffTypeEnum.DRIVER,
-    then: (schema) => schema.required('Licence is required for drivers').max(50, 'Licence too long'),
-    otherwise: (schema) => schema.nullable(),
-  }),
 });
 
 const StaffManager = () => {
@@ -48,6 +41,8 @@ const StaffManager = () => {
 
   const [currentTab, setCurrentTab] = useState('staffList');
   const [selectedStaffForSalaries, setSelectedStaffForSalaries] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filteredStaff, setFilteredStaff] = useState([]);
 
   const fetchStaff = async () => {
     try {
@@ -65,6 +60,20 @@ const StaffManager = () => {
   useEffect(() => {
     fetchStaff();
   }, []);
+
+  useEffect(() => {
+    if (!searchTerm) {
+      setFilteredStaff(staffList);
+    } else {
+      setFilteredStaff(
+        staffList.filter(
+          staff =>
+            staff.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            staff.email.toLowerCase().includes(searchTerm.toLowerCase())
+        )
+      );
+    }
+  }, [searchTerm, staffList]);
 
   const handleOpenDialog = (staff = null) => {
     setEditingStaff(staff);
@@ -145,13 +154,29 @@ const StaffManager = () => {
             <Typography variant="h4" component="h1" gutterBottom>
               Staff List
             </Typography>
-            <Button
-              variant="contained"
-              startIcon={<AddIcon />}
-              onClick={() => handleOpenDialog()}
-            >
-              Add Staff
-            </Button>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <TextField
+                size="small"
+                variant="outlined"
+                placeholder="Search by name or email"
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                sx={{ minWidth: 220 }}
+              />
+              <Button
+                variant="contained"
+                onClick={() => setSearchTerm(searchTerm)}
+              >
+                Search
+              </Button>
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={() => handleOpenDialog()}
+              >
+                Add Staff
+              </Button>
+            </Box>
           </Box>
 
           <Paper elevation={3} sx={{ width: '100%', overflowX: 'auto' }}>
@@ -163,47 +188,45 @@ const StaffManager = () => {
                     <TableCell>Type</TableCell>
                     <TableCell>Email</TableCell>
                     <TableCell>Phone</TableCell>
+                    <TableCell>Address</TableCell>
                     <TableCell>Qualification</TableCell>
-                    <TableCell>Status</TableCell>
-                    <TableCell>Licence</TableCell>
-                    <TableCell align="right">Salary</TableCell>
                     <TableCell align="center">Actions</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {staffList.length === 0 ? (
+                  {filteredStaff.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={8} align="center"> {/* Updated colspan */}
+                      <TableCell colSpan={7} align="center">
                         No staff members found.
                       </TableCell>
                     </TableRow>
                   ) : (
-                    staffList.map((staff) => (
+                    filteredStaff.map((staff) => (
                       <TableRow key={staff.id}>
                         <TableCell>{staff.name}</TableCell>
                         <TableCell>{staff.staff_type}</TableCell>
                         <TableCell>{staff.email}</TableCell>
                         <TableCell>{staff.phone_number || 'N/A'}</TableCell>
+                        <TableCell>{staff.address || 'N/A'}</TableCell>
                         <TableCell>{staff.qualification || 'N/A'}</TableCell>
-                         <TableCell>{staff.status}</TableCell>
-                         <TableCell>{staff.licence_number || 'N/A'}</TableCell> {/* Display licence */}
-                        <TableCell align="right">${staff.actual_salary ? parseFloat(staff.actual_salary).toFixed(2) : '0.00'}</TableCell>
                         <TableCell align="center">
-                          <Tooltip title="Edit">
-                            <IconButton color="primary" onClick={() => handleOpenDialog(staff)}>
-                              <EditIcon />
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title="View Salaries">
-                            <IconButton color="info" onClick={() => handleViewSalaries(staff)}>
-                              <VisibilityIcon />
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title="Delete">
-                            <IconButton color="secondary" onClick={() => handleDelete(staff.id)}>
-                              <DeleteIcon />
-                            </IconButton>
-                          </Tooltip>
+                          <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1 }}>
+                            <Tooltip title="Edit">
+                              <IconButton color="primary" onClick={() => handleOpenDialog(staff)}>
+                                <EditIcon />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title="View Salaries">
+                              <IconButton color="info" onClick={() => handleViewSalaries(staff)}>
+                                <VisibilityIcon />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Delete">
+                              <IconButton color="secondary" onClick={() => handleDelete(staff.id)}>
+                                <DeleteIcon />
+                              </IconButton>
+                            </Tooltip>
+                          </Box>
                         </TableCell>
                       </TableRow>
                     ))
@@ -240,9 +263,12 @@ const StaffManager = () => {
         <DialogTitle>{editingStaff ? 'Edit Staff Member' : 'Add New Staff Member'}</DialogTitle>
         <Formik
           initialValues={editingStaff ? {
-            ...editingStaff,
-            actual_salary: editingStaff.actual_salary ? parseFloat(editingStaff.actual_salary) : '',
-            licence: editingStaff.licence || '', // Initialize licence field
+            name: editingStaff.name || '',
+            staff_type: editingStaff.staff_type || StaffTypeEnum.TEACHING,
+            email: editingStaff.email || '',
+            phone_number: editingStaff.phone_number || '',
+            address: editingStaff.address || '',
+            qualification: editingStaff.qualification || '',
           } : {
             name: '',
             staff_type: StaffTypeEnum.TEACHING,
@@ -250,14 +276,12 @@ const StaffManager = () => {
             phone_number: '',
             address: '',
             qualification: '',
-            actual_salary: '',
-            licence_number: '', // Initialize licence field
           }}
           validationSchema={StaffSchema}
           onSubmit={handleSubmit}
           enableReinitialize={true}
         >
-          {({ errors, touched, isSubmitting, values }) => ( // Added 'values' to destructuring
+          {({ errors, touched, isSubmitting }) => (
             <Form>
               <DialogContent dividers>
                 <Field
@@ -324,28 +348,6 @@ const StaffManager = () => {
                   error={touched.qualification && !!errors.qualification}
                   helperText={touched.qualification && errors.qualification}
                 />
-                <Field
-                  as={TextField}
-                  name="actual_salary"
-                  label="Actual Salary"
-                  type="number"
-                  fullWidth
-                  margin="normal"
-                  error={touched.actual_salary && !!errors.actual_salary}
-                  helperText={touched.actual_salary && errors.actual_salary}
-                />
-                {/* Conditionally render licence field */}
-                {values.staff_type === StaffTypeEnum.DRIVER && (
-                  <Field
-                    as={TextField}
-                    name="licence_number" // Changed from licence to licence_number
-                    label="Licence Number" // You might want to update the label as well for clarity
-                    fullWidth
-                    margin="normal"
-                    error={touched.licence_number && !!errors.licence_number} // Changed from licence to licence_number
-                    helperText={touched.licence_number && errors.licence_number} // Changed from licence to licence_number
-                    />
-                )}
               </DialogContent>
               <DialogActions>
                 <Button onClick={handleCloseDialog} color="secondary">
