@@ -1,5 +1,6 @@
 // src/components/StaffManager.jsx
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box, Typography, Container, Button, Dialog, DialogTitle,
   DialogContent, DialogActions, TextField, MenuItem, CircularProgress,
@@ -34,6 +35,7 @@ const StaffSchema = Yup.object().shape({
 });
 
 const StaffManager = () => {
+  const navigate = useNavigate();
   const [staffList, setStaffList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [openDialog, setOpenDialog] = useState(false);
@@ -218,6 +220,11 @@ const StaffManager = () => {
                             </Tooltip>
                             <Tooltip title="View Salaries">
                               <IconButton color="info" onClick={() => handleViewSalaries(staff)}>
+                                <VisibilityIcon />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title="View Details">
+                              <IconButton color="success" onClick={() => navigate(`/staff/${staff.id}`)}>
                                 <VisibilityIcon />
                               </IconButton>
                             </Tooltip>

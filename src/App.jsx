@@ -21,6 +21,7 @@ import RouteManager from './components/RouteManager';
 
 // New Imports for Staff and Expenditure Management
 import StaffManager from './components/StaffManager';
+import StaffDetails from './components/StaffDetails';
 import ExpenditureManager from './components/ExpenditureManager';
 import ExpenditureCategoryManager from './components/ExpenditureCategoryManager';
 
@@ -104,7 +105,8 @@ const AuthenticatedApp = ({ onLogout }) => {
         <Route path="/academic-years" element={<AcademicYearManager />} />
         
         {/* New Administrative Routes */}
-        <Route path="/staff" element={<StaffManager />} />
+  <Route path="/staff" element={<StaffManager />} />
+  <Route path="/staff/:id" element={<StaffDetails />} />
         <Route path="/expenditures" element={<ExpenditureManager />} />
         <Route path="/expenditure-categories" element={<ExpenditureCategoryManager />} />
         {/* Remove ManagementDashboard from normal user routes */}
