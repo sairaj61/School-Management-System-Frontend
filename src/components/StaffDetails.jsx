@@ -353,7 +353,7 @@ const StaffDetails = () => {
                     />
                     <TextField
                       label="Effective From"
-                      type="datetime-local"
+                        type="date"
                       InputLabelProps={{ shrink: true }}
                       value={ctcForm.effective_from}
                       onChange={e => setCtcForm({ ...ctcForm, effective_from: e.target.value })}
