@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   Box, Card, CardContent, Typography, Avatar, Grid, Chip, IconButton, Tooltip, Button, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, CircularProgress, Tabs, Tab,
-  List, ListItem, ListItemIcon, ListItemText
+  List, ListItem, ListItemIcon, ListItemText, Dialog, DialogTitle, DialogContent, DialogActions,TextField
 } from '@mui/material';
 import {
   CloudUpload, Visibility, Download, Email, Phone, Home, School, Person, AttachFile, Work, CalendarToday, AccountBalance, ArrowBackIosNew, Paid
@@ -71,6 +71,9 @@ const StaffDetails = () => {
   const [loading, setLoading] = useState(true);
   const [activeCTC, setActiveCTC] = useState(null);
   const [ctcHistory, setCtcHistory] = useState([]);
+  // Add state for CTC dialog and form
+  const [openCtcDialog, setOpenCtcDialog] = useState(false);
+  const [ctcForm, setCtcForm] = useState({ total_ctc: '', effective_from: '' });
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -82,8 +85,16 @@ const StaffDetails = () => {
         setStaff(staffRes.data);
         setProfileImage(staffRes.data.profile_image || '');
         // Active CTC
-        const activeCtcRes = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/staff/${id}/ctc-structure/active`);
-        setActiveCTC(activeCtcRes.data);
+        try {
+          const activeCtcRes = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/staff/${id}/ctc-structure/active`);
+          setActiveCTC(activeCtcRes.data);
+        } catch (ctcErr) {
+          if (ctcErr?.response?.status === 404) {
+            setActiveCTC(null);
+          } else {
+            throw ctcErr;
+          }
+        }
         // CTC history
         const ctcHistoryRes = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/staff/${id}/ctc-structures`);
         setCtcHistory(ctcHistoryRes.data);
@@ -202,9 +213,11 @@ const StaffDetails = () => {
                   <Typography variant="h6" fontWeight={600} gutterBottom>Active CTC Structure</Typography>
                   {activeCTC ? (
                     <>
-                      <Typography variant="body1" sx={{ mb: 1 }}>Total CTC: <b>₹{parseFloat(activeCTC.total_ctc).toLocaleString()}</b></Typography>
+                      <Box sx={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center' }}>
+                        <Typography variant="body1" sx={{ mb: 1 }}>Total CTC: <b>₹{parseFloat(activeCTC.total_ctc).toLocaleString()}</b></Typography>
+                      </Box>
                       <Typography variant="body2" sx={{ mb: 1 }}>Effective From: {new Date(activeCTC.effective_from).toLocaleDateString()}</Typography>
-                      <Typography variant="body2" sx={{ mb: 1 }}>Effective To: {new Date(activeCTC.effective_to).toLocaleDateString()}</Typography>
+                      <Typography variant="body2" sx={{ mb: 1 }}>Effective To: {activeCTC.effective_to ? new Date(activeCTC.effective_to).toLocaleDateString() : 'N/A'}</Typography>
                       <Typography variant="subtitle2" sx={{ mt: 2, mb: 1 }}>Components:</Typography>
                       <TableContainer>
                         <Table size="small">
@@ -238,9 +251,41 @@ const StaffDetails = () => {
           {/* Salary Structure Tab */}
           {tab === 1 && (
             <Box>
-              <Typography variant="h5" fontWeight={700} color="primary" sx={{ mb: 2 }}>
-                CTC Structure History
-              </Typography>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                <Typography variant="h5" fontWeight={700} color="primary">
+                  CTC Structure History
+                </Typography>
+                <Box sx={{ display: 'flex', gap: 2 }}>
+                  <Button variant="contained" color="primary" onClick={() => setOpenCtcDialog(true)}>
+                    Add Salary Structure
+                  </Button>
+                  {/* Terminate Active CTC Structure button, only if any active CTC exists */}
+                  {ctcHistory.some(ctc => !ctc.effective_to) && (
+                    <Button
+                      variant="contained"
+                      color="error"
+                      onClick={async () => {
+                        try {
+                          await axiosInstance.post(`${appConfig.API_PREFIX_V1}/staff/${staff.id}/ctc-structure/terminate`);
+                          // Refresh active CTC and history
+                          try {
+                            const activeCtcRes = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/staff/${staff.id}/ctc-structure/active`);
+                            setActiveCTC(activeCtcRes.data);
+                          } catch (ctcErr) {
+                            setActiveCTC(null);
+                          }
+                          const ctcHistoryRes = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/staff/${staff.id}/ctc-structures`);
+                          setCtcHistory(ctcHistoryRes.data);
+                        } catch (err) {
+                          // Optionally show error
+                        }
+                      }}
+                    >
+                      Terminate Active CTC Structure
+                    </Button>
+                  )}
+                </Box>
+              </Box>
               {ctcHistory.length === 0 ? (
                 <Typography color="text.secondary">No CTC history found.</Typography>
               ) : (
@@ -255,37 +300,94 @@ const StaffDetails = () => {
                       </TableRow>
                     </TableHead>
                     <TableBody>
-                      {ctcHistory.map(ctc => (
-                        <TableRow key={ctc.id} hover>
-                          <TableCell>₹{parseFloat(ctc.total_ctc).toLocaleString()}</TableCell>
-                          <TableCell>{new Date(ctc.effective_from).toLocaleDateString()}</TableCell>
-                          <TableCell>{new Date(ctc.effective_to).toLocaleDateString()}</TableCell>
-                          <TableCell>
-                            <Table size="small">
-                              <TableHead>
-                                <TableRow>
-                                  <TableCell>Name</TableCell>
-                                  <TableCell>Amount</TableCell>
-                                  <TableCell>Type</TableCell>
-                                </TableRow>
-                              </TableHead>
-                              <TableBody>
-                                {ctc.components.map(comp => (
-                                  <TableRow key={comp.id}>
-                                    <TableCell>{comp.name}</TableCell>
-                                    <TableCell>₹{parseFloat(comp.amount).toLocaleString()}</TableCell>
-                                    <TableCell>{comp.component_type}</TableCell>
+                      {[...ctcHistory]
+                        .sort((a, b) => {
+                          // Put active (effective_to=null) at top
+                          if (!a.effective_to && b.effective_to) return -1;
+                          if (a.effective_to && !b.effective_to) return 1;
+                          // Otherwise, sort by effective_from descending
+                          return new Date(b.effective_from) - new Date(a.effective_from);
+                        })
+                        .map((ctc, idx, arr) => (
+                          <TableRow key={ctc.id} hover>
+                            <TableCell>₹{parseFloat(ctc.total_ctc).toLocaleString()}</TableCell>
+                            <TableCell>{new Date(ctc.effective_from).toLocaleDateString()}</TableCell>
+                            <TableCell>{ctc.effective_to ? new Date(ctc.effective_to).toLocaleDateString() : 'N/A'}</TableCell>
+                            <TableCell>
+                              <Table size="small" sx={{ mt: 1 }}>
+                                <TableHead>
+                                  <TableRow>
+                                    <TableCell>Name</TableCell>
+                                    <TableCell>Amount</TableCell>
+                                    <TableCell>Type</TableCell>
                                   </TableRow>
-                                ))}
-                              </TableBody>
-                            </Table>
-                          </TableCell>
-                        </TableRow>
-                      ))}
+                                </TableHead>
+                                <TableBody>
+                                  {ctc.components.map(comp => (
+                                    <TableRow key={comp.id}>
+                                      <TableCell>{comp.name}</TableCell>
+                                      <TableCell>₹{parseFloat(comp.amount).toLocaleString()}</TableCell>
+                                      <TableCell>{comp.component_type}</TableCell>
+                                    </TableRow>
+                                  ))}
+                                </TableBody>
+                              </Table>
+                            </TableCell>
+                          </TableRow>
+                        ))}
                     </TableBody>
                   </Table>
                 </TableContainer>
               )}
+              {/* Dialog for creating new CTC structure */}
+              <Dialog open={openCtcDialog || false} onClose={() => setOpenCtcDialog(false)} fullWidth maxWidth="sm">
+                <DialogTitle>Add Salary Structure</DialogTitle>
+                <DialogContent dividers>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    <TextField
+                      label="Total CTC"
+                      type="number"
+                      value={ctcForm.total_ctc}
+                      onChange={e => setCtcForm({ ...ctcForm, total_ctc: e.target.value })}
+                      fullWidth
+                    />
+                    <TextField
+                      label="Effective From"
+                      type="datetime-local"
+                      InputLabelProps={{ shrink: true }}
+                      value={ctcForm.effective_from}
+                      onChange={e => setCtcForm({ ...ctcForm, effective_from: e.target.value })}
+                      fullWidth
+                    />
+                  </Box>
+                </DialogContent>
+                <DialogActions>
+                  <Button onClick={() => setOpenCtcDialog(false)} color="secondary">Cancel</Button>
+                  <Button variant="contained" onClick={async () => {
+                    try {
+                      await axiosInstance.post(`${appConfig.API_PREFIX_V1}/staff/ctc-structure/`, {
+                        staff_id: staff.id,
+                        total_ctc: parseFloat(ctcForm.total_ctc),
+                        effective_from: ctcForm.effective_from,
+                      });
+                      setOpenCtcDialog(false);
+                      setCtcForm({ total_ctc: '', effective_from: '' });
+                      // Refresh CTC history
+                      const ctcHistoryRes = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/staff/${staff.id}/ctc-structures`);
+                      setCtcHistory(ctcHistoryRes.data);
+                      // Refresh active CTC
+                      try {
+                        const activeCtcRes = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/staff/${staff.id}/ctc-structure/active`);
+                        setActiveCTC(activeCtcRes.data);
+                      } catch (ctcErr) {
+                        setActiveCTC(null);
+                      }
+                    } catch (err) {
+                      // Optionally show error
+                    }
+                  }}>Create</Button>
+                </DialogActions>
+              </Dialog>
             </Box>
           )}
 
