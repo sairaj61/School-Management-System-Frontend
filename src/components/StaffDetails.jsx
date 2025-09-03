@@ -1,3 +1,74 @@
+// CTC Component Types
+const CTC_COMPONENT_TYPES = [
+  "Allowance",
+  "Deduction",
+  "Bonus",
+  "Reimbursement",
+  "Tax",
+  "House Rent Allowance",
+  "Basic Salary",
+  "Medical Allowance",
+  "Transport Allowance",
+  "Other"
+];
+
+// State for CTC component dialog
+const [openComponentDialog, setOpenComponentDialog] = useState(false);
+const [componentCtcId, setComponentCtcId] = useState(null);
+const [componentTotal, setComponentTotal] = useState(0);
+const [componentsForm, setComponentsForm] = useState([
+  { name: '', amount: '', component_type: '' }
+]);
+const [componentError, setComponentError] = useState('');
+
+// Handler for adding/removing component rows
+const addComponentRow = () => setComponentsForm([...componentsForm, { name: '', amount: '', component_type: '' }]);
+const removeComponentRow = idx => setComponentsForm(componentsForm.filter((_, i) => i !== idx));
+
+// Handler for changing component values
+const handleComponentChange = (idx, field, value) => {
+  const updated = [...componentsForm];
+  updated[idx][field] = value;
+  // If name is empty, use type as name
+  if (field === 'component_type' && !updated[idx].name) {
+    updated[idx].name = value;
+  }
+  setComponentsForm(updated);
+};
+
+// Handler for submitting components
+const submitComponents = async () => {
+  setComponentError('');
+  // Validate sum
+  const sum = componentsForm.reduce((acc, c) => acc + Number(c.amount), 0);
+  if (sum !== Number(componentTotal)) {
+    setComponentError(`Sum of all components (${sum}) must match total CTC (${componentTotal})`);
+    return;
+  }
+  // Validate required fields
+  for (const comp of componentsForm) {
+    if (!comp.component_type || comp.amount === '' || comp.name === '') {
+      setComponentError('All fields are required for each component.');
+      return;
+    }
+  }
+  try {
+    await axiosInstance.post(`${appConfig.API_PREFIX_V1}/staff/ctc-structure/${componentCtcId}/components/bulk`, {
+      components: componentsForm.map(c => ({
+        name: c.name,
+        amount: Number(c.amount),
+        component_type: c.component_type
+      }))
+    });
+    setOpenComponentDialog(false);
+    setComponentsForm([{ name: '', amount: '', component_type: '' }]);
+    // Optionally refresh CTC history
+    const ctcHistoryRes = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/staff/${staff.id}/ctc-structures`);
+    setCtcHistory(ctcHistoryRes.data);
+  } catch (err) {
+    setComponentError('Failed to create components.');
+  }
+};
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
@@ -314,25 +385,80 @@ const StaffDetails = () => {
                             <TableCell>{new Date(ctc.effective_from).toLocaleDateString()}</TableCell>
                             <TableCell>{ctc.effective_to ? new Date(ctc.effective_to).toLocaleDateString() : 'N/A'}</TableCell>
                             <TableCell>
-                              <Table size="small" sx={{ mt: 1 }}>
-                                <TableHead>
-                                  <TableRow>
-                                    <TableCell>Name</TableCell>
-                                    <TableCell>Amount</TableCell>
-                                    <TableCell>Type</TableCell>
-                                  </TableRow>
-                                </TableHead>
-                                <TableBody>
-                                  {ctc.components.map(comp => (
-                                    <TableRow key={comp.id}>
-                                      <TableCell>{comp.name}</TableCell>
-                                      <TableCell>₹{parseFloat(comp.amount).toLocaleString()}</TableCell>
-                                      <TableCell>{comp.component_type}</TableCell>
+                              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                                <Table size="small" sx={{ mt: 1 }}>
+                                  <TableHead>
+                                    <TableRow>
+                                      <TableCell>Name</TableCell>
+                                      <TableCell>Amount</TableCell>
+                                      <TableCell>Type</TableCell>
                                     </TableRow>
-                                  ))}
-                                </TableBody>
-                              </Table>
+                                  </TableHead>
+                                  <TableBody>
+                                    {ctc.components.map(comp => (
+                                      <TableRow key={comp.id}>
+                                        <TableCell>{comp.name}</TableCell>
+                                        <TableCell>₹{parseFloat(comp.amount).toLocaleString()}</TableCell>
+                                        <TableCell>{comp.component_type}</TableCell>
+                                      </TableRow>
+                                    ))}
+                                  </TableBody>
+                                </Table>
+                                {/* Show create components button for any active CTC with no components (robust null check) */}
+                                {(
+                                  <Button variant="outlined" color="primary" size="small" sx={{ mt: 1 }} onClick={() => {
+                                    setOpenComponentDialog(true);
+                                    setComponentCtcId(ctc.id);
+                                    setComponentTotal(ctc.total_ctc);
+                                  }}>Create CTC Components</Button>
+                                )}
+                              </Box>
                             </TableCell>
+      {/* Dialog for creating CTC components */}
+      <Dialog open={openComponentDialog} onClose={() => setOpenComponentDialog(false)} fullWidth maxWidth="sm">
+        <DialogTitle>Create CTC Components</DialogTitle>
+        <DialogContent dividers>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {componentsForm.map((comp, idx) => (
+              <Box key={idx} sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                <TextField
+                  label="Type"
+                  select
+                  SelectProps={{ native: true }}
+                  value={comp.component_type}
+                  onChange={e => handleComponentChange(idx, 'component_type', e.target.value)}
+                  sx={{ minWidth: 180 }}
+                >
+                  <option value="">Select Type</option>
+                  {CTC_COMPONENT_TYPES.map(type => (
+                    <option key={type} value={type}>{type}</option>
+                  ))}
+                </TextField>
+                <TextField
+                  label="Name"
+                  value={comp.name}
+                  onChange={e => handleComponentChange(idx, 'name', e.target.value)}
+                  sx={{ minWidth: 180 }}
+                />
+                <TextField
+                  label="Amount"
+                  type="number"
+                  value={comp.amount}
+                  onChange={e => handleComponentChange(idx, 'amount', e.target.value)}
+                  sx={{ minWidth: 120 }}
+                />
+                <Button color="error" size="small" onClick={() => removeComponentRow(idx)} disabled={componentsForm.length === 1}>Remove</Button>
+              </Box>
+            ))}
+            <Button variant="outlined" size="small" onClick={addComponentRow}>Add Component</Button>
+            {componentError && <Typography color="error">{componentError}</Typography>}
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenComponentDialog(false)} color="secondary">Cancel</Button>
+          <Button variant="contained" color="primary" onClick={submitComponents}>Create</Button>
+        </DialogActions>
+      </Dialog>
                           </TableRow>
                         ))}
                     </TableBody>
