@@ -151,7 +151,14 @@ const StaffDetails = () => {
   useEffect(() => {
     const fetchAll = async () => {
       setLoading(true);
+      let timeoutId;
       try {
+        // Set a timeout to avoid infinite loading
+        timeoutId = setTimeout(() => {
+          setLoading(false);
+          console.error('API timeout: Backend may be down or endpoint misconfigured.');
+        }, 10000); // 10 seconds
+
         // Staff details
         const staffRes = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/staff/${id}`);
         setStaff(staffRes.data);
@@ -164,6 +171,7 @@ const StaffDetails = () => {
           if (ctcErr?.response?.status === 404) {
             setActiveCTC(null);
           } else {
+            console.error('Error fetching active CTC:', ctcErr);
             throw ctcErr;
           }
         }
@@ -171,10 +179,12 @@ const StaffDetails = () => {
         const ctcHistoryRes = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/staff/${id}/ctc-structures`);
         setCtcHistory(ctcHistoryRes.data);
       } catch (error) {
+        console.error('Error in fetchAll:', error);
         setStaff(defaultStaff);
         setActiveCTC(null);
         setCtcHistory([]);
       } finally {
+        clearTimeout(timeoutId);
         setLoading(false);
       }
     };
@@ -470,6 +480,52 @@ const StaffDetails = () => {
                   }}>Create</Button>
                 </DialogActions>
               </Dialog>
+                {/* Dialog for creating CTC components */}
+                <Dialog open={openComponentDialog || false} onClose={() => setOpenComponentDialog(false)} fullWidth maxWidth="md">
+                  <DialogTitle>Create CTC Components</DialogTitle>
+                  <DialogContent dividers>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                      <Typography variant="subtitle1">Total CTC: ₹{componentTotal}</Typography>
+                      {componentsForm.map((row, idx) => (
+                        <Box key={idx} sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                          <TextField
+                            label="Component Name"
+                            value={row.name}
+                            onChange={e => handleComponentChange(idx, 'name', e.target.value)}
+                            sx={{ flex: 2 }}
+                          />
+                          <TextField
+                            label="Amount"
+                            type="number"
+                            value={row.amount}
+                            onChange={e => handleComponentChange(idx, 'amount', e.target.value)}
+                            sx={{ flex: 1 }}
+                          />
+                          <TextField
+                            label="Type"
+                            select
+                            SelectProps={{ native: true }}
+                            value={row.component_type}
+                            onChange={e => handleComponentChange(idx, 'component_type', e.target.value)}
+                            sx={{ flex: 2 }}
+                          >
+                            <option value="">Select Type</option>
+                            {CTC_COMPONENT_TYPES.map(type => (
+                              <option key={type} value={type}>{type}</option>
+                            ))}
+                          </TextField>
+                          <Button color="error" onClick={() => removeComponentRow(idx)} disabled={componentsForm.length === 1}>Remove</Button>
+                        </Box>
+                      ))}
+                      <Button variant="outlined" onClick={addComponentRow} sx={{ mt: 1, width: 'fit-content' }}>Add Component</Button>
+                      {componentError && <Typography color="error" sx={{ mt: 1 }}>{componentError}</Typography>}
+                    </Box>
+                  </DialogContent>
+                  <DialogActions>
+                    <Button onClick={() => setOpenComponentDialog(false)} color="secondary">Cancel</Button>
+                    <Button variant="contained" onClick={submitComponents}>Submit Components</Button>
+                  </DialogActions>
+                </Dialog>
             </Box>
           )}
 
