@@ -196,7 +196,7 @@ const StaffDetails = () => {
         setCtcHistory(ctcHistoryRes.data);
         
         // Salary payment records
-        fetchSalaryHistory();
+        fetchSalaryHistory(staffRes.data.id);
         
         // Active academic year
         fetchActiveAcademicYear();
@@ -226,16 +226,16 @@ const StaffDetails = () => {
   };
 
   // Fetch salary payment records
-  const fetchSalaryHistory = async () => {
-    if (!staff?.id) {
+  const fetchSalaryHistory = async (staffId = staff.id) => {
+    if (!staffId) {
       console.log('No staff ID available for fetching salary history');
       return;
     }
 
     try {
       setLoadingSalaryHistory(true);
-      console.log('Fetching salary history for staff:', staff.id);
-      const apiUrl = `${appConfig.API_PREFIX_V1}/staff/payment/records/${staff.id}`;
+      console.log('Fetching salary history for staff:', staffId);
+      const apiUrl = `${appConfig.API_PREFIX_V1}/staff/payment/records/${staffId}`;
       console.log('API URL:', apiUrl);
 
       const response = await axiosInstance.get(apiUrl);
@@ -324,7 +324,7 @@ const StaffDetails = () => {
       });
       
       // Refresh salary history
-      fetchSalaryHistory();
+      fetchSalaryHistory(staff.id);
       
     } catch (error) {
       console.error('Error creating salary payment:', error);
@@ -347,9 +347,28 @@ const StaffDetails = () => {
       <Card sx={{ p: { xs: 2, md: 4 }, borderRadius: 3, boxShadow: 6, position: 'relative', height: '100%' }}>
         {/* Back Button */}
         <Tooltip title="Go Back">
-          <IconButton onClick={() => navigate(-1)} sx={{ position: 'absolute', top: 16, left: 16 }}>
-            <ArrowBackIosNew />
-          </IconButton>
+          <Button
+            variant="outlined"
+            startIcon={<ArrowBackIosNew />}
+            onClick={() => navigate(-1)}
+            sx={{
+              position: 'absolute',
+              top: 16,
+              left: 16,
+              borderRadius: 2,
+              textTransform: 'none',
+              fontWeight: 600,
+              borderColor: 'primary.main',
+              color: 'primary.main',
+              '&:hover': {
+                backgroundColor: 'primary.main',
+                color: 'white',
+                borderColor: 'primary.main',
+              }
+            }}
+          >
+            Back
+          </Button>
         </Tooltip>
 
         <Box sx={{ display: 'flex', flexDirection: 'row', height: 'calc(100vh - 32px)' }}>
