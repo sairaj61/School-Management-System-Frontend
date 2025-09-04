@@ -31,15 +31,6 @@ const defaultStaff = {
   profile_image: '',
 };
 
-const mockAttendanceSummary = {
-  month: 'August',
-  year: 2025,
-  present: 22,
-  absent: 2,
-  late: 1,
-  totalDays: 25
-};
-
 const mockFiles = [
   { id: 1, name: 'Resume.pdf', url: '', type: 'pdf' },
   { id: 2, name: 'Certificate.jpg', url: '', type: 'image' },
@@ -148,6 +139,11 @@ const StaffDetails = () => {
   const [payingSalary, setPayingSalary] = useState(false);
   const [loadingSalaryHistory, setLoadingSalaryHistory] = useState(false);
   const [activeAcademicYear, setActiveAcademicYear] = useState(null);
+  const [attendanceRecords, setAttendanceRecords] = useState([]);
+  const [monthlyAttendance, setMonthlyAttendance] = useState([]);
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [loadingAttendance, setLoadingAttendance] = useState(false);
 
   // Get current academic year (April to March)
   const getCurrentAcademicYear = () => {
@@ -200,6 +196,9 @@ const StaffDetails = () => {
         
         // Active academic year
         fetchActiveAcademicYear();
+        
+        // Attendance records
+        fetchMonthlyAttendance(staffRes.data.id, selectedYear, selectedMonth);
       } catch (error) {
         console.error('Error in fetchAll:', error);
         setStaff(defaultStaff);
@@ -212,6 +211,13 @@ const StaffDetails = () => {
     };
     if (id) fetchAll();
   }, [id]);
+
+  // Effect to fetch attendance when month/year changes
+  useEffect(() => {
+    if (staff.id && selectedMonth && selectedYear) {
+      fetchMonthlyAttendance(staff.id, selectedYear, selectedMonth);
+    }
+  }, [selectedMonth, selectedYear, staff.id]);
 
   const handleFileUpload = (e) => {
     setUploading(true);
@@ -251,6 +257,36 @@ const StaffDetails = () => {
       setSalaryHistory([]);
     } finally {
       setLoadingSalaryHistory(false);
+    }
+  };
+
+  // Fetch daily attendance records
+  const fetchDailyAttendance = async (staffId) => {
+    try {
+      console.log('Fetching daily attendance for staff:', staffId);
+      const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/staff/attendance/staff/${staffId}`);
+      console.log('Daily attendance API response:', response.data);
+      setAttendanceRecords(Array.isArray(response.data) ? response.data : []);
+    } catch (error) {
+      console.error('Error fetching daily attendance:', error);
+      setAttendanceRecords([]);
+    }
+  };
+
+  // Fetch monthly attendance records
+  const fetchMonthlyAttendance = async (staffId, year, month) => {
+    try {
+      setLoadingAttendance(true);
+      console.log('Fetching monthly attendance for staff:', staffId, 'Year:', year, 'Month:', month);
+      const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/staff/attendance/staff/${staffId}/month/${year}/${month}`);
+      console.log('Monthly attendance API response:', response.data);
+      const data = Array.isArray(response.data) ? response.data : [];
+      setMonthlyAttendance(data);
+    } catch (error) {
+      console.error('Error fetching monthly attendance:', error);
+      setMonthlyAttendance([]);
+    } finally {
+      setLoadingAttendance(false);
     }
   };
 
@@ -889,30 +925,137 @@ const StaffDetails = () => {
             {/* Attendance Tab */}
             {tab === 3 && (
               <Box>
-                <Typography variant="h6" fontWeight={600} gutterBottom>Monthly Attendance</Typography>
-                <Grid container spacing={2} sx={{ mb: 2 }}>
-                  <Grid item xs={4}>
-                    <Card elevation={2} sx={{ p: 2, textAlign: 'center', bgcolor: 'success.light' }}>
-                      <Typography variant="h4" fontWeight={700} color="success.dark">{mockAttendanceSummary.present}</Typography>
-                      <Typography variant="subtitle1" color="text.secondary">Present</Typography>
-                    </Card>
-                  </Grid>
-                  <Grid item xs={4}>
-                    <Card elevation={2} sx={{ p: 2, textAlign: 'center', bgcolor: 'error.light' }}>
-                      <Typography variant="h4" fontWeight={700} color="error.dark">{mockAttendanceSummary.absent}</Typography>
-                      <Typography variant="subtitle1" color="text.secondary">Absent</Typography>
-                    </Card>
-                  </Grid>
-                  <Grid item xs={4}>
-                    <Card elevation={2} sx={{ p: 2, textAlign: 'center', bgcolor: 'warning.light' }}>
-                      <Typography variant="h4" fontWeight={700} color="warning.dark">{mockAttendanceSummary.late}</Typography>
-                      <Typography variant="subtitle1" color="text.secondary">Late</Typography>
-                    </Card>
-                  </Grid>
-                </Grid>
-                <Typography variant="subtitle1" gutterBottom>
-                  Attendance for **{mockAttendanceSummary.month} {mockAttendanceSummary.year}** (Total Days: {mockAttendanceSummary.totalDays})
-                </Typography>
+                <Typography variant="h6" fontWeight={600} gutterBottom>Staff Attendance</Typography>
+                
+                {/* Month/Year Selector */}
+                <Box sx={{ display: 'flex', gap: 2, mb: 3, alignItems: 'center' }}>
+                  <TextField
+                    label="Year"
+                    type="number"
+                    value={selectedYear}
+                    onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                    sx={{ width: 100 }}
+                  />
+                  <TextField
+                    label="Month"
+                    select
+                    SelectProps={{ native: true }}
+                    value={selectedMonth}
+                    onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+                    sx={{ width: 120 }}
+                  >
+                    <option value={1}>January</option>
+                    <option value={2}>February</option>
+                    <option value={3}>March</option>
+                    <option value={4}>April</option>
+                    <option value={5}>May</option>
+                    <option value={6}>June</option>
+                    <option value={7}>July</option>
+                    <option value={8}>August</option>
+                    <option value={9}>September</option>
+                    <option value={10}>October</option>
+                    <option value={11}>November</option>
+                    <option value={12}>December</option>
+                  </TextField>
+                  <Button 
+                    variant="contained" 
+                    onClick={() => fetchMonthlyAttendance(staff.id, selectedYear, selectedMonth)}
+                    disabled={loadingAttendance}
+                  >
+                    {loadingAttendance ? <CircularProgress size={20} /> : 'Load Attendance'}
+                  </Button>
+                </Box>
+                
+                {/* Attendance Summary */}
+                {loadingAttendance ? (
+                  <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+                    <CircularProgress size={40} />
+                  </Box>
+                ) : (
+                  <>
+                    <Grid container spacing={2} sx={{ mb: 2 }}>
+                      <Grid item xs={3}>
+                        <Card elevation={2} sx={{ p: 2, textAlign: 'center', bgcolor: 'success.light' }}>
+                          <Typography variant="h4" fontWeight={700} color="success.dark">
+                            {monthlyAttendance.filter(record => record.is_present).length}
+                          </Typography>
+                          <Typography variant="subtitle1" color="text.secondary">Present</Typography>
+                        </Card>
+                      </Grid>
+                      <Grid item xs={3}>
+                        <Card elevation={2} sx={{ p: 2, textAlign: 'center', bgcolor: 'error.light' }}>
+                          <Typography variant="h4" fontWeight={700} color="error.dark">
+                            {monthlyAttendance.filter(record => !record.is_present).length}
+                          </Typography>
+                          <Typography variant="subtitle1" color="text.secondary">Absent</Typography>
+                        </Card>
+                      </Grid>
+                      <Grid item xs={3}>
+                        <Card elevation={2} sx={{ p: 2, textAlign: 'center', bgcolor: 'warning.light' }}>
+                          <Typography variant="h4" fontWeight={700} color="warning.dark">
+                            {monthlyAttendance.filter(record => record.location_verified).length}
+                          </Typography>
+                          <Typography variant="subtitle1" color="text.secondary">Location Verified</Typography>
+                        </Card>
+                      </Grid>
+                      <Grid item xs={3}>
+                        <Card elevation={2} sx={{ p: 2, textAlign: 'center', bgcolor: 'info.light' }}>
+                          <Typography variant="h4" fontWeight={700} color="info.dark">
+                            {monthlyAttendance.length}
+                          </Typography>
+                          <Typography variant="subtitle1" color="text.secondary">Total Records</Typography>
+                        </Card>
+                      </Grid>
+                    </Grid>
+                    
+                    {/* Attendance Records Table */}
+                    <Typography variant="subtitle1" gutterBottom>
+                      Attendance Records for {new Date(selectedYear, selectedMonth - 1).toLocaleString('default', { month: 'long' })} {selectedYear}
+                    </Typography>
+                    {monthlyAttendance.length === 0 ? (
+                      <Typography color="text.secondary">No attendance records found for this month.</Typography>
+                    ) : (
+                      <TableContainer component={Paper} sx={{ mt: 2, boxShadow: 2, borderRadius: 2 }}>
+                        <Table>
+                          <TableHead sx={{ backgroundColor: 'primary.light' }}>
+                            <TableRow>
+                              <TableCell sx={{ fontWeight: 'bold' }}>Date</TableCell>
+                              <TableCell sx={{ fontWeight: 'bold' }}>Time</TableCell>
+                              <TableCell sx={{ fontWeight: 'bold' }}>Status</TableCell>
+                              <TableCell sx={{ fontWeight: 'bold' }}>Location Verified</TableCell>
+                              <TableCell sx={{ fontWeight: 'bold' }}>Device</TableCell>
+                              <TableCell sx={{ fontWeight: 'bold' }}>Remarks</TableCell>
+                            </TableRow>
+                          </TableHead>
+                          <TableBody>
+                            {monthlyAttendance.map(record => (
+                              <TableRow key={record.id} hover>
+                                <TableCell>{new Date(record.timestamp).toLocaleDateString()}</TableCell>
+                                <TableCell>{new Date(record.timestamp).toLocaleTimeString()}</TableCell>
+                                <TableCell>
+                                  <Chip
+                                    label={record.is_present ? 'Present' : 'Absent'}
+                                    color={record.is_present ? 'success' : 'error'}
+                                    size="small"
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  <Chip
+                                    label={record.location_verified ? 'Verified' : 'Not Verified'}
+                                    color={record.location_verified ? 'success' : 'warning'}
+                                    size="small"
+                                  />
+                                </TableCell>
+                                <TableCell>{record.device_type} ({record.device_id})</TableCell>
+                                <TableCell>{record.remarks || 'N/A'}</TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </TableContainer>
+                    )}
+                  </>
+                )}
               </Box>
             )}
 
