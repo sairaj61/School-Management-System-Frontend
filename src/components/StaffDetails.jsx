@@ -126,9 +126,16 @@ const StaffDetails = () => {
       });
       setOpenComponentDialog(false);
       setComponentsForm([{ name: '', amount: '', component_type: '' }]);
-      // Optionally refresh CTC history
+      // Refresh CTC history
       const ctcHistoryRes = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/staff/${staff.id}/ctc-structures`);
       setCtcHistory(ctcHistoryRes.data);
+      // Refresh active CTC to reflect component updates in Overview tab
+      try {
+        const activeCtcRes = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/staff/${staff.id}/ctc-structure/active`);
+        setActiveCTC(activeCtcRes.data);
+      } catch (ctcErr) {
+        setActiveCTC(null);
+      }
     } catch (err) {
       setComponentError('Failed to create components.');
     }
