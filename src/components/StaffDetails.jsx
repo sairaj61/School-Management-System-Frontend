@@ -31,12 +31,6 @@ const defaultStaff = {
   profile_image: '',
 };
 
-const mockSalaryHistory = [
-  { id: 1, month: 'August', year: 2025, amount: 35000, paid_on: '2025-08-31' },
-  { id: 2, month: 'July', year: 2025, amount: 35000, paid_on: '2025-07-31' },
-  { id: 3, month: 'June', year: 2025, amount: 35000, paid_on: '2025-06-30' },
-];
-
 const mockAttendanceSummary = {
   month: 'August',
   year: 2025,
@@ -50,15 +44,6 @@ const mockFiles = [
   { id: 1, name: 'Resume.pdf', url: '', type: 'pdf' },
   { id: 2, name: 'Certificate.jpg', url: '', type: 'image' },
   { id: 3, name: 'ID Card.png', url: '', type: 'image' },
-];
-
-const mockSalary = 35000;
-const mockSalaryStructure = [
-  { component: 'Basic Pay', amount: 20000 },
-  { component: 'House Rent Allowance (HRA)', amount: 5000 },
-  { component: 'Dearness Allowance (DA)', amount: 6000 },
-  { component: 'Transport Allowance', amount: 4000 },
-  { component: 'Deductions (EPF)', amount: -1000 },
 ];
 
 const StaffDetails = () => {
@@ -142,6 +127,7 @@ const StaffDetails = () => {
   };
 
   const { id } = useParams();
+  const navigate = useNavigate();
   const [tab, setTab] = useState(0);
   const [files, setFiles] = useState(mockFiles);
   const [uploading, setUploading] = useState(false);
@@ -150,10 +136,33 @@ const StaffDetails = () => {
   const [loading, setLoading] = useState(true);
   const [activeCTC, setActiveCTC] = useState(null);
   const [ctcHistory, setCtcHistory] = useState([]);
-  // Add state for CTC dialog and form
+  const [salaryHistory, setSalaryHistory] = useState([]);
+  const [openSalaryDialog, setOpenSalaryDialog] = useState(false);
   const [openCtcDialog, setOpenCtcDialog] = useState(false);
   const [ctcForm, setCtcForm] = useState({ total_ctc: '', effective_from: '' });
-  const navigate = useNavigate();
+  const [salaryForm, setSalaryForm] = useState({
+    salary_month: new Date().toLocaleString('default', { month: 'long' }).toUpperCase(),
+    payment_date: new Date().toISOString().split('T')[0],
+    description: ''
+  });
+  const [payingSalary, setPayingSalary] = useState(false);
+  const [loadingSalaryHistory, setLoadingSalaryHistory] = useState(false);
+  const [activeAcademicYear, setActiveAcademicYear] = useState(null);
+
+  // Get current academic year (April to March)
+  const getCurrentAcademicYear = () => {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth() + 1; // getMonth() returns 0-11
+    
+    // If current month is April (4) or later, academic year is currentYear-(currentYear+1)
+    // Otherwise, it's (currentYear-1)-currentYear
+    if (currentMonth >= 4) {
+      return `${currentYear}-${currentYear + 1}`;
+    } else {
+      return `${currentYear - 1}-${currentYear}`;
+    }
+  };
 
   useEffect(() => {
     const fetchAll = async () => {
@@ -185,6 +194,12 @@ const StaffDetails = () => {
         // CTC history
         const ctcHistoryRes = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/staff/${id}/ctc-structures`);
         setCtcHistory(ctcHistoryRes.data);
+        
+        // Salary payment records
+        fetchSalaryHistory();
+        
+        // Active academic year
+        fetchActiveAcademicYear();
       } catch (error) {
         console.error('Error in fetchAll:', error);
         setStaff(defaultStaff);
@@ -208,6 +223,115 @@ const StaffDetails = () => {
 
   const handleProfileImageUpload = (e) => {
     setProfileImage(URL.createObjectURL(e.target.files[0]));
+  };
+
+  // Fetch salary payment records
+  const fetchSalaryHistory = async () => {
+    if (!staff?.id) {
+      console.log('No staff ID available for fetching salary history');
+      return;
+    }
+
+    try {
+      setLoadingSalaryHistory(true);
+      console.log('Fetching salary history for staff:', staff.id);
+      const apiUrl = `${appConfig.API_PREFIX_V1}/staff/payment/records/${staff.id}`;
+      console.log('API URL:', apiUrl);
+
+      const response = await axiosInstance.get(apiUrl);
+      console.log('Salary history API response:', response.data);
+
+      // Ensure we have an array
+      const historyData = Array.isArray(response.data) ? response.data : [];
+      setSalaryHistory(historyData);
+      console.log('✅ Salary history loaded:', historyData.length, 'records');
+    } catch (error) {
+      console.error('❌ Error fetching salary history:', error);
+      console.error('Error details:', error.response?.data || error.message);
+      setSalaryHistory([]);
+    } finally {
+      setLoadingSalaryHistory(false);
+    }
+  };
+
+  // Fetch active academic year
+  const fetchActiveAcademicYear = async () => {
+    try {
+      console.log('🔄 Fetching active academic year from API...');
+      const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/timetable/academic-years/active_academic_years`);
+      console.log('📥 Academic year API response:', response.data);
+
+      if (response.data && response.data.id) {
+        const academicYear = response.data;
+        setActiveAcademicYear(academicYear);
+        console.log('✅ Active academic year loaded:', academicYear.year_name, 'ID:', academicYear.id);
+        console.log('📤 Will include academic_year_id in salary payments:', academicYear.id);
+      } else {
+        console.log('⚠️ No active academic year found in API response');
+        setActiveAcademicYear(null);
+        console.log('📤 academic_year_id will be omitted from salary payments');
+      }
+    } catch (error) {
+      console.error('❌ Error fetching active academic year:', error);
+      console.error('📤 academic_year_id will be omitted from salary payments');
+      setActiveAcademicYear(null);
+    }
+  };
+
+  // Create salary payment
+  const createSalaryPayment = async () => {
+    if (!activeCTC || !activeCTC.components || activeCTC.components.length === 0) {
+      alert('No active CTC structure with components found. Please create CTC components first.');
+      return;
+    }
+
+    setPayingSalary(true);
+    try {
+      const totalPaid = activeCTC.components.reduce((sum, comp) => sum + parseFloat(comp.amount), 0);
+      const breakdowns = activeCTC.components.map(comp => ({
+        ctc_component_id: comp.id,
+        amount_paid: parseFloat(comp.amount)
+      }));
+
+      const payload = {
+        staff_id: staff.id,
+        ctc_structure_id: activeCTC.id,
+        salary_month: salaryForm.salary_month,
+        payment_date: new Date(salaryForm.payment_date).toISOString(),
+        total_paid: totalPaid,
+        is_partial: false,
+        description: salaryForm.description || 'Monthly salary payment',
+        breakdowns: breakdowns
+      };
+
+      // Always include academic_year_id when available
+      if (activeAcademicYear?.id) {
+        payload.academic_year_id = activeAcademicYear.id;
+        console.log('✅ Including academic_year_id:', activeAcademicYear.id);
+      } else {
+        console.warn('⚠️ No active academic year available, academic_year_id will be omitted');
+      }
+
+      console.log('Final salary payment payload:', payload);
+
+      await axiosInstance.post(`${appConfig.API_PREFIX_V1}/staff/payment/record/`, payload);
+      
+      setOpenSalaryDialog(false);
+      setSalaryForm({
+        salary_month: new Date().toLocaleString('default', { month: 'long' }).toUpperCase(),
+        payment_date: new Date().toISOString().split('T')[0],
+        description: ''
+      });
+      
+      // Refresh salary history
+      fetchSalaryHistory();
+      
+    } catch (error) {
+      console.error('Error creating salary payment:', error);
+      alert('Failed to create salary payment. Please try again.');
+    } finally {
+      setPayingSalary(false);
+    }
   };
 
   if (loading) {
@@ -546,29 +670,200 @@ const StaffDetails = () => {
             {/* Salary History Tab */}
             {tab === 2 && (
               <Box>
-                <Typography variant="h6" fontWeight={600} gutterBottom>Salary History</Typography>
-                <TableContainer component={Paper} sx={{ mt: 2, boxShadow: 2, borderRadius: 2 }}>
-                  <Table>
-                    <TableHead sx={{ backgroundColor: 'primary.light' }}>
-                      <TableRow>
-                        <TableCell sx={{ fontWeight: 'bold' }}>Month</TableCell>
-                        <TableCell sx={{ fontWeight: 'bold' }}>Year</TableCell>
-                        <TableCell sx={{ fontWeight: 'bold' }}>Amount</TableCell>
-                        <TableCell sx={{ fontWeight: 'bold' }}>Paid On</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {mockSalaryHistory.map(s => (
-                        <TableRow key={s.id} hover>
-                          <TableCell>{s.month}</TableCell>
-                          <TableCell>{s.year}</TableCell>
-                          <TableCell>₹{s.amount.toLocaleString()}</TableCell>
-                          <TableCell>{s.paid_on}</TableCell>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                  <Typography variant="h5" fontWeight={700} color="primary">
+                    Salary Payment History
+                  </Typography>
+                  <Button 
+                    variant="contained" 
+                    color="success" 
+                    startIcon={<Paid />}
+                    onClick={() => setOpenSalaryDialog(true)}
+                    disabled={!activeCTC || !activeCTC.components || activeCTC.components.length === 0}
+                  >
+                    Pay Salary
+                  </Button>
+                </Box>
+                
+                {loadingSalaryHistory ? (
+                  <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+                    <CircularProgress size={40} />
+                    <Typography sx={{ ml: 2 }}>Loading salary history...</Typography>
+                  </Box>
+                ) : salaryHistory.length === 0 ? (
+                  <Typography color="text.secondary">No salary payment records found.</Typography>
+                ) : (
+                  <TableContainer component={Paper} sx={{ mt: 2, boxShadow: 2, borderRadius: 2 }}>
+                    <Table>
+                      <TableHead sx={{ backgroundColor: 'primary.light' }}>
+                        <TableRow>
+                          <TableCell sx={{ fontWeight: 'bold' }}>Month</TableCell>
+                          <TableCell sx={{ fontWeight: 'bold' }}>Payment Date</TableCell>
+                          <TableCell sx={{ fontWeight: 'bold' }}>Total Paid</TableCell>
+                          <TableCell sx={{ fontWeight: 'bold' }}>Status</TableCell>
+                          <TableCell sx={{ fontWeight: 'bold' }}>Description</TableCell>
+                          <TableCell sx={{ fontWeight: 'bold' }}>Breakdown</TableCell>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
+                      </TableHead>
+                      <TableBody>
+                        {salaryHistory.map(record => (
+                          <TableRow key={record.id} hover>
+                            <TableCell>{record.salary_month}</TableCell>
+                            <TableCell>{new Date(record.payment_date).toLocaleDateString()}</TableCell>
+                            <TableCell>₹{parseFloat(record.total_paid || 0).toLocaleString()}</TableCell>
+                            <TableCell>
+                              <Chip
+                                label={record.is_partial ? 'Partial' : 'Full'}
+                                color={record.is_partial ? 'warning' : 'success'}
+                                size="small"
+                              />
+                            </TableCell>
+                            <TableCell>{record.description || 'No description'}</TableCell>
+                            <TableCell>
+                              <Box>
+                                {record.payment_breakdown && record.payment_breakdown.length > 0 ? (
+                                  <Table size="small">
+                                    <TableHead>
+                                      <TableRow>
+                                        <TableCell>Component</TableCell>
+                                        <TableCell>Amount</TableCell>
+                                      </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                      {record.payment_breakdown.map(breakdown => (
+                                        <TableRow key={breakdown.id}>
+                                          <TableCell>
+                                            {activeCTC?.components?.find(comp => comp.id === breakdown.ctc_component_id)?.name || 'Unknown Component'}
+                                          </TableCell>
+                                          <TableCell>₹{parseFloat(breakdown.amount_paid || 0).toLocaleString()}</TableCell>
+                                        </TableRow>
+                                      ))}
+                                    </TableBody>
+                                  </Table>
+                                ) : (
+                                  <Typography variant="body2" color="text.secondary">No breakdown available</Typography>
+                                )}
+                              </Box>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                )}
+                
+                {/* Salary Payment Dialog */}
+                <Dialog open={openSalaryDialog} onClose={() => setOpenSalaryDialog(false)} fullWidth maxWidth="md">
+                  <DialogTitle>Pay Salary</DialogTitle>
+                  <DialogContent dividers>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                      <Typography variant="h6" gutterBottom>
+                        Salary Payment for {staff.name}
+                      </Typography>
+                      
+                      {activeCTC ? (
+                        <>
+                      <Typography variant="subtitle1" color="primary">
+                        Active CTC: ₹{parseFloat(activeCTC.total_ctc).toLocaleString()}
+                      </Typography>
+                      <Typography variant="subtitle2" color="text.secondary">
+                        Academic Year: {activeAcademicYear ? `${activeAcademicYear.year_name} (ID: ${activeAcademicYear.id})` : 'Not available (will be omitted)'}
+                      </Typography>                          <Grid container spacing={2}>
+                            <Grid item xs={6}>
+                              <TextField
+                                label="Salary Month"
+                                select
+                                SelectProps={{ native: true }}
+                                value={salaryForm.salary_month}
+                                onChange={e => setSalaryForm({ ...salaryForm, salary_month: e.target.value })}
+                                fullWidth
+                              >
+                                <option value="JANUARY">January</option>
+                                <option value="FEBRUARY">February</option>
+                                <option value="MARCH">March</option>
+                                <option value="APRIL">April</option>
+                                <option value="MAY">May</option>
+                                <option value="JUNE">June</option>
+                                <option value="JULY">July</option>
+                                <option value="AUGUST">August</option>
+                                <option value="SEPTEMBER">September</option>
+                                <option value="OCTOBER">October</option>
+                                <option value="NOVEMBER">November</option>
+                                <option value="DECEMBER">December</option>
+                              </TextField>
+                            </Grid>
+                            <Grid item xs={6}>
+                              <TextField
+                                label="Payment Date"
+                                type="date"
+                                InputLabelProps={{ shrink: true }}
+                                value={salaryForm.payment_date}
+                                onChange={e => setSalaryForm({ ...salaryForm, payment_date: e.target.value })}
+                                fullWidth
+                              />
+                            </Grid>
+                          </Grid>
+                          
+                          <TextField
+                            label="Description"
+                            multiline
+                            rows={2}
+                            value={salaryForm.description}
+                            onChange={e => setSalaryForm({ ...salaryForm, description: e.target.value })}
+                            fullWidth
+                            placeholder="Optional description for this payment"
+                          />
+                          
+                          <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
+                            Payment Breakdown
+                          </Typography>
+                          <TableContainer component={Paper} sx={{ maxHeight: 300 }}>
+                            <Table size="small">
+                              <TableHead>
+                                <TableRow>
+                                  <TableCell>Component Name</TableCell>
+                                  <TableCell>Type</TableCell>
+                                  <TableCell>Amount</TableCell>
+                                </TableRow>
+                              </TableHead>
+                              <TableBody>
+                                {activeCTC.components.map(comp => (
+                                  <TableRow key={comp.id}>
+                                    <TableCell>{comp.name}</TableCell>
+                                    <TableCell>{comp.component_type}</TableCell>
+                                    <TableCell>₹{parseFloat(comp.amount).toLocaleString()}</TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                          </TableContainer>
+                          
+                          <Typography variant="h6" color="primary" sx={{ mt: 1 }}>
+                            Total Amount: ₹{activeCTC.components.reduce((sum, comp) => sum + parseFloat(comp.amount), 0).toLocaleString()}
+                          </Typography>
+                        </>
+                      ) : (
+                        <Typography color="error">
+                          No active CTC structure found. Please create a CTC structure first.
+                        </Typography>
+                      )}
+                    </Box>
+                  </DialogContent>
+                  <DialogActions>
+                    <Button onClick={() => setOpenSalaryDialog(false)} color="secondary">
+                      Cancel
+                    </Button>
+                    <Button 
+                      variant="contained" 
+                      color="success" 
+                      onClick={createSalaryPayment}
+                      disabled={payingSalary || !activeCTC}
+                      startIcon={payingSalary ? <CircularProgress size={20} /> : null}
+                    >
+                      {payingSalary ? 'Processing...' : 'Confirm Payment'}
+                    </Button>
+                  </DialogActions>
+                </Dialog>
               </Box>
             )}
 
