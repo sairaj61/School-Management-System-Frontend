@@ -5,7 +5,7 @@ import {
   List, ListItem, ListItemIcon, ListItemText, Dialog, DialogTitle, DialogContent, DialogActions,TextField
 } from '@mui/material';
 import {
-  CloudUpload, Visibility, Download, Email, Phone, Home, School, Person, AttachFile, Work, CalendarToday, AccountBalance, ArrowBackIosNew, Paid
+  CloudUpload, Visibility, Download, Email, Phone, Home, School, Person, AttachFile, Work, CalendarToday, AccountBalance, ArrowBackIosNew, Paid, Close
 } from '@mui/icons-material';
 import appConfig from '../config/appConfig';
 import axiosInstance from '../utils/axiosConfig';
@@ -144,6 +144,9 @@ const StaffDetails = () => {
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [loadingAttendance, setLoadingAttendance] = useState(false);
+  const [openSelfieModal, setOpenSelfieModal] = useState(false);
+  const [currentSelfieUrl, setCurrentSelfieUrl] = useState('');
+  const [loadingSelfie, setLoadingSelfie] = useState(false);
 
   // Get current academic year (April to March)
   const getCurrentAcademicYear = () => {
@@ -287,6 +290,28 @@ const StaffDetails = () => {
       setMonthlyAttendance([]);
     } finally {
       setLoadingAttendance(false);
+    }
+  };
+
+  // Fetch selfie URL for attendance record
+  const fetchSelfieUrl = async (attendanceId) => {
+    try {
+      setLoadingSelfie(true);
+      console.log('Fetching selfie URL for attendance ID:', attendanceId);
+      const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/staff/attendance/${attendanceId}/selfie`);
+      console.log('Selfie URL API response:', response.data);
+
+      if (response.data && response.data.selfie_url) {
+        setCurrentSelfieUrl(response.data.selfie_url);
+        setOpenSelfieModal(true);
+      } else {
+        alert('Selfie URL not available for this attendance record.');
+      }
+    } catch (error) {
+      console.error('Error fetching selfie URL:', error);
+      alert('Failed to load selfie. Please try again.');
+    } finally {
+      setLoadingSelfie(false);
     }
   };
 
@@ -922,6 +947,63 @@ const StaffDetails = () => {
               </Box>
             )}
 
+            {/* Selfie View Modal */}
+            <Dialog
+              open={openSelfieModal}
+              onClose={() => setOpenSelfieModal(false)}
+              maxWidth="md"
+              fullWidth
+            >
+              <DialogTitle>
+                Attendance Selfie
+                <IconButton
+                  onClick={() => setOpenSelfieModal(false)}
+                  sx={{ position: 'absolute', right: 8, top: 8 }}
+                >
+                  <Close />
+                </IconButton>
+              </DialogTitle>
+              <DialogContent dividers>
+                <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 400 }}>
+                  {currentSelfieUrl ? (
+                    <img
+                      src={currentSelfieUrl}
+                      alt="Attendance Selfie"
+                      style={{
+                        maxWidth: '100%',
+                        maxHeight: '400px',
+                        objectFit: 'contain',
+                        borderRadius: '8px'
+                      }}
+                    />
+                  ) : (
+                    <Typography>Loading image...</Typography>
+                  )}
+                </Box>
+              </DialogContent>
+              <DialogActions>
+                <Button onClick={() => setOpenSelfieModal(false)} color="secondary">
+                  Close
+                </Button>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  startIcon={<Download />}
+                  onClick={() => {
+                    const link = document.createElement('a');
+                    link.href = currentSelfieUrl;
+                    link.download = `attendance-selfie-${Date.now()}.png`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                  }}
+                  disabled={!currentSelfieUrl}
+                >
+                  Download
+                </Button>
+              </DialogActions>
+            </Dialog>
+
             {/* Attendance Tab */}
             {tab === 3 && (
               <Box>
@@ -1025,6 +1107,7 @@ const StaffDetails = () => {
                               <TableCell sx={{ fontWeight: 'bold' }}>Location Verified</TableCell>
                               <TableCell sx={{ fontWeight: 'bold' }}>Device</TableCell>
                               <TableCell sx={{ fontWeight: 'bold' }}>Remarks</TableCell>
+                              <TableCell sx={{ fontWeight: 'bold' }}>Actions</TableCell>
                             </TableRow>
                           </TableHead>
                           <TableBody>
@@ -1048,6 +1131,17 @@ const StaffDetails = () => {
                                 </TableCell>
                                 <TableCell>{record.device_type} ({record.device_id})</TableCell>
                                 <TableCell>{record.remarks || 'N/A'}</TableCell>
+                                <TableCell>
+                                  <Button
+                                    variant="outlined"
+                                    size="small"
+                                    onClick={() => fetchSelfieUrl(record.id)}
+                                    disabled={loadingSelfie}
+                                    startIcon={loadingSelfie ? <CircularProgress size={16} /> : <Visibility />}
+                                  >
+                                    View Selfie
+                                  </Button>
+                                </TableCell>
                               </TableRow>
                             ))}
                           </TableBody>
