@@ -1,78 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Paper,
-  Typography,
-  Box,
-  Card,
-  CardContent,
-  Avatar,
-  Chip,
-  Grid,
-  Divider,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
-  IconButton,
-  Tooltip,
-  Button,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Alert,
-  Snackbar,
-  Tab,
-  Tabs,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  FormControl,
-  InputLabel,
-  Select, // <-- already present
-  MenuItem, // <-- add this import
-  TextField
+  Box, Card, CardContent, Typography, Avatar, Grid, Chip, IconButton, Tooltip, Button, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, CircularProgress, Tabs, Tab,
+  List, ListItem, ListItemIcon, ListItemText, Dialog, DialogTitle, DialogContent, DialogActions, TextField, FormControl, InputLabel, Select, MenuItem, Alert, Snackbar
 } from '@mui/material';
 import {
-  Person as PersonIcon,
-  Email as EmailIcon,
-  Phone as PhoneIcon,
-  Home as HomeIcon,
-  School as SchoolIcon,
-  CalendarToday as CalendarIcon,
-  Edit as EditIcon,
-  Delete as DeleteIcon,
-  Add as AddIcon,
-  Payment as PaymentIcon,
-  DirectionsBus as BusIcon,
-  Restaurant as RestaurantIcon,
-  LocalLibrary as LibraryIcon,
-  ArrowBack as ArrowBackIcon
+  Person, Email, Phone, Home, School, CalendarToday, Edit, Delete, Add, Payment, DirectionsBus, Restaurant, LocalLibrary, ArrowBackIosNew, CloudUpload, Visibility, Download, AttachFile, Work
 } from '@mui/icons-material';
-import { styled } from '@mui/material/styles';
-import { DataGrid } from '@mui/x-data-grid';
 import axiosInstance from '../utils/axiosConfig';
 import appConfig from '../config/appConfig';
 import StudentAttendance from './StudentAttendance';
 
-const StyledCard = styled(Card)(({ theme }) => ({
-  borderRadius: theme.spacing(2),
-  boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
-  transition: 'all 0.3s ease',
-  '&:hover': {
-    transform: 'translateY(-2px)',
-    boxShadow: '0 8px 30px rgba(0, 0, 0, 0.12)',
-  },
-}));
-
 const StudentDetails = ({ student, onBack, onEdit }) => {
-  const [tabValue, setTabValue] = useState(0);
+  const [tab, setTab] = useState(0);
   const [fixedFees, setFixedFees] = useState([]);
   const [facilities, setFacilities] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   // Add state for add facility modal and form
   const [addFacilityOpen, setAddFacilityOpen] = useState(false);
@@ -91,14 +33,145 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
   });
   const [alert, setAlert] = useState({ open: false, message: '', severity: 'success' });
 
-  // Fetch fixed fees and facilities when student changes
+  // Document management states
+  const [studentDocuments, setStudentDocuments] = useState([]);
+  const [loadingDocuments, setLoadingDocuments] = useState(false);
+  const [uploadingDocument, setUploadingDocument] = useState(false);
+  const [openDocumentModal, setOpenDocumentModal] = useState(false);
+  const [currentDocumentUrl, setCurrentDocumentUrl] = useState('');
+  const [currentDocumentName, setCurrentDocumentName] = useState('');
+  const [currentDocumentId, setCurrentDocumentId] = useState('');
+
+  // Document management functions
+  const fetchStudentDocuments = async (studentId) => {
+    try {
+      setLoadingDocuments(true);
+      console.log('Fetching documents for student:', studentId);
+      const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/user-file/owner/STUDENT/${studentId}`);
+      console.log('Student documents API response:', response.data);
+      setStudentDocuments(Array.isArray(response.data) ? response.data : []);
+    } catch (error) {
+      console.error('Error fetching student documents:', error);
+      setStudentDocuments([]);
+    } finally {
+      setLoadingDocuments(false);
+    }
+  };
+
+  const uploadDocument = async (file) => {
+    try {
+      setUploadingDocument(true);
+      console.log('Uploading document:', file.name);
+
+      const formData = new FormData();
+      formData.append('owner_type', 'STUDENT');
+      formData.append('owner_id_uuid', student.id);
+      formData.append('file', file);
+
+      const response = await axiosInstance.post(`${appConfig.API_PREFIX_V1}/user-file/`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      console.log('Upload response:', response.data);
+      alert('Document uploaded successfully!');
+      
+      // Refresh documents list
+      fetchStudentDocuments(student.id);
+    } catch (error) {
+      console.error('Error uploading document:', error);
+      alert('Failed to upload document. Please try again.');
+    } finally {
+      setUploadingDocument(false);
+    }
+  };
+
+  const fetchDocumentUrl = async (documentId) => {
+    try {
+      console.log('Fetching document URL for ID:', documentId);
+      const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/user-file/${documentId}/url`);
+      console.log('Document URL API response:', response.data);
+
+      if (response.data && response.data.file_url) {
+        return response.data.file_url;
+      } else {
+        throw new Error('Document URL not available');
+      }
+    } catch (error) {
+      console.error('Error fetching document URL:', error);
+      throw error;
+    }
+  };
+
+  const viewDocument = async (documentId, documentName) => {
+    try {
+      const documentUrl = await fetchDocumentUrl(documentId);
+      setCurrentDocumentUrl(documentUrl);
+      setCurrentDocumentName(documentName);
+      setCurrentDocumentId(documentId);
+      setOpenDocumentModal(true);
+    } catch (error) {
+      alert('Failed to load document. Please try again.');
+    }
+  };
+
+  const downloadDocument = async (documentId, documentName) => {
+    try {
+      const documentUrl = await fetchDocumentUrl(documentId);
+      
+      // For S3 URLs, open in new tab to trigger download
+      if (documentUrl.includes('s3.amazonaws.com') || documentUrl.includes('AWSAccessKeyId')) {
+        const link = document.createElement('a');
+        link.href = documentUrl;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } else {
+        const link = document.createElement('a');
+        link.href = documentUrl;
+        link.download = documentName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+    } catch (error) {
+      console.error('Download failed:', error);
+      alert('Failed to download the document. Please try again.');
+    }
+  };
+
+  const deleteDocument = async (documentId, documentName) => {
+    if (!window.confirm(`Are you sure you want to delete "${documentName}"?`)) {
+      return;
+    }
+
+    try {
+      console.log('Deleting document:', documentId);
+      const response = await axiosInstance.delete(`${appConfig.API_PREFIX_V1}/user-file/${documentId}`);
+      console.log('Delete response:', response.data);
+      
+      alert('Document deleted successfully!');
+      
+      // Refresh documents list
+      fetchStudentDocuments(student.id);
+    } catch (error) {
+      console.error('Error deleting document:', error);
+      alert('Failed to delete document. Please try again.');
+    }
+  };
+
+  // Fetch fixed fees, facilities, and documents when student changes
   useEffect(() => {
     if (!student?.id) return;
     setLoading(true);
+    
+    // Fetch fixed fees
     axiosInstance
       .get(`${appConfig.API_PREFIX_V1}/students-managements/students/${student.id}/fees`)
       .then((feesRes) => {
-        // The API returns { student_details, fixed_fees }
         setFixedFees(Array.isArray(feesRes.data.fixed_fees) ? feesRes.data.fixed_fees : []);
       })
       .catch(() => {
@@ -106,7 +179,7 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
       })
       .finally(() => setLoading(false));
 
-    // Facilities API is separate
+    // Fetch facilities
     axiosInstance
       .get(`${appConfig.API_PREFIX_V1}/students-managements/students-facility/${student.id}/facilities`)
       .then((facilitiesRes) => {
@@ -115,33 +188,10 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
       .catch(() => {
         setFacilities([]);
       });
-  }, [student?.id]);
 
-  // Fetch optional fees, concession types, routes, drivers when modal opens
-  useEffect(() => {
-    if (!addFacilityOpen || !student?.class_id) return;
-    axiosInstance.get(`${appConfig.API_PREFIX_V1}/fees/by-class/${student.class_id}`)
-      .then(res => setOptionalFees(res.data.filter(fee => fee.is_optional)))
-      .catch(() => setOptionalFees([]));
-    axiosInstance.get(`${appConfig.API_PREFIX_V1}/concessions-management/concession-types/`)
-      .then(res => setConcessionTypes(res.data))
-      .catch(() => setConcessionTypes([]));
-    axiosInstance.get(`${appConfig.API_PREFIX_V1}/students-managements/transport/routes`)
-      .then(res => setRoutes(res.data))
-      .catch(() => setRoutes([]));
-    axiosInstance.get(`${appConfig.API_PREFIX_V1}/students-managements/transport/drivers/`)
-      .then(res => setDrivers(res.data))
-      .catch(() => setDrivers([]));
-    setFacilityForm({
-      fee_category_id: '',
-      start_date: new Date().toISOString().split('T')[0],
-      end_date: '',
-      concession_type_id: '',
-      concession_amount: 0,
-      route_id: '',
-      driver_id: ''
-    });
-  }, [addFacilityOpen, student?.class_id]);
+    // Fetch documents
+    fetchStudentDocuments(student.id);
+  }, [student?.id]);
 
   // Columns for fixed fees
   const fixedFeesColumns = [
@@ -248,223 +298,417 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
 
   if (!student) {
     return (
-      <Box sx={{ p: 3, textAlign: 'center' }}>
-        <Typography variant="h6">No student selected</Typography>
+      <Box sx={{ width: '100%', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#eef2f6' }}>
+        <CircularProgress size={48} />
+      </Box>
+    );
+  }
+
+  if (loading) {
+    return (
+      <Box sx={{ width: '100%', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#eef2f6' }}>
+        <CircularProgress size={48} />
       </Box>
     );
   }
 
   return (
-    <Box sx={{ width: '100%', height: '100vh', display: 'flex', flexDirection: 'column' }}>
-      {/* Compact Header - Fixed Height */}
-      <Box sx={{ 
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        color: 'white',
-        p: 2,
-        display: 'flex',
-        alignItems: 'center',
-        flexShrink: 0
-      }}>
-        <IconButton onClick={onBack} sx={{ color: 'white', mr: 2 }}>
-          <ArrowBackIcon />
-        </IconButton>
-        <Avatar sx={{ width: 50, height: 50, mr: 2, bgcolor: 'rgba(255,255,255,0.3)' }}>
-          {student.name.charAt(0).toUpperCase()}
-        </Avatar>
-        <Box sx={{ flexGrow: 1 }}>
-          <Typography variant="h5" sx={{ fontWeight: 600, mb: 0.5 }}>
-            {student.name}
-          </Typography>
-          <Typography variant="body2" sx={{ opacity: 0.9 }}>
-            Roll No: {student.roll_number} • Class: {student.class_name} - {student.section_name} • Status: {student.status}
-          </Typography>
-        </Box>
-        <Button
-          variant="contained"
-          startIcon={<EditIcon />}
-          onClick={() => onEdit(student)}
-          sx={{ 
-            bgcolor: 'rgba(255,255,255,0.2)',
-            '&:hover': { bgcolor: 'rgba(255,255,255,0.3)' }
-          }}
-        >
-          Edit
-        </Button>
-      </Box>
-
-      {/* Main Content Area - Horizontal Layout */}
-      <Box sx={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-        {/* Left Sidebar - Personal Info (Fixed Width) */}
-        <Box sx={{ 
-          width: '350px', 
-          bgcolor: 'grey.50', 
-          p: 2, 
-          overflowY: 'auto',
-          borderRight: 1,
-          borderColor: 'divider',
-          flexShrink: 0
-        }}>
-          <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center' }}>
-            <PersonIcon sx={{ mr: 1 }} />
-            Personal Information
-          </Typography>
-          {/* Basic Info */}
-          <Box sx={{ mb: 3 }}>
-            <Typography variant="subtitle2" color="primary" sx={{ fontWeight: 600, mb: 1 }}>
-              Basic Details
-            </Typography>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-              {/* Only show basic fields, not fees/facilities */}
-              <Box>
-                <Typography variant="caption" color="textSecondary">Date of Birth</Typography>
-                <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                  {student.date_of_birth ? new Date(student.date_of_birth).toLocaleDateString() : 'N/A'}
-                </Typography>
-              </Box>
-              <Box>
-                <Typography variant="caption" color="textSecondary">Gender</Typography>
-                <Typography variant="body2" sx={{ fontWeight: 500 }}>{student.gender || 'N/A'}</Typography>
-              </Box>
-            </Box>
-          </Box>
-          {/* Contact Info */}
-          <Box sx={{ mb: 3 }}>
-            <Typography variant="subtitle2" color="primary" sx={{ fontWeight: 600, mb: 1 }}>
-              Contact Details
-            </Typography>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <EmailIcon sx={{ fontSize: 16, mr: 1, color: 'text.secondary' }} />
-                <Box>
-                  <Typography variant="caption" color="textSecondary">Email</Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 500 }}>{student.email || 'N/A'}</Typography>
-                </Box>
-              </Box>
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <PhoneIcon sx={{ fontSize: 16, mr: 1, color: 'text.secondary' }} />
-                <Box>
-                  <Typography variant="caption" color="textSecondary">Phone</Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 500 }}>{student.phone_number || 'N/A'}</Typography>
-                </Box>
-              </Box>
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <PhoneIcon sx={{ fontSize: 16, mr: 1, color: 'text.secondary' }} />
-                <Box>
-                  <Typography variant="caption" color="textSecondary">Emergency Contact</Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 500 }}>{student.emergency_contact_number || 'N/A'}</Typography>
-                </Box>
-              </Box>
-            </Box>
-          </Box>
-          {/* Address & Academic */}
-          <Box sx={{ mb: 3 }}>
-            <Typography variant="subtitle2" color="primary" sx={{ fontWeight: 600, mb: 1 }}>
-              Other Details
-            </Typography>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-              <Box>
-                <Typography variant="caption" color="textSecondary">Address</Typography>
-                <Typography variant="body2" sx={{ fontWeight: 500 }}>{student.address || 'N/A'}</Typography>
-              </Box>
-              <Box>
-                <Typography variant="caption" color="textSecondary">Previous School</Typography>
-                <Typography variant="body2" sx={{ fontWeight: 500 }}>{student.old_school_name || 'N/A'}</Typography>
-              </Box>
-              <Box>
-                <Typography variant="caption" color="textSecondary">Medical History</Typography>
-                <Typography variant="body2" sx={{ fontWeight: 500 }}>{student.medical_history || 'None'}</Typography>
-              </Box>
-            </Box>
-          </Box>
-        </Box>
-
-        {/* Right Content Area - Tabs */}
-        <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-          <Box sx={{ borderBottom: 1, borderColor: 'divider', bgcolor: 'white' }}>
-            <Tabs
-              value={tabValue}
-              onChange={(e, v) => setTabValue(v)}
-              sx={{ minHeight: '48px' }}
+    <>
+      <Box sx={{ width: '100%', height: '100vh', background: '#eef2f6', p: { xs: 2, md: 4 }, overflow: 'hidden' }}>
+        <Card sx={{ p: { xs: 2, md: 4 }, borderRadius: 3, boxShadow: 6, position: 'relative', height: '100%' }}>
+          {/* Back Button */}
+          <Tooltip title="Go Back">
+            <Button
+              variant="outlined"
+              startIcon={<ArrowBackIosNew />}
+              onClick={onBack}
+              sx={{
+                position: 'absolute',
+                top: 16,
+                left: 16,
+                borderRadius: 2,
+                textTransform: 'none',
+                fontWeight: 600,
+                borderColor: 'primary.main',
+                color: 'primary.main',
+                '&:hover': {
+                  backgroundColor: 'primary.main',
+                  color: 'white',
+                  borderColor: 'primary.main',
+                }
+              }}
             >
-              <Tab label="Fee Details" sx={{ minHeight: '48px' }} />
-              <Tab label="Attendance" sx={{ minHeight: '48px' }} />
-            </Tabs>
-          </Box>
-          <Box sx={{ flex: 1, overflow: 'auto', p: 2 }}>
-            {/* Fee Details Tab */}
-            {tabValue === 0 && (
-              <Box>
-                <Typography variant="h6" sx={{ mb: 2 }}>Fixed Fees</Typography>
-                <Box sx={{ height: Math.min((fixedFees.length || 1) * 52 + 56, 300), width: '100%', mb: 4 }}>
-                  <DataGrid
-                    rows={fixedFees.map(fee => ({ ...fee, id: fee.id }))}
-                    columns={fixedFeesColumns}
-                    pageSize={5}
-                    rowsPerPageOptions={[5, 10, 20]}
-                    disableSelectionOnClick
-                    loading={loading}
-                    getRowId={(row) => row.id}
-                    sx={{
-                      '& .MuiDataGrid-row:hover': {
-                        backgroundColor: 'action.hover'
-                      }
-                    }}
-                  />
-                  {(!loading && fixedFees.length === 0) && (
-                    <Typography variant="body2" color="textSecondary" sx={{ mt: 2 }}>
-                      No fixed fees found for this student.
-                    </Typography>
+              Back
+            </Button>
+          </Tooltip>
+
+          <Box sx={{ display: 'flex', flexDirection: 'row', height: 'calc(100vh - 32px)' }}>
+            {/* Sidebar: Student Details */}
+            <Box sx={{ width: { xs: '100%', md: '22%' }, minWidth: 220, maxWidth: 340, pr: { md: 3 }, borderRight: { md: '1px solid #e0e0e0' }, display: 'flex', flexDirection: 'column', alignItems: 'center', pt: 2 }}>
+              <Avatar src={student.profile_image} sx={{ width: 120, height: 120, bgcolor: 'primary.main', border: '3px solid', borderColor: 'primary.light', mb: 2 }}>
+                <Person fontSize="large" sx={{ fontSize: 60 }} />
+              </Avatar>
+              <Typography variant="h5" fontWeight={700} color="text.primary" sx={{ mb: 1 }}>{student.name}</Typography>
+              <Chip
+                label={`${student.class_name} - ${student.section_name}`}
+                color="primary"
+                sx={{ mb: 2, fontWeight: 600, fontSize: 14 }}
+              />
+              <Chip
+                label={student.status}
+                color={student.status === 'ACTIVE' ? 'success' : 'error'}
+                sx={{ mb: 2, fontWeight: 600, fontSize: 14 }}
+              />
+              <Button variant="outlined" startIcon={<Email />} sx={{ mb: 1, width: '100%' }}>{student.email}</Button>
+              <Button variant="outlined" startIcon={<Phone />} sx={{ mb: 1, width: '100%' }}>{student.phone_number}</Button>
+              <Paper elevation={1} sx={{ p: 2, mt: 2, width: '100%' }}>
+                <Typography variant="subtitle2" fontWeight={600} gutterBottom>Personal Info</Typography>
+                <List dense>
+                  <ListItem>
+                    <ListItemIcon><School color="primary" /></ListItemIcon>
+                    <ListItemText primary="Roll Number" secondary={student.roll_number} />
+                  </ListItem>
+                  <ListItem>
+                    <ListItemIcon><CalendarToday color="warning" /></ListItemIcon>
+                    <ListItemText primary="Date of Birth" secondary={student.date_of_birth ? new Date(student.date_of_birth).toLocaleDateString() : 'N/A'} />
+                  </ListItem>
+                  <ListItem>
+                    <ListItemIcon><Person color="info" /></ListItemIcon>
+                    <ListItemText primary="Gender" secondary={student.gender || 'N/A'} />
+                  </ListItem>
+                  <ListItem>
+                    <ListItemIcon><Home color="success" /></ListItemIcon>
+                    <ListItemText primary="Address" secondary={student.address || 'N/A'} />
+                  </ListItem>
+                </List>
+              </Paper>
+            </Box>
+
+            {/* Main Content: Tabs and Panels */}
+            <Box sx={{ flex: 1, pl: { md: 4 }, pt: 2, overflowY: 'auto' }}>
+              <Tabs value={tab} onChange={(e, v) => setTab(v)} variant="scrollable" scrollButtons="auto" sx={{ mb: 3 }}>
+                <Tab label="Overview" icon={<Person />} iconPosition="start" />
+                <Tab label="Payments" icon={<Payment />} iconPosition="start" />
+                <Tab label="Attendance" icon={<CalendarToday />} iconPosition="start" />
+                <Tab label="Uploads" icon={<AttachFile />} iconPosition="start" />
+                <Tab label="Facility Enrolled" icon={<Work />} iconPosition="start" />
+              </Tabs>
+
+              {/* Tab Panels */}
+              {tab === 0 && (
+                <Grid container spacing={4}>
+                  <Grid item xs={12} md={6}>
+                    <Paper elevation={2} sx={{ p: 3, borderRadius: 2, height: '100%', minHeight: 260, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                      <Typography variant="h6" fontWeight={600} gutterBottom>Personal Information</Typography>
+                      <List dense>
+                        <ListItem>
+                          <ListItemIcon><School color="primary" /></ListItemIcon>
+                          <ListItemText primary="Roll Number" secondary={student.roll_number} />
+                        </ListItem>
+                        <ListItem>
+                          <ListItemIcon><CalendarToday color="warning" /></ListItemIcon>
+                          <ListItemText primary="Date of Birth" secondary={student.date_of_birth ? new Date(student.date_of_birth).toLocaleDateString() : 'N/A'} />
+                        </ListItem>
+                        <ListItem>
+                          <ListItemIcon><Person color="info" /></ListItemIcon>
+                          <ListItemText primary="Gender" secondary={student.gender || 'N/A'} />
+                        </ListItem>
+                        <ListItem>
+                          <ListItemIcon><Home color="success" /></ListItemIcon>
+                          <ListItemText primary="Address" secondary={student.address || 'N/A'} />
+                        </ListItem>
+                      </List>
+                    </Paper>
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <Paper elevation={2} sx={{ p: 3, borderRadius: 2, height: '100%', minHeight: 260, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                      <Typography variant="h6" fontWeight={600} gutterBottom>Academic Information</Typography>
+                      <List dense>
+                        <ListItem>
+                          <ListItemIcon><School color="primary" /></ListItemIcon>
+                          <ListItemText primary="Class" secondary={`${student.class_name} - ${student.section_name}`} />
+                        </ListItem>
+                        <ListItem>
+                          <ListItemIcon><CalendarToday color="warning" /></ListItemIcon>
+                          <ListItemText primary="Enrollment Date" secondary={student.enrollment_date ? new Date(student.enrollment_date).toLocaleDateString() : 'N/A'} />
+                        </ListItem>
+                        <ListItem>
+                          <ListItemIcon><Person color="info" /></ListItemIcon>
+                          <ListItemText primary="Previous School" secondary={student.old_school_name || 'N/A'} />
+                        </ListItem>
+                        <ListItem>
+                          <ListItemIcon><Home color="success" /></ListItemIcon>
+                          <ListItemText primary="Medical History" secondary={student.medical_history || 'None'} />
+                        </ListItem>
+                      </List>
+                    </Paper>
+                  </Grid>
+                </Grid>
+              )}
+              {tab === 1 && (
+                <Box>
+                  <Typography variant="h5" fontWeight={700} color="primary" gutterBottom>
+                    Fee Details & Payments
+                  </Typography>
+                  {fixedFees.length === 0 ? (
+                    <Typography color="text.secondary">No fee details found.</Typography>
+                  ) : (
+                    <TableContainer component={Paper} sx={{ mt: 2, boxShadow: 2, borderRadius: 2 }}>
+                      <Table>
+                        <TableHead sx={{ backgroundColor: 'primary.light' }}>
+                          <TableRow>
+                            <TableCell sx={{ fontWeight: 'bold' }}>Fee Category</TableCell>
+                            <TableCell sx={{ fontWeight: 'bold' }}>Fee Name</TableCell>
+                            <TableCell sx={{ fontWeight: 'bold' }}>Amount</TableCell>
+                            <TableCell sx={{ fontWeight: 'bold' }}>Concession</TableCell>
+                            <TableCell sx={{ fontWeight: 'bold' }}>Net Amount</TableCell>
+                            <TableCell sx={{ fontWeight: 'bold' }}>Status</TableCell>
+                            <TableCell sx={{ fontWeight: 'bold' }}>Created At</TableCell>
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
+                          {fixedFees.map(fee => (
+                            <TableRow key={fee.id} hover>
+                              <TableCell>{fee.fee_category?.category_name || 'N/A'}</TableCell>
+                              <TableCell>{fee.fee?.description || 'N/A'}</TableCell>
+                              <TableCell>₹{parseFloat(fee.amount || 0).toLocaleString()}</TableCell>
+                              <TableCell>₹{parseFloat(fee.concession_amount || 0).toLocaleString()}</TableCell>
+                              <TableCell>₹{parseFloat((fee.amount || 0) - (fee.concession_amount || 0)).toLocaleString()}</TableCell>
+                              <TableCell>
+                                <Chip
+                                  label={fee.status || 'ACTIVE'}
+                                  color={fee.status === 'ACTIVE' ? 'success' : 'warning'}
+                                  size="small"
+                                />
+                              </TableCell>
+                              <TableCell>{fee.created_at ? new Date(fee.created_at).toLocaleDateString() : 'N/A'}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
                   )}
                 </Box>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                  <Typography variant="h6">Facilities</Typography>
-                  <Button
-                    variant="contained"
-                    size="small"
-                    startIcon={<AddIcon />}
-                    onClick={() => setAddFacilityOpen(true)}
-                  >
-                    Add Facility
-                  </Button>
+              )}
+              {tab === 2 && (
+                <Box>
+                  <Typography variant="h5" fontWeight={700} color="primary" gutterBottom>
+                    Student Attendance
+                  </Typography>
+                  <StudentAttendance studentId={student.id} />
                 </Box>
-                <Box sx={{ height: Math.min((facilities.length || 1) * 52 + 56, 300), width: '100%' }}>
-                  <DataGrid
-                    rows={facilities.map(facility => ({
-                      ...facility,
-                      id: facility.id,
-                      amount: facility.amount || (facility.fee && facility.fee.amount) || 'N/A',
-                      concession_amount: facility.concession_amount || 0,
-                      status: facility.status || 'ACTIVE'
-                    }))}
-                    columns={facilityColumns}
-                    pageSize={5}
-                    rowsPerPageOptions={[5, 10, 20]}
-                    disableSelectionOnClick
-                    loading={loading}
-                    getRowId={(row) => row.id}
-                    sx={{
-                      '& .MuiDataGrid-row:hover': {
-                        backgroundColor: 'action.hover'
-                      }
-                    }}
-                  />
-                  {(!loading && facilities.length === 0) && (
-                    <Typography variant="body2" color="textSecondary" sx={{ mt: 2 }}>
-                      No facilities found for this student.
-                    </Typography>
+              )}
+              {tab === 3 && (
+                <Box>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                    <Typography variant="h6" fontWeight={600}>Student Documents</Typography>
+                    <Button
+                      variant="contained"
+                      component="label"
+                      startIcon={uploadingDocument ? <CircularProgress size={20} /> : <CloudUpload />}
+                      disabled={uploadingDocument}
+                    >
+                      {uploadingDocument ? 'Uploading...' : 'Upload Document'}
+                      <input
+                        type="file"
+                        hidden
+                        onChange={(e) => {
+                          const file = e.target.files[0];
+                          if (file) {
+                            uploadDocument(file);
+                          }
+                          e.target.value = '';
+                        }}
+                      />
+                    </Button>
+                  </Box>
+
+                  {loadingDocuments ? (
+                    <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+                      <CircularProgress size={40} />
+                      <Typography sx={{ ml: 2 }}>Loading documents...</Typography>
+                    </Box>
+                  ) : studentDocuments.length === 0 ? (
+                    <Typography color="text.secondary">No documents found for this student.</Typography>
+                  ) : (
+                    <Grid container spacing={3}>
+                      {studentDocuments.map(doc => (
+                        <Grid item xs={12} sm={6} md={4} key={doc.id}>
+                          <Paper elevation={2} sx={{ p: 2, borderRadius: 2 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+                              <AttachFile color="action" />
+                              <Typography variant="body1" fontWeight={500} sx={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                {doc.filename}
+                              </Typography>
+                            </Box>
+                            <Box sx={{ display: 'flex', gap: 1 }}>
+                              <Button
+                                variant="outlined"
+                                size="small"
+                                startIcon={<Visibility />}
+                                onClick={() => viewDocument(doc.id, doc.filename)}
+                                sx={{ flex: 1 }}
+                              >
+                                View
+                              </Button>
+                              <Button
+                                variant="outlined"
+                                size="small"
+                                startIcon={<Download />}
+                                onClick={() => downloadDocument(doc.id, doc.filename)}
+                                sx={{ flex: 1 }}
+                              >
+                                Download
+                              </Button>
+                              <IconButton
+                                color="error"
+                                size="small"
+                                onClick={() => deleteDocument(doc.id, doc.filename)}
+                                sx={{ ml: 1 }}
+                              >
+                                <Delete />
+                              </IconButton>
+                            </Box>
+                          </Paper>
+                        </Grid>
+                      ))}
+                    </Grid>
                   )}
                 </Box>
-              </Box>
-            )}
-            {/* Attendance Tab */}
-            {tabValue === 1 && (
-              <Box sx={{ height: '100%' }}>
-                <StudentAttendance studentId={student.id} />
+              )}
+              {tab === 4 && (
+                <Box>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                    <Typography variant="h5" fontWeight={700} color="primary">
+                      Facilities Enrolled
+                    </Typography>
+                    <Button variant="contained" color="primary" startIcon={<Add />} onClick={() => setAddFacilityOpen(true)}>
+                      Add Facility
+                    </Button>
+                  </Box>
+                  {facilities.length === 0 ? (
+                    <Typography color="text.secondary">No facilities enrolled.</Typography>
+                  ) : (
+                    <TableContainer component={Paper} sx={{ mt: 2, boxShadow: 2, borderRadius: 2 }}>
+                      <Table>
+                        <TableHead sx={{ backgroundColor: 'primary.light' }}>
+                          <TableRow>
+                            <TableCell sx={{ fontWeight: 'bold' }}>Facility Type</TableCell>
+                            <TableCell sx={{ fontWeight: 'bold' }}>Start Date</TableCell>
+                            <TableCell sx={{ fontWeight: 'bold' }}>End Date</TableCell>
+                            <TableCell sx={{ fontWeight: 'bold' }}>Amount</TableCell>
+                            <TableCell sx={{ fontWeight: 'bold' }}>Concession</TableCell>
+                            <TableCell sx={{ fontWeight: 'bold' }}>Net Amount</TableCell>
+                            <TableCell sx={{ fontWeight: 'bold' }}>Status</TableCell>
+                            <TableCell sx={{ fontWeight: 'bold' }}>Actions</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {facilities.map(facility => (
+                          <TableRow key={facility.id} hover>
+                            <TableCell>{facility.fee_category?.category_name || 'N/A'}</TableCell>
+                            <TableCell>{facility.start_date ? new Date(facility.start_date).toLocaleDateString() : 'N/A'}</TableCell>
+                            <TableCell>{facility.end_date ? new Date(facility.end_date).toLocaleDateString() : 'N/A'}</TableCell>
+                            <TableCell>₹{parseFloat(facility.amount || facility.fee?.amount || 0).toLocaleString()}</TableCell>
+                            <TableCell>₹{parseFloat(facility.concession_amount || 0).toLocaleString()}</TableCell>
+                            <TableCell>₹{parseFloat((facility.amount || facility.fee?.amount || 0) - (facility.concession_amount || 0)).toLocaleString()}</TableCell>
+                            <TableCell>
+                              <Chip
+                                label={facility.status || 'ACTIVE'}
+                                color={facility.status === 'ACTIVE' ? 'success' : 'warning'}
+                                size="small"
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <IconButton color="error" onClick={() => handleDeleteFacility(facility.id)}>
+                                <Delete />
+                              </IconButton>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                )}
               </Box>
             )}
           </Box>
         </Box>
-      </Box>
+      </Card>
+
+      {/* Document View Modal */}
+      <Dialog
+        open={openDocumentModal}
+        onClose={() => setOpenDocumentModal(false)}
+        maxWidth="lg"
+        fullWidth
+      >
+        <DialogTitle>
+          {currentDocumentName}
+          <IconButton
+            onClick={() => setOpenDocumentModal(false)}
+            sx={{ position: 'absolute', right: 8, top: 8 }}
+          >
+            <ArrowBackIosNew />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent dividers>
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 500 }}>
+            {currentDocumentUrl ? (
+              currentDocumentName.toLowerCase().endsWith('.pdf') ? (
+                <iframe
+                  src={currentDocumentUrl}
+                  style={{
+                    width: '100%',
+                    height: '500px',
+                    border: 'none',
+                    borderRadius: '8px'
+                  }}
+                  title={currentDocumentName}
+                />
+              ) : currentDocumentName.toLowerCase().match(/\.(jpg|jpeg|png|gif|bmp|webp)$/i) ? (
+                <img
+                  src={currentDocumentUrl}
+                  alt={currentDocumentName}
+                  style={{
+                    maxWidth: '100%',
+                    maxHeight: '500px',
+                    objectFit: 'contain',
+                    borderRadius: '8px'
+                  }}
+                />
+              ) : (
+                <Box sx={{ textAlign: 'center' }}>
+                  <AttachFile sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
+                  <Typography variant="h6" color="text.secondary">
+                    Preview not available for this file type
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Click download to view the file
+                  </Typography>
+                </Box>
+              )
+            ) : (
+              <Typography>Loading document...</Typography>
+            )}
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenDocumentModal(false)} color="secondary">
+            Close
+          </Button>
+          <Button
+            variant="contained"
+            color="primary"
+            startIcon={<Download />}
+            onClick={() => downloadDocument(currentDocumentId, currentDocumentName)}
+            disabled={!currentDocumentUrl}
+          >
+            Download
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       {/* Add Facility Modal */}
       <Dialog open={addFacilityOpen} onClose={() => setAddFacilityOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>
@@ -498,37 +742,37 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                   label="Start Date"
                   name="start_date"
                   type="date"
+                  InputLabelProps={{ shrink: true }}
                   value={facilityForm.start_date}
                   onChange={handleFacilityFormChange}
                   required
-                  InputLabelProps={{ shrink: true }}
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
-                  label="End Date (Optional)"
+                  label="End Date"
                   name="end_date"
                   type="date"
+                  InputLabelProps={{ shrink: true }}
                   value={facilityForm.end_date}
                   onChange={handleFacilityFormChange}
-                  InputLabelProps={{ shrink: true }}
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
                 <FormControl fullWidth>
-                  <InputLabel id="concession-type-label">Concession Type (Optional)</InputLabel>
+                  <InputLabel id="concession-type-label">Concession Type</InputLabel>
                   <Select
                     labelId="concession-type-label"
                     name="concession_type_id"
                     value={facilityForm.concession_type_id}
                     onChange={handleFacilityFormChange}
-                    label="Concession Type (Optional)"
+                    label="Concession Type"
                   >
                     <MenuItem value=""><em>None</em></MenuItem>
-                    {concessionTypes.map((concession) => (
-                      <MenuItem key={concession.id} value={concession.id}>
-                        {concession.concession_name}
+                    {concessionTypes.map((type) => (
+                      <MenuItem key={type.id} value={type.id}>
+                        {type.name}
                       </MenuItem>
                     ))}
                   </Select>
@@ -537,49 +781,49 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
               <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
-                  label="Concession Amount (Optional)"
+                  label="Concession Amount"
                   name="concession_amount"
                   type="number"
                   value={facilityForm.concession_amount}
                   onChange={handleFacilityFormChange}
-                  inputProps={{ min: 0, step: "0.01" }}
+                  InputProps={{ inputProps: { min: 0 } }}
                 />
               </Grid>
               {isFacilityTransport && (
                 <>
                   <Grid item xs={12} sm={6}>
-                    <FormControl fullWidth required>
-                      <InputLabel id="route-label">Transport Route</InputLabel>
+                    <FormControl fullWidth required={isFacilityTransport}>
+                      <InputLabel id="route-label">Route</InputLabel>
                       <Select
                         labelId="route-label"
                         name="route_id"
                         value={facilityForm.route_id}
                         onChange={handleFacilityFormChange}
-                        label="Transport Route"
+                        label="Route"
                       >
                         <MenuItem value=""><em>None</em></MenuItem>
                         {routes.map((route) => (
                           <MenuItem key={route.id} value={route.id}>
-                            {route.route_name}
+                            {route.name} - ₹{route.fee_amount}
                           </MenuItem>
                         ))}
                       </Select>
                     </FormControl>
                   </Grid>
                   <Grid item xs={12} sm={6}>
-                    <FormControl fullWidth required>
-                      <InputLabel id="driver-label">Assign Driver</InputLabel>
+                    <FormControl fullWidth required={isFacilityTransport}>
+                      <InputLabel id="driver-label">Driver</InputLabel>
                       <Select
                         labelId="driver-label"
                         name="driver_id"
                         value={facilityForm.driver_id}
                         onChange={handleFacilityFormChange}
-                        label="Assign Driver"
+                        label="Driver"
                       >
                         <MenuItem value=""><em>None</em></MenuItem>
                         {drivers.map((driver) => (
                           <MenuItem key={driver.id} value={driver.id}>
-                            {driver.driver_name}
+                            {driver.name}
                           </MenuItem>
                         ))}
                       </Select>
@@ -590,13 +834,17 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
             </Grid>
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setAddFacilityOpen(false)}>Cancel</Button>
-            <Button type="submit" variant="contained" color="primary" startIcon={<AddIcon />}>
+            <Button onClick={() => setAddFacilityOpen(false)} color="secondary">
+              Cancel
+            </Button>
+            <Button type="submit" variant="contained" color="primary">
               Add Facility
             </Button>
           </DialogActions>
         </form>
       </Dialog>
+
+      {/* Alert Snackbar */}
       <Snackbar
         open={alert.open}
         autoHideDuration={6000}
@@ -605,12 +853,13 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
         <Alert
           onClose={() => setAlert({ ...alert, open: false })}
           severity={alert.severity}
-          sx={{ width: '100%', whiteSpace: 'pre-line' }}
+          sx={{ width: '100%' }}
         >
           {alert.message}
         </Alert>
       </Snackbar>
-    </Box>
+      </Box>
+    </>
   );
 };
 

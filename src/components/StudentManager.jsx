@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Container, Typography, TextField, Button, MenuItem, Grid, Snackbar, Alert,
   Dialog, DialogTitle, DialogContent, DialogActions, Box, Paper, Card, CardContent, FormControl, InputLabel, Select, IconButton, List, ListItem, ListItemText, Tooltip, Divider, Tabs, Tab, Chip
@@ -341,25 +342,20 @@ const StudentManager = () => {
     resetFormData();
   };
 
-  // New: Handle opening the main student details tab
+  // New: Handle opening the main student details page (navigate to standalone route)
+  const navigate = useNavigate();
   const handleViewStudentDetails = (student) => {
-    // Enrich student object with computed fields for StudentDetails component
-    const enrichedStudent = {
-      ...student,
-      class_name: classes.find(c => c.id === student.class_id)?.class_name || 'N/A',
-      section_name: sections.find(s => s.id === student.section_id)?.name || 'N/A', 
-      academic_year_name: academicYears.find(ay => ay.id === student.academic_year_id)?.year_name || 'N/A'
-    };
-    
-    setViewedStudent(enrichedStudent); // Set the enriched student object for the dedicated tab
-    fetchStudentFacilities(student.id); 
-    fetchStudentFixedFees(student.id); 
-    if (student.class_id) {
-      fetchOptionalFeesByClass(student.class_id); 
-    } else {
-      setOptionalFeesForSelectedClass([]);
+    if (!student || !student.id) return;
+    // Prefetch some data for a snappy experience (best-effort)
+    try {
+      fetchStudentFacilities(student.id);
+      fetchStudentFixedFees(student.id);
+      if (student.class_id) fetchOptionalFeesByClass(student.class_id);
+    } catch (err) {
+      // Ignore prefetch errors
     }
-    setTabValue(2); // Switch to the "Student Details" tab (assuming it's the 3rd tab, index 2)
+    // Navigate to the standalone StudentDetails route so it renders full-page
+    navigate(`/students/${student.id}`);
   };
 
   // New: Handle opening the student attendance tab
@@ -1667,6 +1663,18 @@ const StudentManager = () => {
           </DialogActions>
         </form>
       </Dialog>
+
+      {/* Content for "Student Details" Tab */}
+      {tabValue === 2 && viewedStudent && (
+        <StudentDetails
+          student={viewedStudent}
+          onBack={() => {
+            setViewedStudent(null);
+            setTabValue(0);
+          }}
+          onEdit={() => handleAddEditModalOpen(viewedStudent)}
+        />
+      )}
 
       {/* New: Sub-Dialog for Adding New Facility (Compact) */}
       <Dialog open={addFacilitySubModalOpen} onClose={handleAddFacilitySubModalClose} maxWidth="sm" fullWidth>
