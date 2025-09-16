@@ -5,7 +5,7 @@ import {
   List, ListItem, ListItemIcon, ListItemText, Dialog, DialogTitle, DialogContent, DialogActions,TextField
 } from '@mui/material';
 import {
-  CloudUpload, Visibility, Download, Email, Phone, Home, School, Person, AttachFile, Work, CalendarToday, AccountBalance, ArrowBackIosNew, Paid, Close
+  CloudUpload, Visibility, Download, Email, Phone, Home, School, Person, AttachFile, Work, CalendarToday, AccountBalance, ArrowBackIosNew, Paid, Close, Delete
 } from '@mui/icons-material';
 import appConfig from '../config/appConfig';
 import axiosInstance from '../utils/axiosConfig';
@@ -30,12 +30,6 @@ const defaultStaff = {
   date_of_termination: null,
   profile_image: '',
 };
-
-const mockFiles = [
-  { id: 1, name: 'Resume.pdf', url: '', type: 'pdf' },
-  { id: 2, name: 'Certificate.jpg', url: '', type: 'image' },
-  { id: 3, name: 'ID Card.png', url: '', type: 'image' },
-];
 
 const StaffDetails = () => {
   // CTC Component Types
@@ -120,7 +114,6 @@ const StaffDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [tab, setTab] = useState(0);
-  const [files, setFiles] = useState(mockFiles);
   const [uploading, setUploading] = useState(false);
   const [staff, setStaff] = useState(defaultStaff);
   const [profileImage, setProfileImage] = useState('');
@@ -147,6 +140,13 @@ const StaffDetails = () => {
   const [openSelfieModal, setOpenSelfieModal] = useState(false);
   const [currentSelfieUrl, setCurrentSelfieUrl] = useState('');
   const [loadingSelfie, setLoadingSelfie] = useState(false);
+  const [staffDocuments, setStaffDocuments] = useState([]);
+  const [loadingDocuments, setLoadingDocuments] = useState(false);
+  const [uploadingDocument, setUploadingDocument] = useState(false);
+  const [openDocumentModal, setOpenDocumentModal] = useState(false);
+  const [currentDocumentUrl, setCurrentDocumentUrl] = useState('');
+  const [currentDocumentName, setCurrentDocumentName] = useState('');
+  const [currentDocumentId, setCurrentDocumentId] = useState('');
 
   // Get current academic year (April to March)
   const getCurrentAcademicYear = () => {
@@ -202,6 +202,9 @@ const StaffDetails = () => {
         
         // Attendance records
         fetchMonthlyAttendance(staffRes.data.id, selectedYear, selectedMonth);
+        
+        // Staff documents
+        fetchStaffDocuments(staffRes.data.id);
       } catch (error) {
         console.error('Error in fetchAll:', error);
         setStaff(defaultStaff);
@@ -221,14 +224,6 @@ const StaffDetails = () => {
       fetchMonthlyAttendance(staff.id, selectedYear, selectedMonth);
     }
   }, [selectedMonth, selectedYear, staff.id]);
-
-  const handleFileUpload = (e) => {
-    setUploading(true);
-    setTimeout(() => {
-      setFiles([...files, { id: files.length + 1, name: e.target.files[0].name, url: '', type: e.target.files[0].type }]);
-      setUploading(false);
-    }, 1000);
-  };
 
   const handleProfileImageUpload = (e) => {
     setProfileImage(URL.createObjectURL(e.target.files[0]));
@@ -312,6 +307,129 @@ const StaffDetails = () => {
       alert('Failed to load selfie. Please try again.');
     } finally {
       setLoadingSelfie(false);
+    }
+  };
+
+  // Document management functions
+  const fetchStaffDocuments = async (staffId) => {
+    try {
+      setLoadingDocuments(true);
+      console.log('Fetching documents for staff:', staffId);
+      const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/user-file/owner/STAFF/${staffId}`);
+      console.log('Staff documents API response:', response.data);
+      setStaffDocuments(Array.isArray(response.data) ? response.data : []);
+    } catch (error) {
+      console.error('Error fetching staff documents:', error);
+      setStaffDocuments([]);
+    } finally {
+      setLoadingDocuments(false);
+    }
+  };
+
+  const uploadDocument = async (file) => {
+    try {
+      setUploadingDocument(true);
+      console.log('Uploading document:', file.name);
+
+      const formData = new FormData();
+      formData.append('owner_type', 'STAFF');
+      formData.append('owner_id_uuid', staff.id);
+      formData.append('file', file);
+
+      const response = await axiosInstance.post(`${appConfig.API_PREFIX_V1}/user-file/`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      console.log('Upload response:', response.data);
+      alert('Document uploaded successfully!');
+      
+      // Refresh documents list
+      fetchStaffDocuments(staff.id);
+    } catch (error) {
+      console.error('Error uploading document:', error);
+      alert('Failed to upload document. Please try again.');
+    } finally {
+      setUploadingDocument(false);
+    }
+  };
+
+  const fetchDocumentUrl = async (documentId) => {
+    try {
+      console.log('Fetching document URL for ID:', documentId);
+      const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/user-file/${documentId}/url`);
+      console.log('Document URL API response:', response.data);
+
+      if (response.data && response.data.file_url) {
+        return response.data.file_url;
+      } else {
+        throw new Error('Document URL not available');
+      }
+    } catch (error) {
+      console.error('Error fetching document URL:', error);
+      throw error;
+    }
+  };
+
+  const viewDocument = async (documentId, documentName) => {
+    try {
+      const documentUrl = await fetchDocumentUrl(documentId);
+      setCurrentDocumentUrl(documentUrl);
+      setCurrentDocumentName(documentName);
+      setCurrentDocumentId(documentId);
+      setOpenDocumentModal(true);
+    } catch (error) {
+      alert('Failed to load document. Please try again.');
+    }
+  };
+
+  const downloadDocument = async (documentId, documentName) => {
+    try {
+      const documentUrl = await fetchDocumentUrl(documentId);
+      
+      // Use the same download method as selfie
+      if (documentUrl.includes('s3.amazonaws.com') || documentUrl.includes('AWSAccessKeyId')) {
+        // For S3 URLs, open in new tab to trigger download
+        const link = document.createElement('a');
+        link.href = documentUrl;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } else {
+        // For regular URLs
+        const link = document.createElement('a');
+        link.href = documentUrl;
+        link.download = documentName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+    } catch (error) {
+      console.error('Download failed:', error);
+      alert('Failed to download the document. Please try again.');
+    }
+  };
+
+  const deleteDocument = async (documentId, documentName) => {
+    if (!window.confirm(`Are you sure you want to delete "${documentName}"?`)) {
+      return;
+    }
+
+    try {
+      console.log('Deleting document:', documentId);
+      const response = await axiosInstance.delete(`${appConfig.API_PREFIX_V1}/user-file/${documentId}`);
+      console.log('Delete response:', response.data);
+      
+      alert('Document deleted successfully!');
+      
+      // Refresh documents list
+      fetchStaffDocuments(staff.id);
+    } catch (error) {
+      console.error('Error deleting document:', error);
+      alert('Failed to delete document. Please try again.');
     }
   };
 
@@ -1004,6 +1122,79 @@ const StaffDetails = () => {
               </DialogActions>
             </Dialog>
 
+            {/* Document View Modal */}
+            <Dialog
+              open={openDocumentModal}
+              onClose={() => setOpenDocumentModal(false)}
+              maxWidth="lg"
+              fullWidth
+            >
+              <DialogTitle>
+                {currentDocumentName}
+                <IconButton
+                  onClick={() => setOpenDocumentModal(false)}
+                  sx={{ position: 'absolute', right: 8, top: 8 }}
+                >
+                  <Close />
+                </IconButton>
+              </DialogTitle>
+              <DialogContent dividers>
+                <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 500 }}>
+                  {currentDocumentUrl ? (
+                    currentDocumentName.toLowerCase().endsWith('.pdf') ? (
+                      <iframe
+                        src={currentDocumentUrl}
+                        style={{
+                          width: '100%',
+                          height: '500px',
+                          border: 'none',
+                          borderRadius: '8px'
+                        }}
+                        title={currentDocumentName}
+                      />
+                    ) : currentDocumentName.toLowerCase().match(/\.(jpg|jpeg|png|gif|bmp|webp)$/i) ? (
+                      <img
+                        src={currentDocumentUrl}
+                        alt={currentDocumentName}
+                        style={{
+                          maxWidth: '100%',
+                          maxHeight: '500px',
+                          objectFit: 'contain',
+                          borderRadius: '8px'
+                        }}
+                      />
+                    ) : (
+                      <Box sx={{ textAlign: 'center' }}>
+                        <AttachFile sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
+                        <Typography variant="h6" color="text.secondary">
+                          Preview not available for this file type
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          Click download to view the file
+                        </Typography>
+                      </Box>
+                    )
+                  ) : (
+                    <Typography>Loading document...</Typography>
+                  )}
+                </Box>
+              </DialogContent>
+              <DialogActions>
+                <Button onClick={() => setOpenDocumentModal(false)} color="secondary">
+                  Close
+                </Button>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  startIcon={<Download />}
+                  onClick={() => downloadDocument(currentDocumentId, currentDocumentName)}
+                  disabled={!currentDocumentUrl}
+                >
+                  Download
+                </Button>
+              </DialogActions>
+            </Dialog>
+
             {/* Attendance Tab */}
             {tab === 3 && (
               <Box>
@@ -1156,36 +1347,81 @@ const StaffDetails = () => {
             {/* Files Tab */}
             {tab === 4 && (
               <Box>
-                <Typography variant="h6" fontWeight={600} gutterBottom>Staff Documents</Typography>
-                <Grid container spacing={3} sx={{ mt: 1 }}>
-                  {files.map(f => (
-                    <Grid item xs={12} sm={6} md={4} key={f.id}>
-                      <Paper elevation={1} sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1, borderRadius: 2 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                          <AttachFile color="action" />
-                          <Typography variant="body1" fontWeight={500}>{f.name}</Typography>
-                        </Box>
-                        <Box>
-                          <Tooltip title="View"><IconButton color="info" size="small"><Visibility /></IconButton></Tooltip>
-                          <Tooltip title="Download"><IconButton color="primary" size="small"><Download /></IconButton></Tooltip>
-                        </Box>
-                      </Paper>
-                    </Grid>
-                  ))}
-                  <Grid item xs={12} sm={6} md={4}>
-                    <Paper elevation={1} sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 2, minHeight: 64 }}>
-                      <Button
-                        variant="outlined"
-                        component="label"
-                        startIcon={uploading ? null : <CloudUpload />}
-                        disabled={uploading}
-                      >
-                        {uploading ? <CircularProgress size={20} /> : 'Upload New File'}
-                        <input type="file" hidden onChange={handleFileUpload} />
-                      </Button>
-                    </Paper>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                  <Typography variant="h6" fontWeight={600}>Staff Documents</Typography>
+                  <Button
+                    variant="contained"
+                    component="label"
+                    startIcon={uploadingDocument ? <CircularProgress size={20} /> : <CloudUpload />}
+                    disabled={uploadingDocument}
+                  >
+                    {uploadingDocument ? 'Uploading...' : 'Upload Document'}
+                    <input
+                      type="file"
+                      hidden
+                      onChange={(e) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                          uploadDocument(file);
+                        }
+                        // Reset input
+                        e.target.value = '';
+                      }}
+                    />
+                  </Button>
+                </Box>
+
+                {loadingDocuments ? (
+                  <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+                    <CircularProgress size={40} />
+                    <Typography sx={{ ml: 2 }}>Loading documents...</Typography>
+                  </Box>
+                ) : staffDocuments.length === 0 ? (
+                  <Typography color="text.secondary">No documents found for this staff member.</Typography>
+                ) : (
+                  <Grid container spacing={3}>
+                    {staffDocuments.map(doc => (
+                      <Grid item xs={12} sm={6} md={4} key={doc.id}>
+                        <Paper elevation={2} sx={{ p: 2, borderRadius: 2 }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+                            <AttachFile color="action" />
+                            <Typography variant="body1" fontWeight={500} sx={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              {doc.filename}
+                            </Typography>
+                          </Box>
+                          <Box sx={{ display: 'flex', gap: 1 }}>
+                            <Button
+                              variant="outlined"
+                              size="small"
+                              startIcon={<Visibility />}
+                              onClick={() => viewDocument(doc.id, doc.filename)}
+                              sx={{ flex: 1 }}
+                            >
+                              View
+                            </Button>
+                            <Button
+                              variant="outlined"
+                              size="small"
+                              startIcon={<Download />}
+                              onClick={() => downloadDocument(doc.id, doc.filename)}
+                              sx={{ flex: 1 }}
+                            >
+                              Download
+                            </Button>
+                            <IconButton
+                              color="error"
+                              size="small"
+                              onClick={() => deleteDocument(doc.id, doc.filename)}
+                              sx={{ ml: 1 }}
+                            >
+                              <Delete />
+                            </IconButton>
+                          </Box>
+                        </Paper>
+                      </Grid>
+                    ))}
                   </Grid>
-                </Grid>
+                )}
               </Box>
             )}
           </Box>
