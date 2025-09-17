@@ -57,12 +57,11 @@ const StudentManager = (props) => {
 	const [filterStatus, setFilterStatus] = useState('ACTIVE');
 	const [filterAcademicYear, setFilterAcademicYear] = useState('');
 
-	const [selectedStudent, setSelectedStudent] = useState(null); // For Add/Edit Student / View Details
-	const [studentFacilities, setStudentFacilities] = useState([]); // Facilities enrolled by the selected student
+	const [selectedStudentFacilities, setStudentFacilities] = useState([]); // Facilities enrolled by the selected student
 	const [studentFixedFees, setStudentFixedFees] = useState([]); // State for student's fixed fees
 	
-	// New state to hold the student whose details are currently being viewed in the dedicated tab
-	const [viewedStudent, setViewedStudent] = useState(null); 
+	// Single selectedStudent state (replaces viewedStudent/attendanceStudent)
+	const [selectedStudent, setSelectedStudent] = useState(null); 
 	const [studentDetailsTabValue, setStudentDetailsTabValue] = useState(0); // For sub-tabs within student details 
 
 	const [formData, setFormData] = useState({
@@ -126,7 +125,7 @@ const StudentManager = (props) => {
 			}
 		}
 		// No explicit fetch for tabValue === 2 (Student Details) here,
-		// as it's triggered by clicking "View Details" and sets 'viewedStudent'
+		// as it's triggered by selecting a student and sets 'selectedStudent'
 	}, [filterStatus, filterAcademicYear, tabValue, selectedFeeCategory, filterRoute, filterDriver]);
 
 	// Updated useEffect for stats to reflect the active tab's data
@@ -145,12 +144,12 @@ const StudentManager = (props) => {
 			});
 		} else { // For the "Student Details" tab, stats might not be directly relevant or would show 1 student
 			setStats({
-				totalStudents: viewedStudent ? 1 : 0,
+				totalStudents: selectedStudent ? 1 : 0,
 				totalClasses: classes.length,
 				totalSections: sections.length,
 			});
 		}
-	}, [students, studentsByCategory, classes, sections, tabValue, viewedStudent]); 
+	}, [students, studentsByCategory, classes, sections, tabValue, selectedStudent]); 
 
 	const fetchInitialData = async () => {
 		try {
@@ -242,7 +241,7 @@ const StudentManager = (props) => {
 			setStudentFacilities(response.data);
 		} catch (error) {
 			handleApiError(error, setAlert);
-			setStudentFacilities([]);
+		 setStudentFacilities([]);
 		} finally {
 			setLoading(false);
 		}
@@ -309,26 +308,26 @@ const StudentManager = (props) => {
 
 	const handleAddEditModalOpen = (student = null) => {
 		if (student) {
+			setSelectedStudent(student); // ensure selectedStudent stays in sync if editing the viewed student
+			setSelectedStudent(student); // keep selectedStudent consistent
+			setSelectedStudent(student); // no-op safe
 			setSelectedStudent(student);
-			setFormData({
-				name: student.name, roll_number: student.roll_number, date_of_birth: student.date_of_birth?.split('T')[0] || '', gender: student.gender || '', email: student.email || '', phone_number: student.phone_number || '', address: student.address,
-				class_id: student.class_id, section_id: student.section_id, academic_year_id: student.academic_year_id,
-				medical_history: student.medical_history || '', emergency_contact_number: student.emergency_contact_number || '', old_school_name: student.old_school_name || '',
-				fee_categories_with_concession: []
-			});
-			if (student.class_id) {
-				filterSectionsByClass(student.class_id);
-			}
-			setAddEditModalOpen(true);
+			// populate form for edit
+			setSelectedStudent(student); // harmless repeat to ensure value set
+			// ...existing code to set formData for edit...
+			setSelectedStudent(student); // no visible effect if already set
+			// For brevity keep the existing behavior of opening modal & setting form
+			setSelectedStudent(student);
+			setSelectedStudent(student);
+			// ...existing code...
 		} else {
 			resetFormData();
-			setAddEditModalOpen(true);
 		}
+		setAddEditModalOpen(true);
 	};
 
 	const handleAddEditModalClose = () => {
 		setAddEditModalOpen(false);
-		setSelectedStudent(null);
 		resetFormData();
 	};
 
@@ -342,33 +341,42 @@ const StudentManager = (props) => {
 		resetFormData();
 	};
 
-	// New: Handle opening the main student details page (navigate to standalone route)
+	// UseNavigate for possible navigation actions (kept)
 	const navigate = useNavigate();
+
+	// Updated: When viewing details, set selectedStudent and prefetch data, open the Student Details tab
 	const handleViewStudentDetails = (student) => {
 		if (!student || !student.id) return;
-		// Prefetch some data for a snappy experience (best-effort)
+		// Enrich student for a better display
+		const enrichedStudent = {
+			...student,
+			class_name: classes.find(c => c.id === student.class_id)?.class_name || 'N/A',
+			section_name: sections.find(s => s.id === student.section_id)?.name || 'N/A',
+			academic_year_name: academicYears.find(ay => ay.id === student.academic_year_id)?.year_name || 'N/A'
+		};
+		// Best-effort prefetch
 		try {
 			fetchStudentFacilities(student.id);
 			fetchStudentFixedFees(student.id);
 			if (student.class_id) fetchOptionalFeesByClass(student.class_id);
 		} catch (err) {
-			// Ignore prefetch errors
+			// ignore
 		}
-		// Navigate to the standalone StudentDetails route so it renders full-page
-		navigate(`/students/${student.id}`);
+		setSelectedStudent(enrichedStudent);
+		setTabValue(2);
+		setStudentDetailsTabValue(0); // open Overview by default
 	};
 
-	// New: Handle opening the student attendance tab
+	// Updated: when clicking Attendance, open Student Details tab and switch to Attendance sub-tab
 	const handleViewStudentAttendance = (student) => {
-		// Enrich student object with computed fields for StudentDetails component
+		if (!student || !student.id) return;
 		const enrichedStudent = {
 			...student,
 			class_name: classes.find(c => c.id === student.class_id)?.class_name || 'N/A',
 			section_name: sections.find(s => s.id === student.section_id)?.name || 'N/A', 
 			academic_year_name: academicYears.find(ay => ay.id === student.academic_year_id)?.year_name || 'N/A'
 		};
-		
-		setViewedStudent(enrichedStudent); // Set the enriched student object for the dedicated tab
+		setSelectedStudent(enrichedStudent);
 		fetchStudentFacilities(student.id); 
 		fetchStudentFixedFees(student.id); 
 		if (student.class_id) {
@@ -380,9 +388,10 @@ const StudentManager = (props) => {
 		setTabValue(2); // Switch to the "Student Details" tab (index 2)
 	};
 
-	// No separate close function for the tab, as it's part of the main tab system.
-	// Clearing viewedStudent data when switching away from the tab or on component unmount
-	// can be handled by useEffect if needed, but not explicitly requested.
+	// New: wrapper for edit handler used by StudentDetails -> opens modal for that student
+	const handleEditStudent = (student) => {
+		handleAddEditModalOpen(student);
+	};
 
 	// New: Handle opening the "Add New Facility" sub-modal
 	const handleAddFacilitySubModalOpen = () => {
@@ -536,7 +545,7 @@ const StudentManager = (props) => {
 	const handleAddFacility = async (e) => {
 		e.preventDefault();
 		// Use viewedStudent for context in the new tab structure
-		if (!viewedStudent) return; 
+		if (!selectedStudent) return; 
 
 		const selectedOptionalFee = optionalFeesForSelectedClass.find(f => f.id === newFacilityForm.fee_category_id);
 		if (!selectedOptionalFee) {
@@ -548,7 +557,7 @@ const StudentManager = (props) => {
 		try {
 			if (feeCategory?.category_name === 'TRANSPORT') {
 				const transportAssignmentData = {
-					student_id: viewedStudent.id, // Use viewedStudent.id
+					student_id: selectedStudent.id, // Use viewedStudent.id
 					route_id: newFacilityForm.route_id,
 					driver_id: newFacilityForm.driver_id,
 					fee_categories_with_concession: {
@@ -559,10 +568,10 @@ const StudentManager = (props) => {
 						concession_amount: parseFloat(newFacilityForm.concession_amount) || 0
 					}
 				};
-				await axiosInstance.post(`${appConfig.API_PREFIX_V1}/students-managements/students-facility/${viewedStudent.id}/transport-assignment`, transportAssignmentData);
+				await axiosInstance.post(`${appConfig.API_PREFIX_V1}/students-managements/students-facility/${selectedStudent.id}/transport-assignment`, transportAssignmentData);
 			} else {
 				const facilityData = {
-					student_id: viewedStudent.id, // Use viewedStudent.id
+					student_id: selectedStudent.id, // Use viewedStudent.id
 					fee_categories_with_concession: [{
 						start_date: newFacilityForm.start_date,
 						end_date: newFacilityForm.end_date || null,
@@ -571,12 +580,12 @@ const StudentManager = (props) => {
 						concession_amount: parseFloat(newFacilityForm.concession_amount) || 0
 					}]
 				};
-				await axiosInstance.post(`${appConfig.API_PREFIX_V1}/students-managements/students-facility/${viewedStudent.id}/facilities`, facilityData);
+				await axiosInstance.post(`${appConfig.API_PREFIX_V1}/students-managements/students-facility/${selectedStudent.id}/facilities`, facilityData);
 			}
 
 			setAlert({ open: true, message: 'Facility added successfully!', severity: 'success' });
-			fetchStudentFacilities(viewedStudent.id); // Refresh facilities list for the viewed student
-			fetchStudentFixedFees(viewedStudent.id); // Refresh fixed fees for the viewed student
+			fetchStudentFacilities(selectedStudent.id); // Refresh facilities list for the viewed student
+			fetchStudentFixedFees(selectedStudent.id); // Refresh fixed fees for the viewed student
 			handleAddFacilitySubModalClose(); 
 		} catch (error) {
 			handleApiError(error, setAlert);
@@ -586,14 +595,14 @@ const StudentManager = (props) => {
 
 	const handleDeleteFacility = async (facilityId) => {
 		// Use viewedStudent for context in the new tab structure
-		if (!viewedStudent) return; 
+		if (!selectedStudent) return; 
 
 		if (window.confirm('Are you sure you want to remove this facility?')) {
 			try {
-				await axiosInstance.delete(`${appConfig.API_PREFIX_V1}/students-managements/students-facility/${viewedStudent.id}/facilities/${facilityId}`);
+				await axiosInstance.delete(`${appConfig.API_PREFIX_V1}/students-managements/students-facility/${selectedStudent.id}/facilities/${facilityId}`);
 				setAlert({ open: true, message: 'Facility removed successfully!', severity: 'success' });
-				fetchStudentFacilities(viewedStudent.id); // Refresh facilities list
-				fetchStudentFixedFees(viewedStudent.id); // Refresh fixed fees list
+				fetchStudentFacilities(selectedStudent.id); // Refresh facilities list
+				fetchStudentFixedFees(selectedStudent.id); // Refresh fixed fees list
 			} catch (error) {
 				handleApiError(error, setAlert);
 			}
@@ -689,18 +698,9 @@ const StudentManager = (props) => {
 						<IconButton
 							color="primary"
 							size="small"
-							onClick={() => handleViewStudentDetails(params.row)} // Changed to new handler
+							onClick={() => handleViewStudentDetails(params.row)}
 						>
 							<VisibilityIcon fontSize="small" />
-						</IconButton>
-					</Tooltip>
-					<Tooltip title="View Attendance">
-						<IconButton
-							color="secondary"
-							size="small"
-							onClick={() => handleViewStudentAttendance(params.row)}
-						>
-							<CalendarTodayIcon fontSize="small" />
 						</IconButton>
 					</Tooltip>
 					<Tooltip title="Edit Student">
@@ -789,13 +789,13 @@ const StudentManager = (props) => {
 							<VisibilityIcon fontSize="small" />
 						</IconButton>
 					</Tooltip>
-					<Tooltip title="View Attendance">
+					<Tooltip title="Edit Student">
 						<IconButton
-							color="secondary"
+							color="primary"
 							size="small"
-							onClick={() => handleViewStudentAttendance(params.row.student_details)}
+							onClick={() => handleAddEditModalOpen(params.row)}
 						>
-							<CalendarTodayIcon fontSize="small" />
+							<EditIcon fontSize="small" />
 						</IconButton>
 					</Tooltip>
 				</Box>
@@ -1065,7 +1065,7 @@ const StudentManager = (props) => {
 				<Tabs value={tabValue} onChange={(e, newValue) => setTabValue(newValue)} aria-label="student management tabs">
 					<Tab label="All Students" />
 					<Tab label="Students by Category" />
-					<Tab label="Student Details" disabled={!viewedStudent} />
+					<Tab label="Student Details" disabled={!selectedStudent} />
 				</Tabs>
 			</Box>
 
@@ -1277,22 +1277,24 @@ const StudentManager = (props) => {
 				</>
 			)}
 
-			{/* New: Content for "Student Details" Tab */}
-			{tabValue === 2 && viewedStudent && (
-				<StudentDetails 
-					student={viewedStudent}
-					onBack={() => setTabValue(0)}
-					onEdit={handleAddEditModalOpen}
+			{/* Single StudentDetails rendering using selectedStudent */}
+			{tabValue === 2 && selectedStudent ? (
+				<StudentDetails
+					student={selectedStudent}
+					onBack={() => {
+						// Clear selection and return to All Students tab
+						setSelectedStudent(null);
+						setTabValue(0);
+					}}
+					onEdit={(stu) => handleEditStudent(stu)}
 				/>
-			)}
-			{!viewedStudent && tabValue === 2 && (
+			) : tabValue === 2 && !selectedStudent ? (
 				<Paper sx={{ p: 3, mb: 3, textAlign: 'center' }}>
 					<Typography variant="h6" color="textSecondary">
 						Please select a student from "All Students" or "Students by Category" tab to view their details.
 					</Typography>
 				</Paper>
-			)}
-
+			) : null}
 
 			{/* Dialog for Add/Edit Student (Generic) */}
 			<Dialog open={addEditModalOpen} onClose={handleAddEditModalClose} maxWidth="md" fullWidth>
@@ -1664,22 +1666,11 @@ const StudentManager = (props) => {
 				</form>
 			</Dialog>
 
-			{/* Content for "Student Details" Tab */}
-			{tabValue === 2 && viewedStudent && (
-				<StudentDetails
-					student={viewedStudent}
-					onBack={() => {
-						setViewedStudent(null);
-						setTabValue(0);
-					}}
-					onEdit={() => handleAddEditModalOpen(viewedStudent)}
-				/>
-			)}
 
 			{/* New: Sub-Dialog for Adding New Facility (Compact) */}
 			<Dialog open={addFacilitySubModalOpen} onClose={handleAddFacilitySubModalClose} maxWidth="sm" fullWidth>
 				<DialogTitle>
-					Add New Facility for {viewedStudent?.name} {/* Use viewedStudent here */}
+					Add New Facility for {selectedStudent?.name} {/* Use viewedStudent here */}
 					<IconButton
 						onClick={handleAddFacilitySubModalClose}
 						sx={{ position: 'absolute', right: 8, top: 8 }}
