@@ -59,6 +59,10 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
   };
 
   const uploadDocument = async (file) => {
+    if (!student?.id) {
+      setAlert({ open: true, message: 'Student ID missing. Cannot upload.', severity: 'error' });
+      return;
+    }
     try {
       setUploadingDocument(true);
       console.log('Uploading document:', file.name);
@@ -75,13 +79,12 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
       });
 
       console.log('Upload response:', response.data);
-      alert('Document uploaded successfully!');
-      
-      // Refresh documents list
-      fetchStudentDocuments(student.id);
+      // Refresh documents list and wait for it to complete so UI updates immediately
+      await fetchStudentDocuments(student.id);
+      setAlert({ open: true, message: 'Document uploaded successfully!', severity: 'success' });
     } catch (error) {
       console.error('Error uploading document:', error);
-      alert('Failed to upload document. Please try again.');
+      setAlert({ open: true, message: 'Failed to upload document. Please try again.', severity: 'error' });
     } finally {
       setUploadingDocument(false);
     }
@@ -153,13 +156,12 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
       const response = await axiosInstance.delete(`${appConfig.API_PREFIX_V1}/user-file/${documentId}`);
       console.log('Delete response:', response.data);
       
-      alert('Document deleted successfully!');
-      
-      // Refresh documents list
-      fetchStudentDocuments(student.id);
+      // Refresh documents list and wait for completion so UI updates immediately
+      await fetchStudentDocuments(student.id);
+      setAlert({ open: true, message: 'Document deleted successfully!', severity: 'success' });
     } catch (error) {
       console.error('Error deleting document:', error);
-      alert('Failed to delete document. Please try again.');
+      setAlert({ open: true, message: 'Failed to delete document. Please try again.', severity: 'error' });
     }
   };
 
@@ -315,6 +317,7 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
   return (
     <>
       <Box sx={{ width: '100%', height: '100vh', background: '#eef2f6', p: { xs: 2, md: 4 }, overflow: 'hidden' }}>
+        {/* I am getting two vertiacl of this  */}
         <Card sx={{ p: { xs: 2, md: 4 }, borderRadius: 3, boxShadow: 6, position: 'relative', height: '100%' }}>
           {/* Back Button */}
           <Tooltip title="Go Back">
@@ -633,8 +636,8 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
               </Box>
             )}
           </Box>
-        </Box>
-      </Card>
+          </Box>
+        </Card>
 
       {/* Document View Modal */}
       <Dialog
