@@ -9,6 +9,7 @@ import Navbar from './components/Navbar';
 import Login from './components/Login';
 import Dashboard from './components/Dashboard';
 import StudentDetails from './components/StudentDetails';
+import StudentManager from './components/StudentManager';
 import ClassManager from './components/ClassManager';
 import SectionManager from './components/SectionManager';
 import FeeManager from './components/FeeManager';
