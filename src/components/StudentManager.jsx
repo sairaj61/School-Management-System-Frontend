@@ -1008,7 +1008,7 @@ const StudentManager = (props) => {
 	};
 
 	return (
-		<Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+		<Container maxWidth={false} sx={{ mt: 4, mb: 4 }}>
 			{/* Statistics Cards - Only show for "All Students" and "Students by Category" tabs */}
 			{tabValue !== 2 && (
 				<Grid container spacing={3} sx={{ mb: 4 }}>

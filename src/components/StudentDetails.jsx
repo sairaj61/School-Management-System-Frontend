@@ -316,9 +316,8 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
 
   return (
     <>
-      <Box sx={{ width: '100%', height: '100vh', background: '#eef2f6', p: { xs: 2, md: 4 }, overflow: 'hidden' }}>
-        {/* I am getting two vertiacl of this  */}
-        <Card sx={{ p: { xs: 2, md: 4 }, borderRadius: 3, boxShadow: 6, position: 'relative', height: '100%' }}>
+      <Box sx={{ width: '100%', maxWidth: '100%', height: '100vh', background: '#eef2f6', p: { xs: 2, md: 4 }, overflow: 'hidden' }}>
+        <Card sx={{ p: { xs: 2, md: 4 }, borderRadius: 3, boxShadow: 6, position: 'relative', height: '100%', width: '100%', maxWidth: '100%' }}>
           {/* Back Button */}
           <Tooltip title="Go Back">
             <Button
