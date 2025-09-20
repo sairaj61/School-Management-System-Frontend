@@ -117,39 +117,21 @@ const StudentManager = (props) => {
 	}, []);
 
 	useEffect(() => {
-		if (tabValue === 0) {
+		if (selectedFeeCategory) {
+			fetchStudentsByFeeCategory(selectedFeeCategory, '', '');
+		} else {
 			fetchStudents(filterStatus, filterAcademicYear);
-		} else if (tabValue === 1) { // Students by Category tab
-			if (selectedFeeCategory) {
-				fetchStudentsByFeeCategory(selectedFeeCategory, filterRoute, filterDriver);
-			}
 		}
-		// No explicit fetch for tabValue === 2 (Student Details) here,
-		// as it's triggered by selecting a student and sets 'selectedStudent'
-	}, [filterStatus, filterAcademicYear, tabValue, selectedFeeCategory, filterRoute, filterDriver]);
+	}, [filterStatus, filterAcademicYear, selectedFeeCategory, filterRoute, filterDriver]);
 
 	// Updated useEffect for stats to reflect the active tab's data
 	useEffect(() => {
-		if (tabValue === 0) {
-			setStats({
-				totalStudents: students.length,
-				totalClasses: classes.length,
-				totalSections: sections.length,
-			});
-		} else if (tabValue === 1) {
-			setStats({
-				totalStudents: studentsByCategory.length, 
-				totalClasses: classes.length,
-				totalSections: sections.length,
-			});
-		} else { // For the "Student Details" tab, stats might not be directly relevant or would show 1 student
-			setStats({
-				totalStudents: selectedStudent ? 1 : 0,
-				totalClasses: classes.length,
-				totalSections: sections.length,
-			});
-		}
-	}, [students, studentsByCategory, classes, sections, tabValue, selectedStudent]); 
+		setStats({
+			totalStudents: students.length,
+			totalClasses: classes.length,
+			totalSections: sections.length,
+		});
+	}, [students, classes, sections]);
 
 	const fetchInitialData = async () => {
 		try {
@@ -225,10 +207,11 @@ const StudentManager = (props) => {
 			}
 
 			const response = await axiosInstance.get(url);
-			setStudentsByCategory(response.data);
+			// For "All Students" tab, set students to the student_details
+			setStudents(response.data.map(item => item.student_details));
 		} catch (error) {
 			handleApiError(error, setAlert);
-			setStudentsByCategory([]);
+			setStudents([]);
 		} finally {
 			setLoading(false);
 		}
@@ -363,8 +346,6 @@ const StudentManager = (props) => {
 			// ignore
 		}
 		setSelectedStudent(enrichedStudent);
-		setTabValue(2);
-		setStudentDetailsTabValue(0); // open Overview by default
 	};
 
 	// Updated: when clicking Attendance, open Student Details tab and switch to Attendance sub-tab
@@ -1008,72 +989,74 @@ const StudentManager = (props) => {
 	};
 
 	return (
-		<Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+		<Container maxWidth={false} sx={{ mt: 4, mb: 4 }}>
 			{/* Statistics Cards - Only show for "All Students" and "Students by Category" tabs */}
-			{tabValue !== 2 && (
-				<Grid container spacing={3} sx={{ mb: 4 }}>
-					<Grid item xs={12} sm={6} md={4}> 
-						<Card sx={{ bgcolor: 'primary.light', color: 'primary.contrastText' }}>
-							<CardContent>
-								<Box display="flex" alignItems="center" mb={1}>
-									<PeopleIcon sx={{ mr: 1 }} />
-									<Typography variant="h6" gutterBottom>
-										Total Students
+			{!selectedStudent && (
+				<Box sx={{ maxWidth: '1200px', margin: '0 auto', mb: 4 }}>
+					<Grid container spacing={3}>
+						<Grid item xs={12} sm={6} md={4}> 
+							<Card sx={{ bgcolor: 'primary.light', color: 'primary.contrastText' }}>
+								<CardContent>
+									<Box display="flex" alignItems="center" mb={1}>
+										<PeopleIcon sx={{ mr: 1 }} />
+										<Typography variant="h6" gutterBottom>
+											Total Students
+										</Typography>
+									</Box>
+									<Typography variant="h3">
+										{stats.totalStudents}
 									</Typography>
-								</Box>
-								<Typography variant="h3">
-									{stats.totalStudents}
-								</Typography>
-							</CardContent>
-						</Card>
-					</Grid>
-					<Grid item xs={12} sm={6} md={4}> 
-						<Card sx={{ bgcolor: 'success.light', color: 'success.contrastText' }}>
-							<CardContent>
-								<Box display="flex" alignItems="center" mb={1}>
-									<SchoolIcon sx={{ mr: 1 }} />
-									<Typography variant="h6" gutterBottom>
-										Total Classes
+								</CardContent>
+							</Card>
+						</Grid>
+						<Grid item xs={12} sm={6} md={4}> 
+							<Card sx={{ bgcolor: 'success.light', color: 'success.contrastText' }}>
+								<CardContent>
+									<Box display="flex" alignItems="center" mb={1}>
+										<SchoolIcon sx={{ mr: 1 }} />
+										<Typography variant="h6" gutterBottom>
+											Total Classes
+										</Typography>
+									</Box>
+									<Typography variant="h3">
+										{stats.totalClasses}
 									</Typography>
-								</Box>
-								<Typography variant="h3">
-									{stats.totalClasses}
-								</Typography>
-							</CardContent>
-						</Card>
-					</Grid>
-					<Grid item xs={12} sm={6} md={4}> 
-						<Card sx={{ bgcolor: 'info.light', color: 'info.contrastText' }}>
-							<CardContent>
-								<Box display="flex" alignItems="center" mb={1}>
-									<ViewWeekIcon sx={{ mr: 1 }} />
-									<Typography variant="h6" gutterBottom>
-										Total Sections
+								</CardContent>
+							</Card>
+						</Grid>
+						<Grid item xs={12} sm={6} md={4}> 
+							<Card sx={{ bgcolor: 'info.light', color: 'info.contrastText' }}>
+								<CardContent>
+									<Box display="flex" alignItems="center" mb={1}>
+										<ViewWeekIcon sx={{ mr: 1 }} />
+										<Typography variant="h6" gutterBottom>
+											Total Sections
+										</Typography>
+									</Box>
+									<Typography variant="h3">
+										{stats.totalSections}
 									</Typography>
-								</Box>
-								<Typography variant="h3">
-									{stats.totalSections}
-								</Typography>
-							</CardContent>
-						</Card>
+								</CardContent>
+							</Card>
+						</Grid>
 					</Grid>
-				</Grid>
+				</Box>
 			)}
 
-			{/* Main Tabs */}
-			<Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-				<Tabs value={tabValue} onChange={(e, newValue) => setTabValue(newValue)} aria-label="student management tabs">
-					<Tab label="All Students" />
-					<Tab label="Students by Category" />
-					<Tab label="Student Details" disabled={!selectedStudent} />
-				</Tabs>
-			</Box>
-
-			{/* Content for "All Students" Tab */}
-			{tabValue === 0 && (
+			{/* Main Content */}
+			{selectedStudent ? (
+				<StudentDetails
+					student={selectedStudent}
+					onBack={() => {
+						// Clear selection and return to All Students view
+						setSelectedStudent(null);
+					}}
+					onEdit={(stu) => handleEditStudent(stu)}
+				/>
+			) : (
 				<>
 					{/* Actions Bar and Filters */}
-					<Paper sx={{ p: 2, mb: 3 }}>
+					<Paper sx={{ p: 2, mb: 3, maxWidth: '1200px', margin: '0 auto' }}>
 						<Grid container spacing={2} alignItems="center">
 							<Grid item xs>
 								<Typography variant="h5">All Students</Typography>
@@ -1086,7 +1069,7 @@ const StudentManager = (props) => {
 										value={searchTerm}
 										onChange={(e) => setSearchTerm(e.target.value)}
 									/>
-									{/* Added Academic Year and Status filters outside the table for better UX */}
+									{/* Added Academic Year and Status filters outside the table for better UX */}									
 									<FormControl size="small" sx={{ minWidth: 120 }}>
 										<InputLabel id="filter-status-label">Status</InputLabel>
 										<Select
@@ -1115,6 +1098,22 @@ const StudentManager = (props) => {
 											))}
 										</Select>
 									</FormControl>
+									<FormControl size="small" sx={{ minWidth: 200 }}>
+										<InputLabel id="fee-category-filter-label">Fee Category</InputLabel>
+										<Select
+											labelId="fee-category-filter-label"
+											value={selectedFeeCategory}
+											label="Fee Category"
+											onChange={(e) => setSelectedFeeCategory(e.target.value)}
+										>
+											<MenuItem value=""><em>All Categories</em></MenuItem>
+											{feeCategories.map((category) => (
+												<MenuItem key={category.id} value={category.id}>
+													{category.category_name}
+												</MenuItem>
+											))}
+										</Select>
+									</FormControl>
 									<Button
 										variant="contained"
 										color="secondary"
@@ -1135,32 +1134,34 @@ const StudentManager = (props) => {
 					</Paper>
 
 					{/* Download & Upload Student Manager Buttons */}
-					<Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mb: 2 }}>
-						<Button
-							variant="outlined"
-							color="primary"
-							onClick={handleDownloadStudentManager}
-						>
-							Download Student Manager
-						</Button>
-						<Button
-							variant="outlined"
-							color="secondary"
-							component="label"
-							disabled={uploading}
-						>
-							Upload Student Manager
-							<input
-								type="file"
-								accept=".xlsx"
-								hidden
-								onChange={handleUploadStudentManager}
-							/>
-						</Button>
+					<Box sx={{ maxWidth: '1200px', margin: '0 auto', mb: 2, pt: 2 }}>
+						<Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
+							<Button
+								variant="outlined"
+								color="primary"
+								onClick={handleDownloadStudentManager}
+							>
+								Download Student Manager
+							</Button>
+							<Button
+								variant="outlined"
+								color="secondary"
+								component="label"
+								disabled={uploading}
+							>
+								Upload Student Manager
+								<input
+									type="file"
+									accept=".xlsx"
+									hidden
+									onChange={handleUploadStudentManager}
+								/>
+							</Button>
+						</Box>
 					</Box>
 
 					{/* Data Grid */}
-					<Paper sx={{ height: 600, width: '100%' }}>
+					<Paper sx={{ height: 600, width: '100%', maxWidth: '1200px', margin: '0 auto' }}>
 						<DataGrid
 							rows={filteredStudents}
 							columns={columns}
@@ -1178,123 +1179,6 @@ const StudentManager = (props) => {
 					</Paper>
 				</>
 			)}
-
-			{/* Content for "Students by Category" Tab */}
-			{tabValue === 1 && (
-				<>
-					<Paper sx={{ p: 2, mb: 3 }}>
-						<Grid container spacing={2} alignItems="center">
-							<Grid item xs={12} sm={4}>
-								<Typography variant="h5">Students by Fee Category</Typography>
-							</Grid>
-							<Grid item xs={12} sm={8}>
-								<Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
-									<TextField
-										size="small"
-										placeholder="Search by student name..."
-										value={searchTermCategory}
-										onChange={(e) => setSearchTermCategory(e.target.value)}
-										sx={{ flexGrow: 1 }}
-									/>
-									<FormControl size="small" sx={{ minWidth: 200 }}>
-										<InputLabel id="fee-category-filter-label">Select Fee Category</InputLabel>
-										<Select
-											labelId="fee-category-filter-label"
-											value={selectedFeeCategory}
-											label="Select Fee Category"
-											onChange={(e) => {
-												setSelectedFeeCategory(e.target.value);
-												setFilterRoute(''); 
-												setFilterDriver(''); 
-											}}
-										>
-											{feeCategories.map((category) => (
-												<MenuItem key={category.id} value={category.id}>
-													{category.category_name}
-												</MenuItem>
-											))}
-										</Select>
-									</FormControl>
-
-									{/* New: Transport specific filters */}
-									{isSelectedCategoryTransport && (
-										<>
-											<FormControl size="small" sx={{ minWidth: 150 }}>
-												<InputLabel id="transport-route-filter-label">Route</InputLabel>
-												<Select
-													labelId="transport-route-filter-label"
-													value={filterRoute}
-													label="Route"
-													onChange={(e) => setFilterRoute(e.target.value)}
-												>
-													<MenuItem value=""><em>All Routes</em></MenuItem>
-													{routes.map((route) => (
-														<MenuItem key={route.id} value={route.id}>
-															{route.route_name}
-														</MenuItem>
-													))}
-												</Select>
-											</FormControl>
-											<FormControl size="small" sx={{ minWidth: 150 }}>
-												<InputLabel id="transport-driver-filter-label">Driver</InputLabel>
-												<Select
-													labelId="transport-driver-filter-label"
-													value={filterDriver}
-													label="Driver"
-													onChange={(e) => setFilterDriver(e.target.value)}
-												>
-													<MenuItem value=""><em>None</em></MenuItem>
-													{drivers.map((driver) => (
-														<MenuItem key={driver.id} value={driver.id}>
-															{driver.driver_name}
-														</MenuItem>
-													))}
-												</Select>
-											</FormControl>
-										</>
-									)}
-								</Box>
-							</Grid>
-						</Grid>
-					</Paper>
-
-					<Paper sx={{ height: 600, width: '100%' }}>
-						<DataGrid
-							rows={filteredStudentsByCategory}
-							columns={columnsByCategory}
-							pageSize={10}
-							rowsPerPageOptions={[10, 20, 50]}
-							disableSelectionOnClick
-							loading={loading}
-							getRowId={(row) => row.student_details.id} 
-							sx={{
-								'& .MuiDataGrid-row:hover': {
-									backgroundColor: 'action.hover'
-								}
-							}}
-						/>
-					</Paper>
-				</>
-			)}
-
-			{/* Single StudentDetails rendering using selectedStudent */}
-			{tabValue === 2 && selectedStudent ? (
-				<StudentDetails
-					student={selectedStudent}
-					onBack={() => {
-						// Clear selection and return to All Students tab
-						setSelectedStudent(null);
-						setTabValue(0);
-					}}
-					onEdit={(stu) => handleEditStudent(stu)}
-				/>
-			) : tabValue === 2 && !selectedStudent ? (
-				<Paper sx={{ p: 3, mb: 3, textAlign: 'center' }}>
-					<Typography variant="h6" color="textSecondary">
-						Please select a student from "All Students" or "Students by Category" tab to view their details.
-					</Typography>
-				</Paper>
-			) : null}
 
 			{/* Dialog for Add/Edit Student (Generic) */}
 			<Dialog open={addEditModalOpen} onClose={handleAddEditModalClose} maxWidth="md" fullWidth>
@@ -1514,18 +1398,24 @@ const StudentManager = (props) => {
 										name="name"
 										value={parentForm.name}
 										onChange={handleParentInputChange}
-										required
 									/>
 								</Grid>
 								<Grid item xs={12} sm={3}>
-									<TextField
-										fullWidth
-										label="Relation"
-										name="relation"
-										value={parentForm.relation}
-										onChange={handleParentInputChange}
-										required
-									/>
+									<FormControl fullWidth >
+										<InputLabel id="relation-label">Relation</InputLabel>
+										<Select
+											labelId="relation-label"
+											name="relation"
+											value={parentForm.relation}
+											onChange={handleParentInputChange}
+											label="Relation"
+										>
+											<MenuItem value="Father">Father</MenuItem>
+											<MenuItem value="Mother">Mother</MenuItem>
+											<MenuItem value="Guardian">Guardian</MenuItem>
+											<MenuItem value="Other">Other</MenuItem>
+										</Select>
+									</FormControl>
 								</Grid>
 								<Grid item xs={12} sm={3}>
 									<TextField
