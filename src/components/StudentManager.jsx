@@ -118,7 +118,11 @@ const StudentManager = (props) => {
 
 	useEffect(() => {
 		if (tabValue === 0) {
-			fetchStudents(filterStatus, filterAcademicYear);
+			if (selectedFeeCategory) {
+				fetchStudentsByFeeCategory(selectedFeeCategory, '', '');
+			} else {
+				fetchStudents(filterStatus, filterAcademicYear);
+			}
 		} else if (tabValue === 1) { // Students by Category tab
 			if (selectedFeeCategory) {
 				fetchStudentsByFeeCategory(selectedFeeCategory, filterRoute, filterDriver);
@@ -225,10 +229,19 @@ const StudentManager = (props) => {
 			}
 
 			const response = await axiosInstance.get(url);
-			setStudentsByCategory(response.data);
+			if (tabValue === 0) {
+				// For "All Students" tab, set students to the student_details
+				setStudents(response.data.map(item => item.student_details));
+			} else {
+				setStudentsByCategory(response.data);
+			}
 		} catch (error) {
 			handleApiError(error, setAlert);
-			setStudentsByCategory([]);
+			if (tabValue === 0) {
+				setStudents([]);
+			} else {
+				setStudentsByCategory([]);
+			}
 		} finally {
 			setLoading(false);
 		}
@@ -1011,53 +1024,55 @@ const StudentManager = (props) => {
 		<Container maxWidth={false} sx={{ mt: 4, mb: 4 }}>
 			{/* Statistics Cards - Only show for "All Students" and "Students by Category" tabs */}
 			{tabValue !== 2 && (
-				<Grid container spacing={3} sx={{ mb: 4 }}>
-					<Grid item xs={12} sm={6} md={4}> 
-						<Card sx={{ bgcolor: 'primary.light', color: 'primary.contrastText' }}>
-							<CardContent>
-								<Box display="flex" alignItems="center" mb={1}>
-									<PeopleIcon sx={{ mr: 1 }} />
-									<Typography variant="h6" gutterBottom>
-										Total Students
+				<Box sx={{ maxWidth: '1200px', margin: '0 auto', mb: 4 }}>
+					<Grid container spacing={3}>
+						<Grid item xs={12} sm={6} md={4}> 
+							<Card sx={{ bgcolor: 'primary.light', color: 'primary.contrastText' }}>
+								<CardContent>
+									<Box display="flex" alignItems="center" mb={1}>
+										<PeopleIcon sx={{ mr: 1 }} />
+										<Typography variant="h6" gutterBottom>
+											Total Students
+										</Typography>
+									</Box>
+									<Typography variant="h3">
+										{stats.totalStudents}
 									</Typography>
-								</Box>
-								<Typography variant="h3">
-									{stats.totalStudents}
-								</Typography>
-							</CardContent>
-						</Card>
-					</Grid>
-					<Grid item xs={12} sm={6} md={4}> 
-						<Card sx={{ bgcolor: 'success.light', color: 'success.contrastText' }}>
-							<CardContent>
-								<Box display="flex" alignItems="center" mb={1}>
-									<SchoolIcon sx={{ mr: 1 }} />
-									<Typography variant="h6" gutterBottom>
-										Total Classes
+								</CardContent>
+							</Card>
+						</Grid>
+						<Grid item xs={12} sm={6} md={4}> 
+							<Card sx={{ bgcolor: 'success.light', color: 'success.contrastText' }}>
+								<CardContent>
+									<Box display="flex" alignItems="center" mb={1}>
+										<SchoolIcon sx={{ mr: 1 }} />
+										<Typography variant="h6" gutterBottom>
+											Total Classes
+										</Typography>
+									</Box>
+									<Typography variant="h3">
+										{stats.totalClasses}
 									</Typography>
-								</Box>
-								<Typography variant="h3">
-									{stats.totalClasses}
-								</Typography>
-							</CardContent>
-						</Card>
-					</Grid>
-					<Grid item xs={12} sm={6} md={4}> 
-						<Card sx={{ bgcolor: 'info.light', color: 'info.contrastText' }}>
-							<CardContent>
-								<Box display="flex" alignItems="center" mb={1}>
-									<ViewWeekIcon sx={{ mr: 1 }} />
-									<Typography variant="h6" gutterBottom>
-										Total Sections
+								</CardContent>
+							</Card>
+						</Grid>
+						<Grid item xs={12} sm={6} md={4}> 
+							<Card sx={{ bgcolor: 'info.light', color: 'info.contrastText' }}>
+								<CardContent>
+									<Box display="flex" alignItems="center" mb={1}>
+										<ViewWeekIcon sx={{ mr: 1 }} />
+										<Typography variant="h6" gutterBottom>
+											Total Sections
+										</Typography>
+									</Box>
+									<Typography variant="h3">
+										{stats.totalSections}
 									</Typography>
-								</Box>
-								<Typography variant="h3">
-									{stats.totalSections}
-								</Typography>
-							</CardContent>
-						</Card>
+								</CardContent>
+							</Card>
+						</Grid>
 					</Grid>
-				</Grid>
+				</Box>
 			)}
 
 			{/* Main Tabs */}
@@ -1073,7 +1088,7 @@ const StudentManager = (props) => {
 			{tabValue === 0 && (
 				<>
 					{/* Actions Bar and Filters */}
-					<Paper sx={{ p: 2, mb: 3 }}>
+					<Paper sx={{ p: 2, mb: 3, maxWidth: '1200px', margin: '0 auto' }}>
 						<Grid container spacing={2} alignItems="center">
 							<Grid item xs>
 								<Typography variant="h5">All Students</Typography>
@@ -1086,7 +1101,7 @@ const StudentManager = (props) => {
 										value={searchTerm}
 										onChange={(e) => setSearchTerm(e.target.value)}
 									/>
-									{/* Added Academic Year and Status filters outside the table for better UX */}
+									{/* Added Academic Year and Status filters outside the table for better UX */}									
 									<FormControl size="small" sx={{ minWidth: 120 }}>
 										<InputLabel id="filter-status-label">Status</InputLabel>
 										<Select
@@ -1115,6 +1130,22 @@ const StudentManager = (props) => {
 											))}
 										</Select>
 									</FormControl>
+									<FormControl size="small" sx={{ minWidth: 200 }}>
+										<InputLabel id="fee-category-filter-label">Fee Category</InputLabel>
+										<Select
+											labelId="fee-category-filter-label"
+											value={selectedFeeCategory}
+											label="Fee Category"
+											onChange={(e) => setSelectedFeeCategory(e.target.value)}
+										>
+											<MenuItem value=""><em>All Categories</em></MenuItem>
+											{feeCategories.map((category) => (
+												<MenuItem key={category.id} value={category.id}>
+													{category.category_name}
+												</MenuItem>
+											))}
+										</Select>
+									</FormControl>
 									<Button
 										variant="contained"
 										color="secondary"
@@ -1135,7 +1166,7 @@ const StudentManager = (props) => {
 					</Paper>
 
 					{/* Download & Upload Student Manager Buttons */}
-					<Box sx={{ maxWidth: '1200px', margin: '0 auto', mb: 2 }}>
+					<Box sx={{ maxWidth: '1200px', margin: '0 auto', mb: 2, pt: 2 }}>
 						<Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
 							<Button
 								variant="outlined"
@@ -1184,7 +1215,7 @@ const StudentManager = (props) => {
 			{/* Content for "Students by Category" Tab */}
 			{tabValue === 1 && (
 				<>
-					<Paper sx={{ p: 2, mb: 3 }}>
+					<Paper sx={{ p: 2, mb: 3, maxWidth: '1200px', margin: '0 auto' }}>
 						<Grid container spacing={2} alignItems="center">
 							<Grid item xs={12} sm={4}>
 								<Typography variant="h5">Students by Fee Category</Typography>
