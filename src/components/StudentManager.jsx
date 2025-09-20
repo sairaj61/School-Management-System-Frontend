@@ -117,43 +117,21 @@ const StudentManager = (props) => {
 	}, []);
 
 	useEffect(() => {
-		if (tabValue === 0) {
-			if (selectedFeeCategory) {
-				fetchStudentsByFeeCategory(selectedFeeCategory, '', '');
-			} else {
-				fetchStudents(filterStatus, filterAcademicYear);
-			}
-		} else if (tabValue === 1) { // Students by Category tab
-			if (selectedFeeCategory) {
-				fetchStudentsByFeeCategory(selectedFeeCategory, filterRoute, filterDriver);
-			}
+		if (selectedFeeCategory) {
+			fetchStudentsByFeeCategory(selectedFeeCategory, '', '');
+		} else {
+			fetchStudents(filterStatus, filterAcademicYear);
 		}
-		// No explicit fetch for tabValue === 2 (Student Details) here,
-		// as it's triggered by selecting a student and sets 'selectedStudent'
-	}, [filterStatus, filterAcademicYear, tabValue, selectedFeeCategory, filterRoute, filterDriver]);
+	}, [filterStatus, filterAcademicYear, selectedFeeCategory, filterRoute, filterDriver]);
 
 	// Updated useEffect for stats to reflect the active tab's data
 	useEffect(() => {
-		if (tabValue === 0) {
-			setStats({
-				totalStudents: students.length,
-				totalClasses: classes.length,
-				totalSections: sections.length,
-			});
-		} else if (tabValue === 1) {
-			setStats({
-				totalStudents: studentsByCategory.length, 
-				totalClasses: classes.length,
-				totalSections: sections.length,
-			});
-		} else { // For the "Student Details" tab, stats might not be directly relevant or would show 1 student
-			setStats({
-				totalStudents: selectedStudent ? 1 : 0,
-				totalClasses: classes.length,
-				totalSections: sections.length,
-			});
-		}
-	}, [students, studentsByCategory, classes, sections, tabValue, selectedStudent]); 
+		setStats({
+			totalStudents: students.length,
+			totalClasses: classes.length,
+			totalSections: sections.length,
+		});
+	}, [students, classes, sections]);
 
 	const fetchInitialData = async () => {
 		try {
@@ -229,19 +207,11 @@ const StudentManager = (props) => {
 			}
 
 			const response = await axiosInstance.get(url);
-			if (tabValue === 0) {
-				// For "All Students" tab, set students to the student_details
-				setStudents(response.data.map(item => item.student_details));
-			} else {
-				setStudentsByCategory(response.data);
-			}
+			// For "All Students" tab, set students to the student_details
+			setStudents(response.data.map(item => item.student_details));
 		} catch (error) {
 			handleApiError(error, setAlert);
-			if (tabValue === 0) {
-				setStudents([]);
-			} else {
-				setStudentsByCategory([]);
-			}
+			setStudents([]);
 		} finally {
 			setLoading(false);
 		}
@@ -376,8 +346,6 @@ const StudentManager = (props) => {
 			// ignore
 		}
 		setSelectedStudent(enrichedStudent);
-		setTabValue(2);
-		setStudentDetailsTabValue(0); // open Overview by default
 	};
 
 	// Updated: when clicking Attendance, open Student Details tab and switch to Attendance sub-tab
@@ -1023,7 +991,7 @@ const StudentManager = (props) => {
 	return (
 		<Container maxWidth={false} sx={{ mt: 4, mb: 4 }}>
 			{/* Statistics Cards - Only show for "All Students" and "Students by Category" tabs */}
-			{tabValue !== 2 && (
+			{!selectedStudent && (
 				<Box sx={{ maxWidth: '1200px', margin: '0 auto', mb: 4 }}>
 					<Grid container spacing={3}>
 						<Grid item xs={12} sm={6} md={4}> 
@@ -1075,17 +1043,17 @@ const StudentManager = (props) => {
 				</Box>
 			)}
 
-			{/* Main Tabs */}
-			<Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-				<Tabs value={tabValue} onChange={(e, newValue) => setTabValue(newValue)} aria-label="student management tabs">
-					<Tab label="All Students" />
-					<Tab label="Students by Category" />
-					<Tab label="Student Details" disabled={!selectedStudent} />
-				</Tabs>
-			</Box>
-
-			{/* Content for "All Students" Tab */}
-			{tabValue === 0 && (
+			{/* Main Content */}
+			{selectedStudent ? (
+				<StudentDetails
+					student={selectedStudent}
+					onBack={() => {
+						// Clear selection and return to All Students view
+						setSelectedStudent(null);
+					}}
+					onEdit={(stu) => handleEditStudent(stu)}
+				/>
+			) : (
 				<>
 					{/* Actions Bar and Filters */}
 					<Paper sx={{ p: 2, mb: 3, maxWidth: '1200px', margin: '0 auto' }}>
@@ -1211,123 +1179,6 @@ const StudentManager = (props) => {
 					</Paper>
 				</>
 			)}
-
-			{/* Content for "Students by Category" Tab */}
-			{tabValue === 1 && (
-				<>
-					<Paper sx={{ p: 2, mb: 3, maxWidth: '1200px', margin: '0 auto' }}>
-						<Grid container spacing={2} alignItems="center">
-							<Grid item xs={12} sm={4}>
-								<Typography variant="h5">Students by Fee Category</Typography>
-							</Grid>
-							<Grid item xs={12} sm={8}>
-								<Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
-									<TextField
-										size="small"
-										placeholder="Search by student name..."
-										value={searchTermCategory}
-										onChange={(e) => setSearchTermCategory(e.target.value)}
-										sx={{ flexGrow: 1 }}
-									/>
-									<FormControl size="small" sx={{ minWidth: 200 }}>
-										<InputLabel id="fee-category-filter-label">Select Fee Category</InputLabel>
-										<Select
-											labelId="fee-category-filter-label"
-											value={selectedFeeCategory}
-											label="Select Fee Category"
-											onChange={(e) => {
-												setSelectedFeeCategory(e.target.value);
-												setFilterRoute(''); 
-												setFilterDriver(''); 
-											}}
-										>
-											{feeCategories.map((category) => (
-												<MenuItem key={category.id} value={category.id}>
-													{category.category_name}
-												</MenuItem>
-											))}
-										</Select>
-									</FormControl>
-
-									{/* New: Transport specific filters */}
-									{isSelectedCategoryTransport && (
-										<>
-											<FormControl size="small" sx={{ minWidth: 150 }}>
-												<InputLabel id="transport-route-filter-label">Route</InputLabel>
-												<Select
-													labelId="transport-route-filter-label"
-													value={filterRoute}
-													label="Route"
-													onChange={(e) => setFilterRoute(e.target.value)}
-												>
-													<MenuItem value=""><em>All Routes</em></MenuItem>
-													{routes.map((route) => (
-														<MenuItem key={route.id} value={route.id}>
-															{route.route_name}
-														</MenuItem>
-													))}
-												</Select>
-											</FormControl>
-											<FormControl size="small" sx={{ minWidth: 150 }}>
-												<InputLabel id="transport-driver-filter-label">Driver</InputLabel>
-												<Select
-													labelId="transport-driver-filter-label"
-													value={filterDriver}
-													label="Driver"
-													onChange={(e) => setFilterDriver(e.target.value)}
-												>
-													<MenuItem value=""><em>None</em></MenuItem>
-													{drivers.map((driver) => (
-														<MenuItem key={driver.id} value={driver.id}>
-															{driver.driver_name}
-														</MenuItem>
-													))}
-												</Select>
-											</FormControl>
-										</>
-									)}
-								</Box>
-							</Grid>
-						</Grid>
-					</Paper>
-
-					<Paper sx={{ height: 600, width: '100%', maxWidth: '1200px', margin: '0 auto' }}>
-						<DataGrid
-							rows={filteredStudentsByCategory}
-							columns={columnsByCategory}
-							pageSize={10}
-							rowsPerPageOptions={[10, 20, 50]}
-							disableSelectionOnClick
-							loading={loading}
-							getRowId={(row) => row.student_details.id} 
-							sx={{
-								'& .MuiDataGrid-row:hover': {
-									backgroundColor: 'action.hover'
-								}
-							}}
-						/>
-					</Paper>
-				</>
-			)}
-
-			{/* Single StudentDetails rendering using selectedStudent */}
-			{tabValue === 2 && selectedStudent ? (
-				<StudentDetails
-					student={selectedStudent}
-					onBack={() => {
-						// Clear selection and return to All Students tab
-						setSelectedStudent(null);
-						setTabValue(0);
-					}}
-					onEdit={(stu) => handleEditStudent(stu)}
-				/>
-			) : tabValue === 2 && !selectedStudent ? (
-				<Paper sx={{ p: 3, mb: 3, textAlign: 'center' }}>
-					<Typography variant="h6" color="textSecondary">
-						Please select a student from "All Students" or "Students by Category" tab to view their details.
-					</Typography>
-				</Paper>
-			) : null}
 
 			{/* Dialog for Add/Edit Student (Generic) */}
 			<Dialog open={addEditModalOpen} onClose={handleAddEditModalClose} maxWidth="md" fullWidth>
