@@ -1398,18 +1398,24 @@ const StudentManager = (props) => {
 										name="name"
 										value={parentForm.name}
 										onChange={handleParentInputChange}
-										required
 									/>
 								</Grid>
 								<Grid item xs={12} sm={3}>
-									<TextField
-										fullWidth
-										label="Relation"
-										name="relation"
-										value={parentForm.relation}
-										onChange={handleParentInputChange}
-										required
-									/>
+									<FormControl fullWidth >
+										<InputLabel id="relation-label">Relation</InputLabel>
+										<Select
+											labelId="relation-label"
+											name="relation"
+											value={parentForm.relation}
+											onChange={handleParentInputChange}
+											label="Relation"
+										>
+											<MenuItem value="Father">Father</MenuItem>
+											<MenuItem value="Mother">Mother</MenuItem>
+											<MenuItem value="Guardian">Guardian</MenuItem>
+											<MenuItem value="Other">Other</MenuItem>
+										</Select>
+									</FormControl>
 								</Grid>
 								<Grid item xs={12} sm={3}>
 									<TextField
