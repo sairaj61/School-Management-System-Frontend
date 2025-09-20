@@ -8,6 +8,7 @@ import GlobalAlert from './components/GlobalAlert';
 import Navbar from './components/Navbar';
 import Login from './components/Login';
 import Dashboard from './components/Dashboard';
+import StudentDetails from './components/StudentDetails';
 import StudentManager from './components/StudentManager';
 import ClassManager from './components/ClassManager';
 import SectionManager from './components/SectionManager';
@@ -94,6 +95,7 @@ const AuthenticatedApp = ({ onLogout }) => {
       <Routes>
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/students" element={<StudentManager />} />
+        <Route path="/students/:id" element={<StudentDetails />} />
         <Route path="/classes" element={<ClassManager />} />
         <Route path="/sections" element={<SectionManager />} />
         <Route path="/fees" element={<FeeManager />} />
