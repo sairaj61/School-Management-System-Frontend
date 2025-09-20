@@ -1135,32 +1135,34 @@ const StudentManager = (props) => {
 					</Paper>
 
 					{/* Download & Upload Student Manager Buttons */}
-					<Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mb: 2 }}>
-						<Button
-							variant="outlined"
-							color="primary"
-							onClick={handleDownloadStudentManager}
-						>
-							Download Student Manager
-						</Button>
-						<Button
-							variant="outlined"
-							color="secondary"
-							component="label"
-							disabled={uploading}
-						>
-							Upload Student Manager
-							<input
-								type="file"
-								accept=".xlsx"
-								hidden
-								onChange={handleUploadStudentManager}
-							/>
-						</Button>
+					<Box sx={{ maxWidth: '1200px', margin: '0 auto', mb: 2 }}>
+						<Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
+							<Button
+								variant="outlined"
+								color="primary"
+								onClick={handleDownloadStudentManager}
+							>
+								Download Student Manager
+							</Button>
+							<Button
+								variant="outlined"
+								color="secondary"
+								component="label"
+								disabled={uploading}
+							>
+								Upload Student Manager
+								<input
+									type="file"
+									accept=".xlsx"
+									hidden
+									onChange={handleUploadStudentManager}
+								/>
+							</Button>
+						</Box>
 					</Box>
 
 					{/* Data Grid */}
-					<Paper sx={{ height: 600, width: '100%' }}>
+					<Paper sx={{ height: 600, width: '100%', maxWidth: '1200px', margin: '0 auto' }}>
 						<DataGrid
 							rows={filteredStudents}
 							columns={columns}
@@ -1258,7 +1260,7 @@ const StudentManager = (props) => {
 						</Grid>
 					</Paper>
 
-					<Paper sx={{ height: 600, width: '100%' }}>
+					<Paper sx={{ height: 600, width: '100%', maxWidth: '1200px', margin: '0 auto' }}>
 						<DataGrid
 							rows={filteredStudentsByCategory}
 							columns={columnsByCategory}
