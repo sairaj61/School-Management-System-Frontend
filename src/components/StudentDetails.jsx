@@ -413,22 +413,51 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
               {tab === 0 && (
                 <Grid container spacing={4}>
                   <Grid item xs={12} md={6}>
-                    <Paper elevation={2} sx={{ p: 3, borderRadius: 2, height: '100%', minHeight: 260, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                    <Paper elevation={2} sx={{ p: 2, borderRadius: 2, height: '100%', minHeight: 260, display: 'flex', flexDirection: 'column' }}>
                       <Typography variant="h6" fontWeight={600} gutterBottom>Parent Information</Typography>
                       {parentDetails.length === 0 ? (
                         <Typography color="text.secondary">No parent details available.</Typography>
                       ) : (
-                        <List dense>
-                          {parentDetails.map((parent, index) => (
-                            <ListItem key={index}>
-                              <ListItemIcon><Person color="primary" /></ListItemIcon>
-                              <ListItemText
-                                primary={`${parent.name} (${parent.relationship_to_student})`}
-                                secondary={`${parent.email} | ${parent.phone_number} | ${parent.occupation || 'N/A'}`}
-                              />
-                            </ListItem>
-                          ))}
-                        </List>
+                        <Box sx={{ overflowY: 'auto', flex: 1 }}>
+                          <Grid container spacing={2}>
+                            {parentDetails.map((parent, index) => (
+                              <Grid item xs={12} key={index}>
+                                <Card sx={{ p: 2, borderRadius: 2, boxShadow: 1 }}>
+                                  <Typography variant="subtitle1" fontWeight={600} gutterBottom>
+                                    {parent.name} ({parent.relationship_to_student})
+                                  </Typography>
+                                  <Grid container spacing={1}>
+                                    <Grid item xs={12} sm={6}>
+                                      <Typography variant="body2" color="text.secondary">
+                                        <strong>Email:</strong> {parent.email}
+                                      </Typography>
+                                    </Grid>
+                                    <Grid item xs={12} sm={6}>
+                                      <Typography variant="body2" color="text.secondary">
+                                        <strong>Phone:</strong> {parent.phone_number}
+                                      </Typography>
+                                    </Grid>
+                                    <Grid item xs={12} sm={6}>
+                                      <Typography variant="body2" color="text.secondary">
+                                        <strong>Gender:</strong> {parent.gender}
+                                      </Typography>
+                                    </Grid>
+                                    <Grid item xs={12} sm={6}>
+                                      <Typography variant="body2" color="text.secondary">
+                                        <strong>Occupation:</strong> {parent.occupation || 'N/A'}
+                                      </Typography>
+                                    </Grid>
+                                    <Grid item xs={12}>
+                                      <Typography variant="body2" color="text.secondary">
+                                        <strong>Address:</strong> {parent.address}
+                                      </Typography>
+                                    </Grid>
+                                  </Grid>
+                                </Card>
+                              </Grid>
+                            ))}
+                          </Grid>
+                        </Box>
                       )}
                     </Paper>
                   </Grid>
