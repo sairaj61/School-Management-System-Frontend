@@ -285,7 +285,7 @@ const StudentManager = (props) => {
 		setFilteredSectionsForDropdown([]);
 		setClassFees([]);
 		setOptionalFeesForSelectedClass([]);
-		setParentForm({ name: '', phone_number: '', email: '', relation: '' });
+		setParentForm({ name: '', phone_number: '', email: '', address: '', gender: '', occupation: '', relationship_to_student: '' });
 		setParentEditIndex(null);
 	};
 
@@ -866,7 +866,10 @@ const StudentManager = (props) => {
 		name: '',
 		phone_number: '',
 		email: '',
-		relation: '',
+		address: '',
+		gender: '',
+		occupation: '',
+		relationship_to_student: '',
 	});
 	const [parentEditIndex, setParentEditIndex] = useState(null);
 
@@ -876,12 +879,12 @@ const StudentManager = (props) => {
 	};
 
 	const handleAddParent = () => {
-		if (!parentForm.name || !parentForm.relation) return;
+		if (!parentForm.name || !parentForm.relationship_to_student) return;
 		setFormData(prev => ({
 			...prev,
 			parents: [...prev.parents, parentForm]
 		}));
-		setParentForm({ name: '', phone_number: '', email: '', relation: '' });
+		setParentForm({ name: '', phone_number: '', email: '', address: '', gender: '', occupation: '', relationship_to_student: '' });
 		setParentEditIndex(null);
 	};
 
@@ -897,7 +900,7 @@ const StudentManager = (props) => {
 			updated[parentEditIndex] = parentForm;
 			return { ...prev, parents: updated };
 		});
-		setParentForm({ name: '', phone_number: '', email: '', relation: '' });
+		setParentForm({ name: '', phone_number: '', email: '', address: '', gender: '', occupation: '', relationship_to_student: '' });
 		setParentEditIndex(null);
 	};
 
@@ -906,7 +909,7 @@ const StudentManager = (props) => {
 			...prev,
 			parents: prev.parents.filter((_, i) => i !== idx)
 		}));
-		setParentForm({ name: '', phone_number: '', email: '', relation: '' });
+		setParentForm({ name: '', phone_number: '', email: '', address: '', gender: '', occupation: '', relationship_to_student: '' });
 		setParentEditIndex(null);
 	};
 
@@ -1391,7 +1394,7 @@ const StudentManager = (props) => {
 						<Box sx={{ mt: 3, mb: 2 }}>
 							<Typography variant="h6" gutterBottom>Parents</Typography>
 							<Grid container spacing={2} alignItems="center">
-								<Grid item xs={12} sm={3}>
+								<Grid item xs={12} sm={6}>
 									<TextField
 										fullWidth
 										label="Parent Name"
@@ -1400,33 +1403,7 @@ const StudentManager = (props) => {
 										onChange={handleParentInputChange}
 									/>
 								</Grid>
-								<Grid item xs={12} sm={3}>
-									<FormControl fullWidth >
-										<InputLabel id="relation-label">Relation</InputLabel>
-										<Select
-											labelId="relation-label"
-											name="relation"
-											value={parentForm.relation}
-											onChange={handleParentInputChange}
-											label="Relation"
-										>
-											<MenuItem value="Father">Father</MenuItem>
-											<MenuItem value="Mother">Mother</MenuItem>
-											<MenuItem value="Guardian">Guardian</MenuItem>
-											<MenuItem value="Other">Other</MenuItem>
-										</Select>
-									</FormControl>
-								</Grid>
-								<Grid item xs={12} sm={3}>
-									<TextField
-										fullWidth
-										label="Phone Number"
-										name="phone_number"
-										value={parentForm.phone_number}
-										onChange={handleParentInputChange}
-									/>
-								</Grid>
-								<Grid item xs={12} sm={3}>
+								<Grid item xs={12} sm={6}>
 									<TextField
 										fullWidth
 										label="Email"
@@ -1435,7 +1412,67 @@ const StudentManager = (props) => {
 										onChange={handleParentInputChange}
 									/>
 								</Grid>
-								<Grid item xs={12} sm={3}>
+								<Grid item xs={12} sm={6}>
+									<TextField
+										fullWidth
+										label="Phone Number"
+										name="phone_number"
+										value={parentForm.phone_number}
+										onChange={handleParentInputChange}
+									/>
+								</Grid>
+								<Grid item xs={12} sm={6}>
+									<TextField
+										fullWidth
+										label="Address"
+										name="address"
+										value={parentForm.address}
+										onChange={handleParentInputChange}
+									/>
+								</Grid>
+								<Grid item xs={12} sm={6}>
+									<FormControl fullWidth>
+										<InputLabel id="parent-gender-label">Gender</InputLabel>
+										<Select
+											labelId="parent-gender-label"
+											name="gender"
+											value={parentForm.gender}
+											onChange={handleParentInputChange}
+											label="Gender"
+										>
+											<MenuItem value="MALE">Male</MenuItem>
+											<MenuItem value="FEMALE">Female</MenuItem>
+											<MenuItem value="OTHER">Other</MenuItem>
+										</Select>
+									</FormControl>
+								</Grid>
+								<Grid item xs={12} sm={6}>
+									<TextField
+										fullWidth
+										label="Occupation"
+										name="occupation"
+										value={parentForm.occupation}
+										onChange={handleParentInputChange}
+									/>
+								</Grid>
+								<Grid item xs={12} sm={6}>
+									<FormControl fullWidth>
+										<InputLabel id="relationship-label">Relationship to Student</InputLabel>
+										<Select
+											labelId="relationship-label"
+											name="relationship_to_student"
+											value={parentForm.relationship_to_student}
+											onChange={handleParentInputChange}
+											label="Relationship to Student"
+										>
+											<MenuItem value="Father">Father</MenuItem>
+											<MenuItem value="Mother">Mother</MenuItem>
+											<MenuItem value="Guardian">Guardian</MenuItem>
+											<MenuItem value="Other">Other</MenuItem>
+										</Select>
+									</FormControl>
+								</Grid>
+								<Grid item xs={12} sm={6}>
 									{parentEditIndex === null ? (
 										<Button variant="outlined" onClick={handleAddParent} sx={{ mt: { xs: 1, sm: 0 } }}>
 											Add Parent
@@ -1456,7 +1493,7 @@ const StudentManager = (props) => {
 											<Grid item xs={12} key={idx}>
 												<Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
 													<Typography>
-														{parent.name} ({parent.relation}) {parent.phone_number ? `- ${parent.phone_number}` : ''} {parent.email ? `- ${parent.email}` : ''}
+														{parent.name} ({parent.relationship_to_student}) {parent.phone_number ? `- ${parent.phone_number}` : ''} {parent.email ? `- ${parent.email}` : ''} {parent.address ? `- ${parent.address}` : ''} {parent.gender ? `- ${parent.gender}` : ''} {parent.occupation ? `- ${parent.occupation}` : ''}
 													</Typography>
 													<Button size="small" onClick={() => handleEditParent(idx)}>Edit</Button>
 													<Button size="small" color="error" onClick={() => handleRemoveParent(idx)}>Remove</Button>
