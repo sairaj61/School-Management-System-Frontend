@@ -42,6 +42,9 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
   const [currentDocumentName, setCurrentDocumentName] = useState('');
   const [currentDocumentId, setCurrentDocumentId] = useState('');
 
+  // Add state for parent details
+  const [parentDetails, setParentDetails] = useState([]);
+
   // Document management functions
   const fetchStudentDocuments = async (studentId) => {
     try {
@@ -170,6 +173,16 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
     if (!student?.id) return;
     setLoading(true);
     
+    // Fetch student with parent details
+    axiosInstance
+      .get(`${appConfig.API_PREFIX_V1}/students-managements/students/student-with-parent-details/${student.id}`)
+      .then((studentRes) => {
+        setParentDetails(Array.isArray(studentRes.data.parent_details) ? studentRes.data.parent_details : []);
+      })
+      .catch(() => {
+        setParentDetails([]);
+      });
+
     // Fetch fixed fees
     axiosInstance
       .get(`${appConfig.API_PREFIX_V1}/students-managements/students/${student.id}/fees`)
@@ -401,25 +414,22 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                 <Grid container spacing={4}>
                   <Grid item xs={12} md={6}>
                     <Paper elevation={2} sx={{ p: 3, borderRadius: 2, height: '100%', minHeight: 260, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                      <Typography variant="h6" fontWeight={600} gutterBottom>Personal Information</Typography>
-                      <List dense>
-                        <ListItem>
-                          <ListItemIcon><School color="primary" /></ListItemIcon>
-                          <ListItemText primary="Roll Number" secondary={student.roll_number} />
-                        </ListItem>
-                        <ListItem>
-                          <ListItemIcon><CalendarToday color="warning" /></ListItemIcon>
-                          <ListItemText primary="Date of Birth" secondary={student.date_of_birth ? new Date(student.date_of_birth).toLocaleDateString() : 'N/A'} />
-                        </ListItem>
-                        <ListItem>
-                          <ListItemIcon><Person color="info" /></ListItemIcon>
-                          <ListItemText primary="Gender" secondary={student.gender || 'N/A'} />
-                        </ListItem>
-                        <ListItem>
-                          <ListItemIcon><Home color="success" /></ListItemIcon>
-                          <ListItemText primary="Address" secondary={student.address || 'N/A'} />
-                        </ListItem>
-                      </List>
+                      <Typography variant="h6" fontWeight={600} gutterBottom>Parent Information</Typography>
+                      {parentDetails.length === 0 ? (
+                        <Typography color="text.secondary">No parent details available.</Typography>
+                      ) : (
+                        <List dense>
+                          {parentDetails.map((parent, index) => (
+                            <ListItem key={index}>
+                              <ListItemIcon><Person color="primary" /></ListItemIcon>
+                              <ListItemText
+                                primary={`${parent.name} (${parent.relationship_to_student})`}
+                                secondary={`${parent.email} | ${parent.phone_number} | ${parent.occupation || 'N/A'}`}
+                              />
+                            </ListItem>
+                          ))}
+                        </List>
+                      )}
                     </Paper>
                   </Grid>
                   <Grid item xs={12} md={6}>
