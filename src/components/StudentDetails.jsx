@@ -206,6 +206,48 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
 
     // Fetch documents
     fetchStudentDocuments(student.id);
+
+    // Fetch concession types
+    axiosInstance
+      .get(`${appConfig.API_PREFIX_V1}/concessions-management/concession-types/`)
+      .then((concessionRes) => {
+        setConcessionTypes(Array.isArray(concessionRes.data) ? concessionRes.data : []);
+      })
+      .catch(() => {
+        setConcessionTypes([]);
+      });
+
+    // Fetch routes
+    axiosInstance
+      .get(`${appConfig.API_PREFIX_V1}/students-managements/transport/routes`)
+      .then((routesRes) => {
+        setRoutes(Array.isArray(routesRes.data) ? routesRes.data : []);
+      })
+      .catch(() => {
+        setRoutes([]);
+      });
+
+    // Fetch drivers
+    axiosInstance
+      .get(`${appConfig.API_PREFIX_V1}/students-managements/transport/drivers/`)
+      .then((driversRes) => {
+        setDrivers(Array.isArray(driversRes.data) ? driversRes.data : []);
+      })
+      .catch(() => {
+        setDrivers([]);
+      });
+
+    // Fetch optional fees by class
+    if (student.class_id) {
+      axiosInstance
+        .get(`${appConfig.API_PREFIX_V1}/fees/by-class/${student.class_id}`)
+        .then((feesRes) => {
+          setOptionalFees(feesRes.data.filter(fee => fee.is_optional));
+        })
+        .catch(() => {
+          setOptionalFees([]);
+        });
+    }
   }, [student?.id]);
 
   // Columns for fixed fees
@@ -813,7 +855,7 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                     <MenuItem value=""><em>None</em></MenuItem>
                     {concessionTypes.map((type) => (
                       <MenuItem key={type.id} value={type.id}>
-                        {type.name}
+                        {type.concession_name}
                       </MenuItem>
                     ))}
                   </Select>
@@ -845,7 +887,7 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                         <MenuItem value=""><em>None</em></MenuItem>
                         {routes.map((route) => (
                           <MenuItem key={route.id} value={route.id}>
-                            {route.name} - ₹{route.fee_amount}
+                            {route.route_name} - ₹{route.fee_amount}
                           </MenuItem>
                         ))}
                       </Select>
@@ -864,7 +906,7 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                         <MenuItem value=""><em>None</em></MenuItem>
                         {drivers.map((driver) => (
                           <MenuItem key={driver.id} value={driver.id}>
-                            {driver.name}
+                            {driver.driver_name}
                           </MenuItem>
                         ))}
                       </Select>
