@@ -1621,7 +1621,7 @@ const StudentManager = (props) => {
 										<MenuItem value=""><em>None</em></MenuItem>
 										{optionalFeesForSelectedClass.map((fee) => (
 											<MenuItem key={fee.id} value={fee.id}>
-												{getFeeCategoryName(fee.fee_category_id)} (Amount: ${fee.amount})
+												{fee.category_name} (Amount: ₹{fee.amount})
 											</MenuItem>
 										))}
 									</Select>
