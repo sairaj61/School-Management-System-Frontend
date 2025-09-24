@@ -29,6 +29,11 @@ const StaffSchema = Yup.object().shape({
   phone_number: Yup.string().max(20, 'Phone number too long').nullable(),
   address: Yup.string().max(255, 'Address too long').nullable(),
   qualification: Yup.string().max(255, 'Qualification too long').nullable(),
+  license_number: Yup.string().when('staff_type', {
+    is: StaffTypeEnum.DRIVER,
+    then: () => Yup.string().required('License number is required').max(50, 'License number too long'),
+    otherwise: () => Yup.string().nullable(),
+  }),
 });
 
 const StaffManager = () => {
@@ -304,6 +309,7 @@ const StaffManager = () => {
             phone_number: editingStaff.phone_number || '',
             address: editingStaff.address || '',
             qualification: editingStaff.qualification || '',
+            license_number: editingStaff.license_number || '',
           } : {
             name: '',
             staff_type: StaffTypeEnum.TEACHING,
@@ -311,12 +317,13 @@ const StaffManager = () => {
             phone_number: '',
             address: '',
             qualification: '',
+            license_number: '',
           }}
           validationSchema={StaffSchema}
           onSubmit={handleSubmit}
           enableReinitialize={true}
         >
-          {({ errors, touched, isSubmitting }) => (
+          {({ errors, touched, isSubmitting, values }) => (
             <Form>
               <DialogContent dividers>
                 <Field
@@ -383,6 +390,17 @@ const StaffManager = () => {
                   error={touched.qualification && !!errors.qualification}
                   helperText={touched.qualification && errors.qualification}
                 />
+                {values.staff_type === StaffTypeEnum.DRIVER && (
+                  <Field
+                    as={TextField}
+                    name="license_number"
+                    label="License Number"
+                    fullWidth
+                    margin="normal"
+                    error={touched.license_number && !!errors.license_number}
+                    helperText={touched.license_number && errors.license_number}
+                  />
+                )}
               </DialogContent>
               <DialogActions>
                 <Button onClick={handleCloseDialog} color="secondary">
