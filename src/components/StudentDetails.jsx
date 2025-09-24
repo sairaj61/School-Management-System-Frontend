@@ -813,7 +813,7 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                     <MenuItem value=""><em>None</em></MenuItem>
                     {optionalFees.map((fee) => (
                       <MenuItem key={fee.id} value={fee.id}>
-                        {fee.fee_category?.category_name || 'N/A'} (Amount: ₹{fee.amount})
+                        {fee.category_name || 'N/A'} (Amount: ₹{fee.amount})
                       </MenuItem>
                     ))}
                   </Select>
