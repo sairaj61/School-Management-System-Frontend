@@ -26,7 +26,7 @@ const StaffSchema = Yup.object().shape({
   name: Yup.string().required('Name is required').max(255, 'Name too long'),
   staff_type: Yup.string().oneOf(Object.values(StaffTypeEnum)).required('Staff type is required'),
   email: Yup.string().email('Invalid email').required('Email is required'),
-  phone_number: Yup.string().max(20, 'Phone number too long').matches(/^\d{10}$/, 'Phone number must be exactly 10 digits and contain only numbers').nullable(),
+  phone_number: Yup.string().max(20, 'Phone number too long').matches(/^(?:\d{10}|\+91\d{10})$/, 'Phone number must be 10 digits or +91 followed by 10 digits').nullable(),
   address: Yup.string().max(255, 'Address too long').nullable(),
   qualification: Yup.string().max(255, 'Qualification too long').nullable(),
   license_number: Yup.string().when('staff_type', {
