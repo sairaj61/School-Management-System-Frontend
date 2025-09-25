@@ -19,6 +19,9 @@ import VisibilityIcon from '@mui/icons-material/Visibility'; // Icon for view de
 import Papa from 'papaparse'; // Add at the top for CSV parsing
 
 const ClassFeeManager = () => {
+  // Define constant for transport fee category name to avoid hardcoding
+  const TRANSPORT_FEE_NAME = 'Transport Fee';
+
   const [fees, setFees] = useState([]);
   const [feeCategories, setFeeCategories] = useState([]);
   const [classes, setClasses] = useState([]);
@@ -130,7 +133,7 @@ const ClassFeeManager = () => {
 
   const handleViewRouteDetails = (feeItem) => {
     const category = feeCategories.find(cat => cat.id === feeItem.fee_category_id);
-    if (category && category.category_name === 'TRANSPORT' && feeItem.route_id) {
+    if (category && category.category_name === TRANSPORT_FEE_NAME && feeItem.route_id) {
       const route = routes.find(r => r.id === feeItem.route_id);
       const driver = route ? drivers.find(d => d.id === route.driver_id) : null;
       setSelectedRouteDetails({ route, driver });
@@ -196,7 +199,7 @@ const ClassFeeManager = () => {
 
   const isTransportFee = feeCategories.find(
     cat => cat.id === formData.fee_category_id
-  )?.category_name === 'TRANSPORT';
+  )?.category_name === TRANSPORT_FEE_NAME;
 
   const filteredFees = fees.filter(fee => {
     const categoryName = feeCategories.find(cat => cat.id === fee.fee_category_id)?.category_name || '';
@@ -204,7 +207,7 @@ const ClassFeeManager = () => {
     const academicYear = academicYears.find(year => year.id === fee.academic_year_id)?.year_name || '';
 
     let routeInfo = '';
-    if (categoryName === 'TRANSPORT' && fee.route_id) {
+    if (categoryName === TRANSPORT_FEE_NAME && fee.route_id) {
       const route = routes.find(r => r.id === fee.route_id);
       if (route) {
         const driver = drivers.find(d => d.id === route.driver_id);
@@ -286,7 +289,7 @@ const ClassFeeManager = () => {
       width: 280, // Increased width to accommodate the new button
       renderCell: (params) => {
         const category = feeCategories.find(cat => cat.id === params.row.fee_category_id);
-        const isTransportFeeCategory = category && category.category_name === 'TRANSPORT';
+        const isTransportFeeCategory = category && category.category_name === TRANSPORT_FEE_NAME;
         const hasRouteId = !!params.row.route_id;
 
         return (
