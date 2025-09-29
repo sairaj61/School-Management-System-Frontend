@@ -151,7 +151,7 @@ const AcademicYearManager = () => {
         await axiosInstance.put(`${appConfig.API_PREFIX_V1}/timetable/academic-years/${selectedYear.id}/`, yearData);
         setAlert({ open: true, message: 'Academic Year updated successfully!', severity: 'success' });
       } else {
-        await axiosInstance.post(`${appConfig.API_PREFIX_V1}/timetable/academic-years`, yearData);
+        await axiosInstance.post(`${appConfig.API_PREFIX_V1}/timetable/academic-years/`, yearData);
         setAlert({ open: true, message: 'Academic Year added successfully!', severity: 'success' });
       }
 
