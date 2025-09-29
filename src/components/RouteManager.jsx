@@ -177,12 +177,17 @@ const RouteManager = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    // Add validation for required driver when creating a new route
+    if (!selectedRoute && !formData.driver_id) {
+      setAlert({ open: true, message: 'Driver is required when creating a new route.', severity: 'error' });
+      return;
+    }
     try {
       const routeData = {
         route_name: formData.route_name.trim(),
         distance: parseFloat(formData.distance),
         description: formData.description.trim(),
-        driver_id: formData.driver_id || null
+        driver_id: formData.driver_id // Remove || null to prevent sending null
       };
 
       if (selectedRoute) {
@@ -521,7 +526,7 @@ const RouteManager = () => {
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
-                <FormControl fullWidth>
+                <FormControl fullWidth required={!selectedRoute}>
                   <InputLabel id="driver-label">Assign Driver</InputLabel>
                   <Select
                     labelId="driver-label"
