@@ -15,6 +15,8 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
   const [fixedFees, setFixedFees] = useState([]);
   const [facilities, setFacilities] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [profileImage, setProfileImage] = useState('');
 
   // Add state for add facility modal and form
   const [addFacilityOpen, setAddFacilityOpen] = useState(false);
@@ -183,6 +185,16 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
         setParentDetails([]);
       });
 
+    // Fetch profile photo URL
+    axiosInstance
+      .get(`${appConfig.API_PREFIX_V1}/students-managements/students/${student.id}/profile-photo`)
+      .then((photoRes) => {
+        setProfileImage(photoRes.data.profile_photo_url || '');
+      })
+      .catch(() => {
+        setProfileImage(student.profile_image || '');
+      });
+
     // Fetch fixed fees
     axiosInstance
       .get(`${appConfig.API_PREFIX_V1}/students-managements/students/${student.id}/fees`)
@@ -249,6 +261,39 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
         });
     }
   }, [student?.id]);
+
+  const handleProfileImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Ensure it's an image file
+    if (!file.type.startsWith('image/')) {
+      alert('Please select a valid image file.');
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      // Upload the file
+      await axiosInstance.post(`${appConfig.API_PREFIX_V1}/students-managements/students/${student.id}/profile-photo`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      // Fetch the updated profile photo URL
+      const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/students-managements/students/${student.id}/profile-photo`);
+      setProfileImage(response.data.profile_photo_url || '');
+    } catch (error) {
+      console.error('Error uploading profile image:', error);
+      alert('Failed to upload profile image. Please try again.');
+    } finally {
+      setUploading(false);
+    }
+  };
 
   // Columns for fixed fees
   const fixedFeesColumns = [
@@ -402,9 +447,17 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
           <Box sx={{ display: 'flex', flexDirection: 'row', height: 'calc(100vh - 32px)' }}>
             {/* Sidebar: Student Details */}
             <Box sx={{ width: { xs: '100%', md: '22%' }, minWidth: 220, maxWidth: 340, pr: { md: 3 }, borderRight: { md: '1px solid #e0e0e0' }, display: 'flex', flexDirection: 'column', alignItems: 'center', pt: 2 }}>
-              <Avatar src={student.profile_image} sx={{ width: 120, height: 120, bgcolor: 'primary.main', border: '3px solid', borderColor: 'primary.light', mb: 2 }}>
+              <Avatar src={profileImage} sx={{ width: 120, height: 120, bgcolor: 'primary.main', border: '3px solid', borderColor: 'primary.light', mb: 2 }}>
                 <Person fontSize="large" sx={{ fontSize: 60 }} />
               </Avatar>
+              <IconButton
+                component="label"
+                sx={{ position: 'relative', background: 'rgba(0,0,0,0.1)', color: 'primary.main', mb: 2 }}
+                disabled={uploading}
+              >
+                {uploading ? <CircularProgress size={20} /> : <CloudUpload fontSize="small" />}
+                <input type="file" hidden accept="image/*" onChange={handleProfileImageUpload} />
+              </IconButton>
               <Typography variant="h5" fontWeight={700} color="text.primary" sx={{ mb: 1 }}>{student.name}</Typography>
               <Chip
                 label={`${student.class_name} - ${student.section_name}`}
