@@ -245,7 +245,7 @@ const SectionManager = () => {
   }, [sections, students]);
 
   const columns = [
-    { field: 'name', headerName: 'Name', width: 150 }, // 'name' is correct for sections
+    { field: 'name', headerName: 'Section Name', width: 150 }, // 'name' is correct for sections
     {
       field: 'class_name', // This is a virtual field for display
       headerName: 'Class',
