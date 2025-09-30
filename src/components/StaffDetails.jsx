@@ -177,7 +177,14 @@ const StaffDetails = () => {
         // Staff details
         const staffRes = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/staff/${id}`);
         setStaff(staffRes.data);
-        setProfileImage(staffRes.data.profile_image || '');
+        // Fetch profile photo URL
+        try {
+          const photoRes = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/staff/${id}/profile-photo`);
+          setProfileImage(photoRes.data.profile_photo_url || '');
+        } catch (photoErr) {
+          console.error('Error fetching profile photo:', photoErr);
+          setProfileImage(staffRes.data.profile_image || '');
+        }
         // Active CTC
         try {
           const activeCtcRes = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/staff/${id}/ctc-structure/active`);
@@ -225,8 +232,37 @@ const StaffDetails = () => {
     }
   }, [selectedMonth, selectedYear, staff.id]);
 
-  const handleProfileImageUpload = (e) => {
-    setProfileImage(URL.createObjectURL(e.target.files[0]));
+  const handleProfileImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Ensure it's an image file
+    if (!file.type.startsWith('image/')) {
+      alert('Please select a valid image file.');
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      // Upload the file
+      await axiosInstance.post(`${appConfig.API_PREFIX_V1}/staff/${staff.id}/profile-photo`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      // Fetch the updated profile photo URL
+      const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/staff/${staff.id}/profile-photo`);
+      setProfileImage(response.data.profile_photo_url || '');
+    } catch (error) {
+      console.error('Error uploading profile image:', error);
+      alert('Failed to upload profile image. Please try again.');
+    } finally {
+      setUploading(false);
+    }
   };
 
   // Fetch salary payment records
@@ -559,8 +595,9 @@ const StaffDetails = () => {
             <IconButton
               component="label"
               sx={{ position: 'relative', background: 'rgba(0,0,0,0.1)', color: 'primary.main', mb: 2 }}
+              disabled={uploading}
             >
-              <CloudUpload fontSize="small" />
+              {uploading ? <CircularProgress size={20} /> : <CloudUpload fontSize="small" />}
               <input type="file" hidden accept="image/*" onChange={handleProfileImageUpload} />
             </IconButton>
             <Typography variant="h5" fontWeight={700} color="text.primary" sx={{ mb: 1 }}>{staff.name}</Typography>
