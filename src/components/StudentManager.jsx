@@ -453,6 +453,16 @@ const StudentManager = (props) => {
 
 	const handleSubmit = async (e) => {
 		e.preventDefault();
+		// Validate phone number
+		if (!validatePhoneNumber(formData.phone_number)) {
+			setAlert({ open: true, message: 'Phone number must be a valid 10-digit number or +91 followed by 10 digits.', severity: 'error' });
+			return;
+		}
+		// Validate emergency contact number if provided
+		if (formData.emergency_contact_number && !validatePhoneNumber(formData.emergency_contact_number)) {
+			setAlert({ open: true, message: 'Emergency contact number must be a valid 10-digit number or +91 followed by 10 digits.', severity: 'error' });
+			return;
+		}
 		try {
 			const studentData = {
 				name: formData.name.trim(),
@@ -487,6 +497,23 @@ const StudentManager = (props) => {
 
 	const handleAdmitStudentSubmit = async (e) => {
 		e.preventDefault();
+		// Validate student phone number
+		if (!validatePhoneNumber(formData.phone_number)) {
+			setAlert({ open: true, message: 'Student phone number must be a valid 10-digit number or +91 followed by 10 digits.', severity: 'error' });
+			return;
+		}
+		// Validate emergency contact number if provided
+		if (formData.emergency_contact_number && !validatePhoneNumber(formData.emergency_contact_number)) {
+			setAlert({ open: true, message: 'Emergency contact number must be a valid 10-digit number or +91 followed by 10 digits.', severity: 'error' });
+			return;
+		}
+		// Validate parent phone numbers
+		for (const parent of formData.parents) {
+			if (parent.phone_number && !validatePhoneNumber(parent.phone_number)) {
+				setAlert({ open: true, message: `Parent ${parent.name} phone number must be a valid 10-digit number or +91 followed by 10 digits.`, severity: 'error' });
+				return;
+			}
+		}
 		try {
 			const admitData = {
 				name: formData.name.trim(),
@@ -989,6 +1016,12 @@ const StudentManager = (props) => {
 			setUploading(false);
 			event.target.value = '';
 		}
+	};
+
+	// Phone number validation function
+	const validatePhoneNumber = (phone) => {
+		const regex = /^(\+91)?[6-9]\d{9}$/;
+		return regex.test(phone);
 	};
 
 	return (
