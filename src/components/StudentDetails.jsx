@@ -616,28 +616,30 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
               <Button variant="outlined" startIcon={<Phone />} sx={{ mb: 1, width: '100%' }}>{student.phone_number}</Button>
               <Paper elevation={1} sx={{ p: 2, mt: 2, width: '100%' }}>
                 <Typography variant="subtitle2" fontWeight={600} gutterBottom>Personal Info</Typography>
-                <List dense>
-                  <ListItem>
-                    <ListItemIcon><School color="primary" /></ListItemIcon>
-                    <ListItemText primary="Roll Number" secondary={student.roll_number} />
-                  </ListItem>
-                  <ListItem>
-                    <ListItemIcon><CalendarToday color="warning" /></ListItemIcon>
-                    <ListItemText primary="Date of Birth" secondary={student.date_of_birth ? new Date(student.date_of_birth).toLocaleDateString() : 'N/A'} />
-                  </ListItem>
-                  <ListItem>
-                    <ListItemIcon><CalendarToday color="warning" /></ListItemIcon>
-                    <ListItemText primary="Enrollment Date" secondary={student.enrollment_date ? new Date(student.enrollment_date).toLocaleDateString() : 'N/A'} />
-                  </ListItem>
-                  <ListItem>
-                    <ListItemIcon><Person color="info" /></ListItemIcon>
-                    <ListItemText primary="Gender" secondary={student.gender || 'N/A'} />
-                  </ListItem>
-                  <ListItem>
-                    <ListItemIcon><Home color="success" /></ListItemIcon>
-                    <ListItemText primary="Address" secondary={student.address || 'N/A'} />
-                  </ListItem>
-                </List>
+                <Box sx={{ maxHeight: 220, overflowY: 'auto' }}>
+                  <List dense>
+                    <ListItem>
+                      <ListItemIcon><School color="primary" /></ListItemIcon>
+                      <ListItemText primary="Roll Number" secondary={student.roll_number} />
+                    </ListItem>
+                    <ListItem>
+                      <ListItemIcon><CalendarToday color="warning" /></ListItemIcon>
+                      <ListItemText primary="Date of Birth" secondary={student.date_of_birth ? new Date(student.date_of_birth).toLocaleDateString() : 'N/A'} />
+                    </ListItem>
+                    <ListItem>
+                      <ListItemIcon><CalendarToday color="warning" /></ListItemIcon>
+                      <ListItemText primary="Enrollment Date" secondary={student.enrollment_date ? new Date(student.enrollment_date).toLocaleDateString() : 'N/A'} />
+                    </ListItem>
+                    <ListItem>
+                      <ListItemIcon><Person color="info" /></ListItemIcon>
+                      <ListItemText primary="Gender" secondary={student.gender || 'N/A'} />
+                    </ListItem>
+                    <ListItem>
+                      <ListItemIcon><Home color="success" /></ListItemIcon>
+                      <ListItemText primary="Address" secondary={student.address || 'N/A'} />
+                    </ListItem>
+                  </List>
+                </Box>
               </Paper>
             </Box>
 
