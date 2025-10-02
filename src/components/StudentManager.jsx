@@ -30,6 +30,8 @@ import UnarchiveIcon from '@mui/icons-material/Unarchive'; // For Activate
 import AssignmentIcon from '@mui/icons-material/Assignment'; // For Manage Facilities (alternative to VisibilityIcon)
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday'; // For Attendance
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'; // For back navigation
+import DownloadIcon from '@mui/icons-material/Download';
+import UploadIcon from '@mui/icons-material/Upload';
 
 const StudentManager = (props) => {
 	const [isEditMode, setIsEditMode] = useState(false);
@@ -1247,27 +1249,17 @@ const StudentManager = (props) => {
 					{/* Download & Upload Student Manager Buttons */}
 					<Box sx={{ maxWidth: '1200px', margin: '0 auto', mb: 2, pt: 2 }}>
 						<Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
-							<Button
-								variant="outlined"
-								color="primary"
-								onClick={handleDownloadStudentManager}
-							>
-								Download Student Manager
-							</Button>
-							<Button
-								variant="outlined"
-								color="secondary"
-								component="label"
-								disabled={uploading}
-							>
-								Upload Student Manager
-								<input
-									type="file"
-									accept=".xlsx"
-									hidden
-									onChange={handleUploadStudentManager}
-								/>
-							</Button>
+							<Tooltip title="Download Student Manager">
+								<IconButton color="primary" onClick={handleDownloadStudentManager} sx={{ border: '2px solid', borderColor: 'primary.main', bgcolor: 'white', borderRadius: 2 }}>
+									<DownloadIcon fontSize="large" />
+								</IconButton>
+							</Tooltip>
+							<Tooltip title="Upload Student Manager">
+								<IconButton color="secondary" component="label" sx={{ border: '2px solid', borderColor: 'secondary.main', bgcolor: 'white', borderRadius: 2 }} disabled={uploading}>
+									<UploadIcon fontSize="large" />
+									<input type="file" accept=".xlsx" hidden onChange={handleUploadStudentManager} />
+								</IconButton>
+							</Tooltip>
 						</Box>
 					</Box>
 
