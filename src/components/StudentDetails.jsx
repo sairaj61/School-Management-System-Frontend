@@ -593,14 +593,26 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
               <Avatar src={profileImage} sx={{ width: 120, height: 120, bgcolor: 'primary.main', border: '3px solid', borderColor: 'primary.light', mb: 2 }}>
                 <Person fontSize="large" sx={{ fontSize: 60 }} />
               </Avatar>
-              <IconButton
-                component="label"
-                sx={{ position: 'relative', background: 'rgba(0,0,0,0.1)', color: 'primary.main', mb: 2 }}
-                disabled={uploading}
-              >
-                {uploading ? <CircularProgress size={20} /> : <CloudUpload fontSize="small" />}
-                <input type="file" hidden accept="image/*" onChange={handleProfileImageUpload} />
-              </IconButton>
+              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 2 }}>
+                <IconButton
+                  component="label"
+                  sx={{ position: 'relative', background: 'rgba(0,0,0,0.1)', color: 'primary.main', mb: 1 }}
+                  disabled={uploading}
+                >
+                  {uploading ? <CircularProgress size={20} /> : <CloudUpload fontSize="small" />}
+                  <input type="file" hidden accept="image/*" onChange={handleProfileImageUpload} />
+                </IconButton>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  size="small"
+                  sx={{ mt: 1, textTransform: 'none', fontWeight: 600 }}
+                  startIcon={<Edit />}
+                  onClick={() => onEdit && onEdit(student)}
+                >
+                  Edit
+                </Button>
+              </Box>
               <Typography variant="h5" fontWeight={700} color="text.primary" sx={{ mb: 1 }}>{student.name}</Typography>
               <Chip
                 label={`${student.class_name} - ${student.section_name}`}
