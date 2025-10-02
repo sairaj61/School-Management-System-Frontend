@@ -638,7 +638,7 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                     </ListItem>
                     <ListItem>
                       <ListItemIcon><CalendarToday color="warning" /></ListItemIcon>
-                      <ListItemText primary="Enrollment Date" secondary={student.enrollment_date ? new Date(student.enrollment_date).toLocaleDateString() : 'N/A'} />
+                      <ListItemText primary="Enrollment Date" secondary={student.enrolment_date ? new Date(student.enrolment_date).toLocaleDateString() : 'N/A'} />
                     </ListItem>
                     <ListItem>
                       <ListItemIcon><Person color="info" /></ListItemIcon>
@@ -812,7 +812,7 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                         </ListItem>
                         <ListItem>
                           <ListItemIcon><CalendarToday color="warning" /></ListItemIcon>
-                          <ListItemText primary="Enrollment Date" secondary={student.enrollment_date ? new Date(student.enrollment_date).toLocaleDateString() : 'N/A'} />
+                          <ListItemText primary="Enrollment Date" secondary={student.enrolment_date ? new Date(student.enrolment_date).toLocaleDateString() : 'N/A'} />
                         </ListItem>
                         <ListItem>
                           <ListItemIcon><Person color="info" /></ListItemIcon>
