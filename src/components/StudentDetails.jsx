@@ -11,6 +11,43 @@ import appConfig from '../config/appConfig';
 import StudentAttendance from './StudentAttendance';
 
 const StudentDetails = ({ student, onBack, onEdit }) => {
+  // State for edit parent form
+  const [editParentLoading, setEditParentLoading] = useState(false);
+  const [editParentError, setEditParentError] = useState('');
+
+  // Handle parent field change
+  const handleEditParentChange = (e) => {
+    const { name, value } = e.target;
+    setEditParentData(prev => ({ ...prev, [name]: value }));
+  };
+
+  // Update parent API call
+  const handleUpdateParent = async () => {
+    if (!editParentData?.id) return;
+    setEditParentLoading(true);
+    setEditParentError('');
+    try {
+      await axiosInstance.put(
+        `${appConfig.API_PREFIX_V1}/students-managements/parents/${editParentData.id}`,
+        editParentData,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            // Add Authorization header if needed, e.g. from localStorage
+            ...(localStorage.getItem('token') ? { Authorization: `Bearer ${localStorage.getItem('token')}` } : {})
+          }
+        }
+      );
+      // Refetch parent details
+      const studentRes = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/students-managements/students/student-with-parent-details/${student.id}`);
+      setParentDetails(Array.isArray(studentRes.data.parent_details) ? studentRes.data.parent_details : []);
+      setEditParentModalOpen(false);
+    } catch (err) {
+      setEditParentError('Failed to update parent.');
+    } finally {
+      setEditParentLoading(false);
+    }
+  };
   const [tab, setTab] = useState(0);
   const [fixedFees, setFixedFees] = useState([]);
   const [facilities, setFacilities] = useState([]);
@@ -46,6 +83,9 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
 
   // Add state for parent details
   const [parentDetails, setParentDetails] = useState([]);
+  // State for editing parent
+  const [editParentModalOpen, setEditParentModalOpen] = useState(false);
+  const [editParentData, setEditParentData] = useState(null);
 
   // Document management functions
   const fetchStudentDocuments = async (studentId) => {
@@ -417,6 +457,48 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
   return (
     <>
       <Box sx={{ width: '100%', maxWidth: '100%', height: '100vh', background: '#eef2f6', p: { xs: 2, md: 4 }, overflow: 'hidden' }}>
+        {/* Edit Parent Modal */}
+        <Dialog open={editParentModalOpen} onClose={() => setEditParentModalOpen(false)} maxWidth="sm" fullWidth>
+          <DialogTitle>Edit Parent Details</DialogTitle>
+          <DialogContent dividers>
+            {editParentError && <Alert severity="error" sx={{ mb: 2 }}>{editParentError}</Alert>}
+            {editParentData && (
+              <Grid container spacing={2}>
+                <Grid item xs={12}>
+                  <TextField label="Name" name="name" fullWidth value={editParentData.name || ''} onChange={handleEditParentChange} />
+                </Grid>
+                <Grid item xs={12}>
+                  <TextField label="Email" name="email" fullWidth value={editParentData.email || ''} onChange={handleEditParentChange} />
+                </Grid>
+                <Grid item xs={12}>
+                  <TextField label="Phone Number" name="phone_number" fullWidth value={editParentData.phone_number || ''} onChange={handleEditParentChange} />
+                </Grid>
+                <Grid item xs={12}>
+                  <TextField label="Address" name="address" fullWidth value={editParentData.address || ''} onChange={handleEditParentChange} />
+                </Grid>
+                <Grid item xs={12}>
+                  <FormControl fullWidth>
+                    <InputLabel>Gender</InputLabel>
+                    <Select name="gender" value={editParentData.gender || ''} label="Gender" onChange={handleEditParentChange}>
+                      <MenuItem value="MALE">Male</MenuItem>
+                      <MenuItem value="FEMALE">Female</MenuItem>
+                      <MenuItem value="OTHER">Other</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Grid>
+                <Grid item xs={12}>
+                  <TextField label="Occupation" name="occupation" fullWidth value={editParentData.occupation || ''} onChange={handleEditParentChange} />
+                </Grid>
+              </Grid>
+            )}
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setEditParentModalOpen(false)} color="secondary">Cancel</Button>
+            <Button onClick={handleUpdateParent} color="primary" variant="contained" disabled={editParentLoading}>
+              {editParentLoading ? <CircularProgress size={20} /> : 'Update'}
+            </Button>
+          </DialogActions>
+        </Dialog>
         <Card sx={{ p: { xs: 2, md: 4 }, borderRadius: 3, boxShadow: 6, position: 'relative', height: '100%', width: '100%', maxWidth: '100%' }}>
           {/* Back Button */}
           <Tooltip title="Go Back">
@@ -517,7 +599,7 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                           <Grid container spacing={2}>
                             {parentDetails.map((parent, index) => (
                               <Grid item xs={12} key={index}>
-                                <Card sx={{ p: 2, borderRadius: 2, boxShadow: 1 }}>
+                                <Card sx={{ p: 2, borderRadius: 2, boxShadow: 1, position: 'relative' }}>
                                   <Typography variant="subtitle1" fontWeight={600} gutterBottom>
                                     {parent.name} ({parent.relationship_to_student})
                                   </Typography>
@@ -548,6 +630,15 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                                       </Typography>
                                     </Grid>
                                   </Grid>
+                                  <Button
+                                    variant="outlined"
+                                    size="small"
+                                    startIcon={<Edit />}
+                                    sx={{ position: 'absolute', top: 8, right: 8 }}
+                                    onClick={() => { setEditParentData(parent); setEditParentModalOpen(true); }}
+                                  >
+                                    Edit
+                                  </Button>
                                 </Card>
                               </Grid>
                             ))}
