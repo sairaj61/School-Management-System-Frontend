@@ -995,14 +995,47 @@ const StudentManager = (props) => {
 			let parents = Array.isArray(response.data.parents) ? response.data.parents : [];
 			let fees = Array.isArray(response.data.fees) ? response.data.fees : [];
 
-			// Remove 'id' from students
-			students = students.map(({ id, ...rest }) => ({ ...rest }));
+			// Filter students to required fields
+			students = students.map(s => ({
+				name: s.name,
+				roll_number: s.roll_number,
+				date_of_birth: s.date_of_birth,
+				enrolment_date: s.enrolment_date,
+				gender: s.gender,
+				email: s.email,
+				phone_number: s.phone_number,
+				address: s.address,
+				class_id: s.class_id,
+				academic_year_id: s.academic_year_id,
+				section_id: s.section_id,
+				medical_history: s.medical_history,
+				emergency_contact_number: s.emergency_contact_number,
+				old_school_name: s.old_school_name,
+				student_int_id: s.student_int_id
+			}));
 
-			// Remove 'parent_id' and 'student_id' from parents
-			parents = parents.map(({ parent_id, student_id, ...rest }) => ({ ...rest }));
+			// Filter parents to required fields
+			parents = parents.map(p => ({
+				name: p.name,
+				email: p.email,
+				phone_number: p.phone_number,
+				address: p.address,
+				gender: p.gender,
+				occupation: p.occupation,
+				relationship_to_student: p.relationship_to_student,
+				student_int_id: p.student_int_id,
+				parent_int_id: p.parent_int_id
+			}));
 
-			// Remove 'student_id' from fees
-			fees = fees.map(({ student_id, ...rest }) => ({ ...rest }));
+			// Filter fees to required fields
+			fees = fees.map(f => ({
+				fee_category_name: f.fee_category_name,
+				amount: f.amount,
+				concession_name: f.concession_name,
+				concession_amount: f.concession_amount,
+				student_int_id: f.student_int_id,
+				fee_int_id: f.fee_int_id
+			}));
 
 			// Prepare workbook with three sheets
 			const wb = XLSX.utils.book_new();
