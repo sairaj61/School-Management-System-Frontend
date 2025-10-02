@@ -78,7 +78,7 @@ const StudentManager = (props) => {
 		medical_history: '',
 		emergency_contact_number: '',
 		old_school_name: '',
-		enrollment_date: '',
+		enrolment_date: '',
 		fee_categories_with_concession: [],
 		parents: [], // <-- Add parents array
 	});
@@ -280,7 +280,7 @@ const StudentManager = (props) => {
 		setFormData({
 			name: '', roll_number: '', date_of_birth: '', gender: '', email: '', phone_number: '', address: '',
 			class_id: '', section_id: '', academic_year_id: '', medical_history: '', emergency_contact_number: '', old_school_name: '',
-			enrollment_date: '', fee_categories_with_concession: [], parents: []
+			enrolment_date: '', fee_categories_with_concession: [], parents: []
 		});
 		setFilteredSectionsForDropdown([]);
 		setClassFees([]);
@@ -291,7 +291,7 @@ const StudentManager = (props) => {
 
 	const handleAddEditModalOpen = (student = null) => {
 		   if (student) {
-			   // Format date_of_birth and enrollment_date to yyyy-MM-dd for input type="date"
+			   // Format date_of_birth and enrolment_date to yyyy-MM-dd for input type="date"
 			   const formatDate = (dateStr) => {
 				   if (!dateStr) return '';
 				   // Handles ISO string or yyyy-MM-dd
@@ -313,7 +313,7 @@ const StudentManager = (props) => {
 				   medical_history: student.medical_history || '',
 				   emergency_contact_number: student.emergency_contact_number || '',
 				   old_school_name: student.old_school_name || '',
-				   enrollment_date: formatDate(student.enrollment_date),
+				   enrolment_date: formatDate(student.enrolment_date),
 				   fee_categories_with_concession: student.fee_categories_with_concession || [],
 				   parents: student.parents || []
 			   });
@@ -483,29 +483,31 @@ const StudentManager = (props) => {
 			return;
 		}
 		try {
-			const studentData = {
-				name: formData.name.trim(),
-				roll_number: formData.roll_number.trim(),
-				date_of_birth: formData.date_of_birth,
-				gender: formData.gender,
-				email: formData.email.trim(),
-				phone_number: formData.phone_number.trim(),
-				address: formData.address.trim(),
-				class_id: formData.class_id,
-				academic_year_id: formData.academic_year_id,
-				section_id: formData.section_id,
-				medical_history: formData.medical_history.trim(),
-				emergency_contact_number: formData.emergency_contact_number.trim(),
-				old_school_name: formData.old_school_name.trim()
-			};
+			   const studentData = {
+				   name: formData.name.trim(),
+				   roll_number: formData.roll_number.trim(),
+				   // father_name and mother_name removed as per request
+				   date_of_birth: formData.date_of_birth,
+				   gender: formData.gender,
+				   email: formData.email.trim(),
+				   phone_number: formData.phone_number.trim(),
+				   address: formData.address.trim(),
+				   class_id: formData.class_id,
+				   academic_year_id: formData.academic_year_id,
+				   section_id: formData.section_id,
+				   status: selectedStudent?.status || 'ACTIVE',
+				   medical_history: formData.medical_history.trim(),
+				   emergency_contact_number: formData.emergency_contact_number.trim(),
+				   old_school_name: formData.old_school_name.trim()
+			   };
 
-			if (selectedStudent) {
-				await axiosInstance.put(`${appConfig.API_PREFIX_V1}/students-managements/students/${selectedStudent.id}`, studentData);
-				setAlert({ open: true, message: 'Student updated successfully!', severity: 'success' });
-			} else {
-				await axiosInstance.post(`${appConfig.API_PREFIX_V1}/students-managements/students/`, studentData);
-				setAlert({ open: true, message: 'Student added successfully!', severity: 'success' });
-			}
+			   if (selectedStudent && selectedStudent.id) {
+				   await axiosInstance.put(`${appConfig.API_PREFIX_V1}/students-managements/students/${selectedStudent.id}`, studentData);
+				   setAlert({ open: true, message: 'Student updated successfully!', severity: 'success' });
+			   } else {
+				   await axiosInstance.post(`${appConfig.API_PREFIX_V1}/students-managements/students/`, studentData);
+				   setAlert({ open: true, message: 'Student added successfully!', severity: 'success' });
+			   }
 
 			handleAddEditModalClose();
 			fetchStudents(filterStatus, filterAcademicYear);
@@ -548,7 +550,7 @@ const StudentManager = (props) => {
 				medical_history: formData.medical_history.trim(),
 				emergency_contact_number: formData.emergency_contact_number.trim(),
 				old_school_name: formData.old_school_name.trim(),
-				enrollment_date: formData.enrollment_date,
+				enrolment_date: formData.enrolment_date,
 				parents: formData.parents, // <-- send parents array
 				fee_categories_with_concession: formData.fee_categories_with_concession.map(fee => ({
 					start_date: fee.start_date,
@@ -1291,7 +1293,7 @@ const StudentManager = (props) => {
 								<TextField fullWidth label="Old School Name" name="old_school_name" value={formData.old_school_name} onChange={handleInputChange} />
 							</Grid>
 							<Grid item xs={12} sm={6}>
-								<TextField fullWidth label="Enrollment Date" name="enrollment_date" type="date" value={formData.enrollment_date} onChange={handleInputChange} required InputLabelProps={{ shrink: true }} />
+								<TextField fullWidth label="Enrollment Date" name="enrolment_date" type="date" value={formData.enrolment_date} onChange={handleInputChange} required InputLabelProps={{ shrink: true }} />
 							</Grid>
 							<Grid item xs={12} sm={6}>
 								<FormControl fullWidth required>
@@ -1339,12 +1341,12 @@ const StudentManager = (props) => {
 							</Grid>
 						</Grid>
 					</DialogContent>
-					<DialogActions>
-						<Button onClick={handleAddEditModalClose}>Cancel</Button>
-						<Button type="submit" variant="contained" color="primary">
-							{selectedStudent ? 'Update' : 'Add'} Student
-						</Button>
-					</DialogActions>
+					   <DialogActions>
+						   <Button onClick={handleAddEditModalClose}>Cancel</Button>
+						   <Button type="submit" variant="contained" color="primary">
+							   {selectedStudent && selectedStudent.id ? 'Update Student' : 'Add Student'}
+						   </Button>
+					   </DialogActions>
 				</form>
 			</Dialog>
 
@@ -1402,7 +1404,7 @@ const StudentManager = (props) => {
 								<TextField fullWidth label="Old School Name" name="old_school_name" value={formData.old_school_name} onChange={handleInputChange} />
 							</Grid>
 							<Grid item xs={12} sm={6}>
-								<TextField fullWidth label="Enrollment Date" name="enrollment_date" type="date" value={formData.enrollment_date} onChange={handleInputChange} required InputLabelProps={{ shrink: true }} />
+								<TextField fullWidth label="Enrollment Date" name="enrolment_date" type="date" value={formData.enrolment_date} onChange={handleInputChange} required InputLabelProps={{ shrink: true }} />
 							</Grid>
 							<Grid item xs={12} sm={6}>
 								<FormControl fullWidth required>
