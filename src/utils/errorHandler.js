@@ -1,3 +1,8 @@
+// Phone number validation utility
+export const validatePhoneNumber = (phone) => {
+  const regex = /^(\+91)?[6-9]\d{9}$/;
+  return regex.test(phone);
+};
 export const formatApiError = (error) => {
   if (!error.response) {
     return 'Network error occurred';

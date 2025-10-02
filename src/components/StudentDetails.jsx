@@ -7,6 +7,7 @@ import {
   Person, Email, Phone, Home, School, CalendarToday, Edit, Delete, Add, Payment, DirectionsBus, Restaurant, LocalLibrary, ArrowBackIosNew, CloudUpload, Visibility, Download, AttachFile, Work
 } from '@mui/icons-material';
 import axiosInstance from '../utils/axiosConfig';
+import { validatePhoneNumber } from '../utils/errorHandler';
 import appConfig from '../config/appConfig';
 import StudentAttendance from './StudentAttendance';
 
@@ -25,6 +26,10 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
   const handleUpdateParent = async () => {
     if (!editParentData?.parent_id) {
       setEditParentError('Parent ID missing. Cannot update.');
+      return;
+    }
+    if (!validatePhoneNumber(editParentData.phone_number)) {
+      setEditParentError('Invalid phone number. Please enter a valid Indian mobile number.');
       return;
     }
     setEditParentLoading(true);
