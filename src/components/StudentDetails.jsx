@@ -756,19 +756,37 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                                       </Typography>
                                     </Grid>
                                   </Grid>
-                                  <Button
-                                    variant="outlined"
-                                    size="small"
-                                    startIcon={<Edit />}
-                                    sx={{ position: 'absolute', top: 8, right: 8 }}
-                                    onClick={() => {
-                                      console.log('Edit button clicked for parent:', parent);
-                                      setEditParentData({ ...parent, parent_id: parent.parent_id });
-                                      setEditParentModalOpen(true);
-                                    }}
-                                  >
-                                    Edit
-                                  </Button>
+                                  <Box sx={{ position: 'absolute', top: 8, right: 8, display: 'flex', gap: 1 }}>
+                                    <Button
+                                      variant="outlined"
+                                      size="small"
+                                      startIcon={<Edit />}
+                                      onClick={() => {
+                                        setEditParentData({ ...parent, parent_id: parent.parent_id });
+                                        setEditParentModalOpen(true);
+                                      }}
+                                    >
+                                      Edit
+                                    </Button>
+                                    <Button
+                                      variant="outlined"
+                                      color="error"
+                                      size="small"
+                                      startIcon={<Delete />}
+                                      onClick={async () => {
+                                        if (!window.confirm(`Are you sure you want to delete parent '${parent.name}'?`)) return;
+                                        try {
+                                          await axiosInstance.delete(`${appConfig.API_PREFIX_V1}/students-managements/parents/${parent.parent_id}`);
+                                          setParentDetails(prev => prev.filter(p => p.parent_id !== parent.parent_id));
+                                          setAlert({ open: true, message: 'Parent deleted successfully!', severity: 'success' });
+                                        } catch (err) {
+                                          setAlert({ open: true, message: 'Failed to delete parent.', severity: 'error' });
+                                        }
+                                      }}
+                                    >
+                                      Delete
+                                    </Button>
+                                  </Box>
                                 </Card>
                               </Grid>
                             ))}
