@@ -664,10 +664,16 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                 <Grid container spacing={4} alignItems="flex-start">
                   <Grid item xs={12} md={6}>
                     <Paper elevation={2} sx={{ p: 2, borderRadius: 2, display: 'flex', flexDirection: 'column', alignSelf: 'flex-start', maxHeight: 500, overflowY: 'auto' }}>
-                      <Typography variant="h6" fontWeight={600} gutterBottom>Parent Information</Typography>
-                      <Button variant="contained" color="primary" sx={{ mb: 2 }} onClick={() => setAddParentModalOpen(true)}>
-                        Add New Parent
-                      </Button>
+                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                        <Typography variant="h6" fontWeight={600} gutterBottom>Parent Information</Typography>
+                        <IconButton
+                          color="primary"
+                          sx={{ background: 'rgba(0,0,0,0.08)' }}
+                          onClick={() => setAddParentModalOpen(true)}
+                        >
+                          <Add />
+                        </IconButton>
+                      </Box>
                       <Dialog open={addParentModalOpen} onClose={() => setAddParentModalOpen(false)} maxWidth="sm" fullWidth>
                         <DialogTitle>Add New Parent</DialogTitle>
                         <DialogContent dividers>
@@ -757,22 +763,19 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                                     </Grid>
                                   </Grid>
                                   <Box sx={{ position: 'absolute', top: 8, right: 8, display: 'flex', gap: 1 }}>
-                                    <Button
-                                      variant="outlined"
-                                      size="small"
-                                      startIcon={<Edit />}
+                                    <IconButton
+                                      color="primary"
+                                      sx={{ background: 'rgba(0,0,0,0.08)' }}
                                       onClick={() => {
                                         setEditParentData({ ...parent, parent_id: parent.parent_id });
                                         setEditParentModalOpen(true);
                                       }}
                                     >
-                                      Edit
-                                    </Button>
-                                    <Button
-                                      variant="outlined"
+                                      <Edit />
+                                    </IconButton>
+                                    <IconButton
                                       color="error"
-                                      size="small"
-                                      startIcon={<Delete />}
+                                      sx={{ background: 'rgba(0,0,0,0.08)' }}
                                       onClick={async () => {
                                         if (!window.confirm(`Are you sure you want to delete parent '${parent.name}'?`)) return;
                                         try {
@@ -784,8 +787,8 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                                         }
                                       }}
                                     >
-                                      Delete
-                                    </Button>
+                                      <Delete />
+                                    </IconButton>
                                   </Box>
                                 </Card>
                               </Grid>
