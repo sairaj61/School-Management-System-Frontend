@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Box, Card, CardContent, Typography, Avatar, Grid, Chip, IconButton, Tooltip, Button, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, CircularProgress, Tabs, Tab,
-  List, ListItem, ListItemIcon, ListItemText, Dialog, DialogTitle, DialogContent, DialogActions, TextField, FormControl, InputLabel, Select, MenuItem, Alert, Snackbar
+  List, ListItem, ListItemIcon, ListItemText, Dialog, DialogTitle, DialogContent, DialogActions, TextField, FormControl, InputLabel, Select, MenuItem, Alert, Snackbar, Divider
 } from '@mui/material';
 import {
   Person, Email, Phone, Home, School, CalendarToday, Edit, Delete, Add, Payment, DirectionsBus, Restaurant, LocalLibrary, ArrowBackIosNew, CloudUpload, Visibility, Download, AttachFile, Work
@@ -590,40 +590,34 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
           <Box sx={{ display: 'flex', flexDirection: 'row', height: 'calc(100vh - 32px)' }}>
             {/* Sidebar: Student Details */}
             <Box sx={{ width: { xs: '100%', md: '22%' }, minWidth: 220, maxWidth: 340, pr: { md: 3 }, borderRight: { md: '1px solid #e0e0e0' }, display: 'flex', flexDirection: 'column', alignItems: 'center', pt: 2 }}>
-              <Avatar src={profileImage} sx={{ width: 120, height: 120, bgcolor: 'primary.main', border: '3px solid', borderColor: 'primary.light', mb: 2 }}>
-                <Person fontSize="large" sx={{ fontSize: 60 }} />
-              </Avatar>
               <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 2 }}>
-                <IconButton
-                  component="label"
-                  sx={{ position: 'relative', background: 'rgba(0,0,0,0.1)', color: 'primary.main', mb: 1 }}
-                  disabled={uploading}
-                >
-                  {uploading ? <CircularProgress size={20} /> : <CloudUpload fontSize="small" />}
-                  <input type="file" hidden accept="image/*" onChange={handleProfileImageUpload} />
-                </IconButton>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  size="small"
-                  sx={{ mt: 1, textTransform: 'none', fontWeight: 600 }}
-                  startIcon={<Edit />}
-                  onClick={() => onEdit && onEdit(student)}
-                >
-                  Edit
-                </Button>
+                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 2 }}>
+                  <Avatar
+                    src={profileImage}
+                    sx={{ width: 180, height: 180, bgcolor: 'primary.main', border: '3px solid', borderColor: 'primary.light', borderRadius: 2 }}
+                  >
+                    <Person fontSize="large" sx={{ fontSize: 100 }} />
+                  </Avatar>
+                  <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', mt: 2, gap: 2 }}>
+                    <IconButton
+                      component="label"
+                      color="primary"
+                      sx={{ background: 'rgba(0,0,0,0.08)' }}
+                      disabled={uploading}
+                    >
+                      {uploading ? <CircularProgress size={24} /> : <CloudUpload fontSize="large" />}
+                      <input type="file" hidden accept="image/*" onChange={handleProfileImageUpload} />
+                    </IconButton>
+                    <IconButton
+                      color="primary"
+                      sx={{ background: 'rgba(0,0,0,0.08)' }}
+                      onClick={() => onEdit && onEdit(student)}
+                    >
+                      <Edit fontSize="large" />
+                    </IconButton>
+                  </Box>
+                </Box>
               </Box>
-              <Typography variant="h5" fontWeight={700} color="text.primary" sx={{ mb: 1 }}>{student.name}</Typography>
-              <Chip
-                label={`${student.class_name} - ${student.section_name}`}
-                color="primary"
-                sx={{ mb: 2, fontWeight: 600, fontSize: 14 }}
-              />
-              <Chip
-                label={student.status}
-                color={student.status === 'ACTIVE' ? 'success' : 'error'}
-                sx={{ mb: 2, fontWeight: 600, fontSize: 14 }}
-              />
               <Button variant="outlined" startIcon={<Email />} sx={{ mb: 1, width: '100%' }}>{student.email}</Button>
               <Button variant="outlined" startIcon={<Phone />} sx={{ mb: 1, width: '100%' }}>{student.phone_number}</Button>
               <Paper elevation={1} sx={{ p: 2, mt: 2, width: '100%' }}>
