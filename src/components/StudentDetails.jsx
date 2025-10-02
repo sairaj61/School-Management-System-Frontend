@@ -12,6 +12,54 @@ import appConfig from '../config/appConfig';
 import StudentAttendance from './StudentAttendance';
 
 const StudentDetails = ({ student, onBack, onEdit }) => {
+  // Add Parent Modal State
+  const [addParentModalOpen, setAddParentModalOpen] = useState(false);
+  const [newParentForm, setNewParentForm] = useState({
+    name: '',
+    email: '',
+    phone_number: '',
+    address: '',
+    gender: '',
+    occupation: '',
+    relationship: '',
+  });
+  const [addParentLoading, setAddParentLoading] = useState(false);
+  const [addParentError, setAddParentError] = useState('');
+
+  const handleNewParentInputChange = (e) => {
+    const { name, value } = e.target;
+    setNewParentForm(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleAddParentSubmit = async () => {
+    if (!validatePhoneNumber(newParentForm.phone_number)) {
+      setAddParentError('Invalid phone number.');
+      return;
+    }
+    if (!student?.id) {
+      setAddParentError('No student selected.');
+      return;
+    }
+    setAddParentLoading(true);
+    setAddParentError('');
+    try {
+      const payload = { ...newParentForm, student_id: student.id };
+      await axiosInstance.post(
+        `${appConfig.API_PREFIX_V1}/students-managements/parents/`,
+        payload,
+        { headers: { 'Content-Type': 'application/json' } }
+      );
+      setAddParentModalOpen(false);
+      setNewParentForm({ name: '', email: '', phone_number: '', address: '', gender: '', occupation: '', relationship: '' });
+      // Refetch parent details
+      const studentRes = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/students-managements/students/student-with-parent-details/${student.id}`);
+      setParentDetails(Array.isArray(studentRes.data.parent_details) ? studentRes.data.parent_details : []);
+    } catch (err) {
+      setAddParentError('Failed to add parent.');
+    } finally {
+      setAddParentLoading(false);
+    }
+  };
   // State for edit parent form
   const [editParentLoading, setEditParentLoading] = useState(false);
   const [editParentError, setEditParentError] = useState('');
@@ -605,6 +653,59 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                   <Grid item xs={12} md={6}>
                     <Paper elevation={2} sx={{ p: 2, borderRadius: 2, height: '100%', minHeight: 260, display: 'flex', flexDirection: 'column' }}>
                       <Typography variant="h6" fontWeight={600} gutterBottom>Parent Information</Typography>
+                      <Button variant="contained" color="primary" sx={{ mb: 2 }} onClick={() => setAddParentModalOpen(true)}>
+                        Add New Parent
+                      </Button>
+                      <Dialog open={addParentModalOpen} onClose={() => setAddParentModalOpen(false)} maxWidth="sm" fullWidth>
+                        <DialogTitle>Add New Parent</DialogTitle>
+                        <DialogContent dividers>
+                          {addParentError && <Alert severity="error" sx={{ mb: 2 }}>{addParentError}</Alert>}
+                          <Grid container spacing={2}>
+                            <Grid item xs={12}>
+                              <TextField label="Name" name="name" fullWidth value={newParentForm.name} onChange={handleNewParentInputChange} />
+                            </Grid>
+                            <Grid item xs={12}>
+                              <TextField label="Email" name="email" fullWidth value={newParentForm.email} onChange={handleNewParentInputChange} />
+                            </Grid>
+                            <Grid item xs={12}>
+                              <TextField label="Phone Number" name="phone_number" fullWidth value={newParentForm.phone_number} onChange={handleNewParentInputChange} />
+                            </Grid>
+                            <Grid item xs={12}>
+                              <TextField label="Address" name="address" fullWidth value={newParentForm.address} onChange={handleNewParentInputChange} />
+                            </Grid>
+                            <Grid item xs={12}>
+                              <FormControl fullWidth>
+                                <InputLabel>Gender</InputLabel>
+                                <Select name="gender" value={newParentForm.gender} label="Gender" onChange={handleNewParentInputChange}>
+                                  <MenuItem value="MALE">Male</MenuItem>
+                                  <MenuItem value="FEMALE">Female</MenuItem>
+                                  <MenuItem value="OTHER">Other</MenuItem>
+                                </Select>
+                              </FormControl>
+                            </Grid>
+                            <Grid item xs={12}>
+                              <TextField label="Occupation" name="occupation" fullWidth value={newParentForm.occupation} onChange={handleNewParentInputChange} />
+                            </Grid>
+                            <Grid item xs={12}>
+                              <FormControl fullWidth>
+                                <InputLabel>Relationship</InputLabel>
+                                <Select name="relationship" value={newParentForm.relationship} label="Relationship" onChange={handleNewParentInputChange}>
+                                  <MenuItem value="Father">Father</MenuItem>
+                                  <MenuItem value="Mother">Mother</MenuItem>
+                                  <MenuItem value="Guardian">Guardian</MenuItem>
+                                  <MenuItem value="Other">Other</MenuItem>
+                                </Select>
+                              </FormControl>
+                            </Grid>
+                          </Grid>
+                        </DialogContent>
+                        <DialogActions>
+                          <Button onClick={() => setAddParentModalOpen(false)} color="secondary">Cancel</Button>
+                          <Button onClick={handleAddParentSubmit} color="primary" variant="contained" disabled={addParentLoading}>
+                            {addParentLoading ? <CircularProgress size={20} /> : 'Add Parent'}
+                          </Button>
+                        </DialogActions>
+                      </Dialog>
                       {parentDetails.length === 0 ? (
                         <Typography color="text.secondary">No parent details available.</Typography>
                       ) : (
