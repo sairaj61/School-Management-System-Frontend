@@ -494,6 +494,7 @@ const StudentManager = (props) => {
 				   roll_number: formData.roll_number.trim(),
 				   // father_name and mother_name removed as per request
 				   date_of_birth: formData.date_of_birth,
+				   enrollment_date: formData.enrollment_date,
 				   gender: formData.gender,
 				   email: formData.email.trim(),
 				   phone_number: formData.phone_number.trim(),
