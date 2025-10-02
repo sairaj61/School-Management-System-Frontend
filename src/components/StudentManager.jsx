@@ -32,6 +32,7 @@ import CalendarTodayIcon from '@mui/icons-material/CalendarToday'; // For Attend
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'; // For back navigation
 
 const StudentManager = (props) => {
+	const [isEditMode, setIsEditMode] = useState(false);
 	const [students, setStudents] = useState([]);
 	const [classes, setClasses] = useState([]);
 	const [sections, setSections] = useState([]);
@@ -61,7 +62,6 @@ const StudentManager = (props) => {
 	const [studentFixedFees, setStudentFixedFees] = useState([]); // State for student's fixed fees
 	
 	// Single selectedStudent state (replaces viewedStudent/attendanceStudent)
-	const [selectedStudent, setSelectedStudent] = useState(null); 
 	const [studentDetailsTabValue, setStudentDetailsTabValue] = useState(0); // For sub-tabs within student details 
 
 	const [formData, setFormData] = useState({
@@ -111,7 +111,7 @@ const StudentManager = (props) => {
 
 	// Add state for upload
 	const [uploading, setUploading] = useState(false);
-
+	const [selectedStudent, setSelectedStudent] = useState(null);
 	useEffect(() => {
 		fetchInitialData();
 	}, []);
@@ -291,6 +291,8 @@ const StudentManager = (props) => {
 
 	const handleAddEditModalOpen = (student = null) => {
 		   if (student) {
+			   setIsEditMode(true);
+			   setSelectedStudent(student);
 			   // Format date_of_birth and enrolment_date to yyyy-MM-dd for input type="date"
 			   const formatDate = (dateStr) => {
 				   if (!dateStr) return '';
@@ -323,6 +325,8 @@ const StudentManager = (props) => {
 			   setParentForm({ name: '', phone_number: '', email: '', address: '', gender: '', occupation: '', relationship_to_student: '' });
 			   setParentEditIndex(null);
 		   } else {
+			   setIsEditMode(false);
+			   setSelectedStudent(null);
 			   resetFormData();
 		   }
 		   setAddEditModalOpen(true);
@@ -330,6 +334,8 @@ const StudentManager = (props) => {
 
 	const handleAddEditModalClose = () => {
 		setAddEditModalOpen(false);
+		setIsEditMode(false);
+		setSelectedStudent(null);
 		resetFormData();
 	};
 
@@ -501,7 +507,7 @@ const StudentManager = (props) => {
 				   old_school_name: formData.old_school_name.trim()
 			   };
 
-			   if (selectedStudent && selectedStudent.id) {
+			   if (isEditMode && selectedStudent && selectedStudent.id) {
 				   await axiosInstance.put(`${appConfig.API_PREFIX_V1}/students-managements/students/${selectedStudent.id}`, studentData);
 				   setAlert({ open: true, message: 'Student updated successfully!', severity: 'success' });
 			   } else {
@@ -1242,8 +1248,8 @@ const StudentManager = (props) => {
 
 			{/* Dialog for Add/Edit Student (Generic) */}
 			<Dialog open={addEditModalOpen} onClose={handleAddEditModalClose} maxWidth="md" fullWidth>
-				   <DialogTitle>
-					   {formData && formData.name ? 'Edit Student' : 'Add Student (Generic)'}
+				<DialogTitle>
+					{isEditMode ? 'Edit Student' : 'Add Student (Generic)'}
 					   <IconButton
 						   onClick={handleAddEditModalClose}
 						   sx={{ position: 'absolute', right: 8, top: 8 }}
@@ -1343,9 +1349,9 @@ const StudentManager = (props) => {
 					</DialogContent>
 					   <DialogActions>
 						   <Button onClick={handleAddEditModalClose}>Cancel</Button>
-						   <Button type="submit" variant="contained" color="primary">
-							   {selectedStudent && selectedStudent.id ? 'Update Student' : 'Add Student'}
-						   </Button>
+						<Button type="submit" variant="contained" color="primary">
+							{isEditMode ? 'Update Student' : 'Add Student'}
+						</Button>
 					   </DialogActions>
 				</form>
 			</Dialog>
