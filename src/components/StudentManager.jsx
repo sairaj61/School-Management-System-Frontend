@@ -743,9 +743,12 @@ const StudentManager = (props) => {
 							color="primary"
 							size="small"
 							onClick={(e) => {
-								e.stopPropagation();
-								handleAddEditModalOpen(params.row);
+								 e.stopPropagation();
+								 handleAddEditModalOpen(params.row);
 							}}
+							tabIndex={-1}
+							aria-label="Edit Student"
+							onMouseDown={e => e.stopPropagation()}
 						>
 							<EditIcon fontSize="small" />
 						</IconButton>
