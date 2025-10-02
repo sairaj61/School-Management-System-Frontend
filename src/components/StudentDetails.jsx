@@ -598,7 +598,10 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                   >
                     <Person fontSize="large" sx={{ fontSize: 100 }} />
                   </Avatar>
-                  <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', mt: 2, gap: 2 }}>
+                  <Typography variant="h5" fontWeight={700} color="text.primary" sx={{ mt: 2, mb: 1 }}>
+                    {student.name}
+                  </Typography>
+                  <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', mt: 1, gap: 2 }}>
                     <IconButton
                       component="label"
                       color="primary"
