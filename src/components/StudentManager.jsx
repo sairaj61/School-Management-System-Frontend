@@ -517,8 +517,15 @@ const StudentManager = (props) => {
 			   }
 
 			// Only close the modal, do not switch to list page
-			handleAddEditModalClose();
-			// Optionally, refresh the details of the student if needed
+						// Refetch latest student details and update details view
+						if (selectedStudent && selectedStudent.id) {
+								axiosInstance.get(`${appConfig.API_PREFIX_V1}/students-managements/students/${selectedStudent.id}`)
+									.then(res => {
+										handleViewStudentDetails(res.data);
+									})
+									.catch(() => {});
+						}
+						handleAddEditModalClose();
 		} catch (error) {
 			handleApiError(error, setAlert);
 		}
