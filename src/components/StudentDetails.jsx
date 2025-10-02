@@ -649,9 +649,9 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
 
               {/* Tab Panels */}
               {tab === 0 && (
-                <Grid container spacing={4}>
+                <Grid container spacing={4} alignItems="flex-start">
                   <Grid item xs={12} md={6}>
-                    <Paper elevation={2} sx={{ p: 2, borderRadius: 2, height: '100%', minHeight: 260, display: 'flex', flexDirection: 'column' }}>
+                    <Paper elevation={2} sx={{ p: 2, borderRadius: 2, display: 'flex', flexDirection: 'column', alignSelf: 'flex-start', maxHeight: 500, overflowY: 'auto' }}>
                       <Typography variant="h6" fontWeight={600} gutterBottom>Parent Information</Typography>
                       <Button variant="contained" color="primary" sx={{ mb: 2 }} onClick={() => setAddParentModalOpen(true)}>
                         Add New Parent
@@ -709,11 +709,11 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                       {parentDetails.length === 0 ? (
                         <Typography color="text.secondary">No parent details available.</Typography>
                       ) : (
-                        <Box sx={{ overflowY: 'auto', flex: 1 }}>
+                        <Box sx={{ flex: 1 }}>
                           <Grid container spacing={2}>
                             {parentDetails.map((parent, index) => (
                               <Grid item xs={12} key={index}>
-                                <Card sx={{ p: 2, borderRadius: 2, boxShadow: 1, position: 'relative' }}>
+                                <Card sx={{ p: 2, borderRadius: 2, boxShadow: 1, position: 'relative', mb: 2 }}>
                                   <Typography variant="subtitle1" fontWeight={600} gutterBottom>
                                     {parent.name} ({parent.relationship_to_student})
                                   </Typography>
@@ -766,7 +766,7 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                     </Paper>
                   </Grid>
                   <Grid item xs={12} md={6}>
-                    <Paper elevation={2} sx={{ p: 3, borderRadius: 2, height: '100%', minHeight: 260, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                    <Paper elevation={2} sx={{ p: 3, borderRadius: 2, display: 'flex', flexDirection: 'column', alignSelf: 'flex-start' }}>
                       <Typography variant="h6" fontWeight={600} gutterBottom>Academic Information</Typography>
                       <List dense>
                         <ListItem>
