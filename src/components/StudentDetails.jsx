@@ -626,6 +626,10 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                     <ListItemText primary="Date of Birth" secondary={student.date_of_birth ? new Date(student.date_of_birth).toLocaleDateString() : 'N/A'} />
                   </ListItem>
                   <ListItem>
+                    <ListItemIcon><CalendarToday color="warning" /></ListItemIcon>
+                    <ListItemText primary="Enrollment Date" secondary={student.enrollment_date ? new Date(student.enrollment_date).toLocaleDateString() : 'N/A'} />
+                  </ListItem>
+                  <ListItem>
                     <ListItemIcon><Person color="info" /></ListItemIcon>
                     <ListItemText primary="Gender" secondary={student.gender || 'N/A'} />
                   </ListItem>
