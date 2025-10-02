@@ -30,8 +30,11 @@ import UnarchiveIcon from '@mui/icons-material/Unarchive'; // For Activate
 import AssignmentIcon from '@mui/icons-material/Assignment'; // For Manage Facilities (alternative to VisibilityIcon)
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday'; // For Attendance
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'; // For back navigation
+import DownloadIcon from '@mui/icons-material/Download';
+import UploadIcon from '@mui/icons-material/Upload';
 
 const StudentManager = (props) => {
+	const [isEditMode, setIsEditMode] = useState(false);
 	const [students, setStudents] = useState([]);
 	const [classes, setClasses] = useState([]);
 	const [sections, setSections] = useState([]);
@@ -61,7 +64,6 @@ const StudentManager = (props) => {
 	const [studentFixedFees, setStudentFixedFees] = useState([]); // State for student's fixed fees
 	
 	// Single selectedStudent state (replaces viewedStudent/attendanceStudent)
-	const [selectedStudent, setSelectedStudent] = useState(null); 
 	const [studentDetailsTabValue, setStudentDetailsTabValue] = useState(0); // For sub-tabs within student details 
 
 	const [formData, setFormData] = useState({
@@ -78,7 +80,7 @@ const StudentManager = (props) => {
 		medical_history: '',
 		emergency_contact_number: '',
 		old_school_name: '',
-		enrollment_date: '',
+		enrolment_date: '',
 		fee_categories_with_concession: [],
 		parents: [], // <-- Add parents array
 	});
@@ -111,7 +113,7 @@ const StudentManager = (props) => {
 
 	// Add state for upload
 	const [uploading, setUploading] = useState(false);
-
+	const [selectedStudent, setSelectedStudent] = useState(null);
 	useEffect(() => {
 		fetchInitialData();
 	}, []);
@@ -280,7 +282,7 @@ const StudentManager = (props) => {
 		setFormData({
 			name: '', roll_number: '', date_of_birth: '', gender: '', email: '', phone_number: '', address: '',
 			class_id: '', section_id: '', academic_year_id: '', medical_history: '', emergency_contact_number: '', old_school_name: '',
-			enrollment_date: '', fee_categories_with_concession: [], parents: []
+			enrolment_date: '', fee_categories_with_concession: [], parents: []
 		});
 		setFilteredSectionsForDropdown([]);
 		setClassFees([]);
@@ -290,27 +292,52 @@ const StudentManager = (props) => {
 	};
 
 	const handleAddEditModalOpen = (student = null) => {
-		if (student) {
-			setSelectedStudent(student); // ensure selectedStudent stays in sync if editing the viewed student
-			setSelectedStudent(student); // keep selectedStudent consistent
-			setSelectedStudent(student); // no-op safe
-			setSelectedStudent(student);
-			// populate form for edit
-			setSelectedStudent(student); // harmless repeat to ensure value set
-			// ...existing code to set formData for edit...
-			setSelectedStudent(student); // no visible effect if already set
-			// For brevity keep the existing behavior of opening modal & setting form
-			setSelectedStudent(student);
-			setSelectedStudent(student);
-			// ...existing code...
-		} else {
-			resetFormData();
-		}
-		setAddEditModalOpen(true);
+		   if (student) {
+			   setIsEditMode(true);
+			   setSelectedStudent(student);
+			   // Format date_of_birth and enrolment_date to yyyy-MM-dd for input type="date"
+			   const formatDate = (dateStr) => {
+				   if (!dateStr) return '';
+				   // Handles ISO string or yyyy-MM-dd
+				   const d = new Date(dateStr);
+				   if (isNaN(d.getTime())) return dateStr.split('T')[0];
+				   return d.toISOString().split('T')[0];
+			   };
+			   setFormData({
+				   name: student.name || '',
+				   roll_number: student.roll_number || '',
+				   date_of_birth: formatDate(student.date_of_birth),
+				   gender: student.gender || '',
+				   email: student.email || '',
+				   phone_number: student.phone_number || '',
+				   address: student.address || '',
+				   class_id: student.class_id || '',
+				   section_id: student.section_id || '',
+				   academic_year_id: student.academic_year_id || '',
+				   medical_history: student.medical_history || '',
+				   emergency_contact_number: student.emergency_contact_number || '',
+				   old_school_name: student.old_school_name || '',
+				   enrolment_date: formatDate(student.enrolment_date),
+				   fee_categories_with_concession: student.fee_categories_with_concession || [],
+				   parents: student.parents || []
+			   });
+			   setFilteredSectionsForDropdown(sections.filter(section => section.class_id === student.class_id));
+			   setClassFees([]); // Optionally fetch fees if needed
+			   setOptionalFeesForSelectedClass([]);
+			   setParentForm({ name: '', phone_number: '', email: '', address: '', gender: '', occupation: '', relationship_to_student: '' });
+			   setParentEditIndex(null);
+		   } else {
+			   setIsEditMode(false);
+			   setSelectedStudent(null);
+			   resetFormData();
+		   }
+		   setAddEditModalOpen(true);
 	};
 
 	const handleAddEditModalClose = () => {
 		setAddEditModalOpen(false);
+		setIsEditMode(false);
+		setSelectedStudent(null);
 		resetFormData();
 	};
 
@@ -453,33 +480,54 @@ const StudentManager = (props) => {
 
 	const handleSubmit = async (e) => {
 		e.preventDefault();
+		// Validate phone number
+		if (!validatePhoneNumber(formData.phone_number)) {
+			setAlert({ open: true, message: 'Phone number must be a valid 10-digit number or +91 followed by 10 digits.', severity: 'error' });
+			return;
+		}
+		// Validate emergency contact number if provided
+		if (formData.emergency_contact_number && !validatePhoneNumber(formData.emergency_contact_number)) {
+			setAlert({ open: true, message: 'Emergency contact number must be a valid 10-digit number or +91 followed by 10 digits.', severity: 'error' });
+			return;
+		}
 		try {
-			const studentData = {
-				name: formData.name.trim(),
-				roll_number: formData.roll_number.trim(),
-				date_of_birth: formData.date_of_birth,
-				gender: formData.gender,
-				email: formData.email.trim(),
-				phone_number: formData.phone_number.trim(),
-				address: formData.address.trim(),
-				class_id: formData.class_id,
-				academic_year_id: formData.academic_year_id,
-				section_id: formData.section_id,
-				medical_history: formData.medical_history.trim(),
-				emergency_contact_number: formData.emergency_contact_number.trim(),
-				old_school_name: formData.old_school_name.trim()
-			};
+			   const studentData = {
+				   name: formData.name.trim(),
+				   roll_number: formData.roll_number.trim(),
+				   // father_name and mother_name removed as per request
+				   date_of_birth: formData.date_of_birth,
+				   enrolment_date: formData.enrolment_date,
+				   gender: formData.gender,
+				   email: formData.email.trim(),
+				   phone_number: formData.phone_number.trim(),
+				   address: formData.address.trim(),
+				   class_id: formData.class_id,
+				   academic_year_id: formData.academic_year_id,
+				   section_id: formData.section_id,
+				   status: selectedStudent?.status || 'ACTIVE',
+				   medical_history: formData.medical_history.trim(),
+				   emergency_contact_number: formData.emergency_contact_number.trim(),
+				   old_school_name: formData.old_school_name.trim()
+			   };
 
-			if (selectedStudent) {
-				await axiosInstance.put(`${appConfig.API_PREFIX_V1}/students-managements/students/${selectedStudent.id}`, studentData);
-				setAlert({ open: true, message: 'Student updated successfully!', severity: 'success' });
-			} else {
-				await axiosInstance.post(`${appConfig.API_PREFIX_V1}/students-managements/students/`, studentData);
-				setAlert({ open: true, message: 'Student added successfully!', severity: 'success' });
-			}
+			   if (isEditMode && selectedStudent && selectedStudent.id) {
+				   await axiosInstance.put(`${appConfig.API_PREFIX_V1}/students-managements/students/${selectedStudent.id}`, studentData);
+				   setAlert({ open: true, message: 'Student updated successfully!', severity: 'success' });
+			   } else {
+				   await axiosInstance.post(`${appConfig.API_PREFIX_V1}/students-managements/students/`, studentData);
+				   setAlert({ open: true, message: 'Student added successfully!', severity: 'success' });
+			   }
 
-			handleAddEditModalClose();
-			fetchStudents(filterStatus, filterAcademicYear);
+			// Only close the modal, do not switch to list page
+						// Refetch latest student details and update details view
+						if (selectedStudent && selectedStudent.id) {
+								axiosInstance.get(`${appConfig.API_PREFIX_V1}/students-managements/students/${selectedStudent.id}`)
+									.then(res => {
+										handleViewStudentDetails(res.data);
+									})
+									.catch(() => {});
+						}
+						handleAddEditModalClose();
 		} catch (error) {
 			handleApiError(error, setAlert);
 		}
@@ -487,6 +535,23 @@ const StudentManager = (props) => {
 
 	const handleAdmitStudentSubmit = async (e) => {
 		e.preventDefault();
+		// Validate student phone number
+		if (!validatePhoneNumber(formData.phone_number)) {
+			setAlert({ open: true, message: 'Student phone number must be a valid 10-digit number or +91 followed by 10 digits.', severity: 'error' });
+			return;
+		}
+		// Validate emergency contact number if provided
+		if (formData.emergency_contact_number && !validatePhoneNumber(formData.emergency_contact_number)) {
+			setAlert({ open: true, message: 'Emergency contact number must be a valid 10-digit number or +91 followed by 10 digits.', severity: 'error' });
+			return;
+		}
+		// Validate parent phone numbers
+		for (const parent of formData.parents) {
+			if (parent.phone_number && !validatePhoneNumber(parent.phone_number)) {
+				setAlert({ open: true, message: `Parent ${parent.name} phone number must be a valid 10-digit number or +91 followed by 10 digits.`, severity: 'error' });
+				return;
+			}
+		}
 		try {
 			const admitData = {
 				name: formData.name.trim(),
@@ -502,7 +567,7 @@ const StudentManager = (props) => {
 				medical_history: formData.medical_history.trim(),
 				emergency_contact_number: formData.emergency_contact_number.trim(),
 				old_school_name: formData.old_school_name.trim(),
-				enrollment_date: formData.enrollment_date,
+				enrolment_date: formData.enrolment_date,
 				parents: formData.parents, // <-- send parents array
 				fee_categories_with_concession: formData.fee_categories_with_concession.map(fee => ({
 					start_date: fee.start_date,
@@ -688,7 +753,13 @@ const StudentManager = (props) => {
 						<IconButton
 							color="primary"
 							size="small"
-							onClick={() => handleAddEditModalOpen(params.row)}
+							onClick={(e) => {
+								 e.stopPropagation();
+								 handleAddEditModalOpen(params.row);
+							}}
+							tabIndex={-1}
+							aria-label="Edit Student"
+							onMouseDown={e => e.stopPropagation()}
 						>
 							<EditIcon fontSize="small" />
 						</IconButton>
@@ -926,14 +997,47 @@ const StudentManager = (props) => {
 			let parents = Array.isArray(response.data.parents) ? response.data.parents : [];
 			let fees = Array.isArray(response.data.fees) ? response.data.fees : [];
 
-			// Remove 'id' from students
-			students = students.map(({ id, ...rest }) => ({ ...rest }));
+			// Filter students to required fields
+			students = students.map(s => ({
+				name: s.name,
+				roll_number: s.roll_number,
+				date_of_birth: s.date_of_birth,
+				enrolment_date: s.enrolment_date,
+				gender: s.gender,
+				email: s.email,
+				phone_number: s.phone_number,
+				address: s.address,
+				class_id: s.class_id,
+				academic_year_id: s.academic_year_id,
+				section_id: s.section_id,
+				medical_history: s.medical_history,
+				emergency_contact_number: s.emergency_contact_number,
+				old_school_name: s.old_school_name,
+				student_int_id: s.student_int_id
+			}));
 
-			// Remove 'parent_id' and 'student_id' from parents
-			parents = parents.map(({ parent_id, student_id, ...rest }) => ({ ...rest }));
+			// Filter parents to required fields
+			parents = parents.map(p => ({
+				name: p.name,
+				email: p.email,
+				phone_number: p.phone_number,
+				address: p.address,
+				gender: p.gender,
+				occupation: p.occupation,
+				relationship_to_student: p.relationship_to_student,
+				student_int_id: p.student_int_id,
+				parent_int_id: p.parent_int_id
+			}));
 
-			// Remove 'student_id' from fees
-			fees = fees.map(({ student_id, ...rest }) => ({ ...rest }));
+			// Filter fees to required fields
+			fees = fees.map(f => ({
+				fee_category_name: f.fee_category_name,
+				amount: f.amount,
+				concession_name: f.concession_name,
+				concession_amount: f.concession_amount,
+				student_int_id: f.student_int_id,
+				fee_int_id: f.fee_int_id
+			}));
 
 			// Prepare workbook with three sheets
 			const wb = XLSX.utils.book_new();
@@ -989,6 +1093,12 @@ const StudentManager = (props) => {
 			setUploading(false);
 			event.target.value = '';
 		}
+	};
+
+	// Phone number validation function
+	const validatePhoneNumber = (phone) => {
+		const regex = /^(\+91)?[6-9]\d{9}$/;
+		return regex.test(phone);
 	};
 
 	return (
@@ -1139,27 +1249,17 @@ const StudentManager = (props) => {
 					{/* Download & Upload Student Manager Buttons */}
 					<Box sx={{ maxWidth: '1200px', margin: '0 auto', mb: 2, pt: 2 }}>
 						<Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
-							<Button
-								variant="outlined"
-								color="primary"
-								onClick={handleDownloadStudentManager}
-							>
-								Download Student Manager
-							</Button>
-							<Button
-								variant="outlined"
-								color="secondary"
-								component="label"
-								disabled={uploading}
-							>
-								Upload Student Manager
-								<input
-									type="file"
-									accept=".xlsx"
-									hidden
-									onChange={handleUploadStudentManager}
-								/>
-							</Button>
+							<Tooltip title="Download Student Manager">
+								<IconButton color="primary" onClick={handleDownloadStudentManager} sx={{ border: '2px solid', borderColor: 'primary.main', bgcolor: 'white', borderRadius: 2 }}>
+									<DownloadIcon fontSize="large" />
+								</IconButton>
+							</Tooltip>
+							<Tooltip title="Upload Student Manager">
+								<IconButton color="secondary" component="label" sx={{ border: '2px solid', borderColor: 'secondary.main', bgcolor: 'white', borderRadius: 2 }} disabled={uploading}>
+									<UploadIcon fontSize="large" />
+									<input type="file" accept=".xlsx" hidden onChange={handleUploadStudentManager} />
+								</IconButton>
+							</Tooltip>
 						</Box>
 					</Box>
 
@@ -1186,14 +1286,14 @@ const StudentManager = (props) => {
 			{/* Dialog for Add/Edit Student (Generic) */}
 			<Dialog open={addEditModalOpen} onClose={handleAddEditModalClose} maxWidth="md" fullWidth>
 				<DialogTitle>
-					{selectedStudent ? 'Edit Student' : 'Add Student (Generic)'}
-					<IconButton
-						onClick={handleAddEditModalClose}
-						sx={{ position: 'absolute', right: 8, top: 8 }}
-					>
-						<CloseIcon />
-					</IconButton>
-				</DialogTitle>
+					{isEditMode ? 'Edit Student' : 'Add Student (Generic)'}
+					   <IconButton
+						   onClick={handleAddEditModalClose}
+						   sx={{ position: 'absolute', right: 8, top: 8 }}
+					   >
+						   <CloseIcon />
+					   </IconButton>
+				   </DialogTitle>
 				<form onSubmit={handleSubmit}>
 					<DialogContent dividers>
 						<Grid container spacing={2}>
@@ -1236,7 +1336,7 @@ const StudentManager = (props) => {
 								<TextField fullWidth label="Old School Name" name="old_school_name" value={formData.old_school_name} onChange={handleInputChange} />
 							</Grid>
 							<Grid item xs={12} sm={6}>
-								<TextField fullWidth label="Enrollment Date" name="enrollment_date" type="date" value={formData.enrollment_date} onChange={handleInputChange} required InputLabelProps={{ shrink: true }} />
+								<TextField fullWidth label="Enrollment Date" name="enrolment_date" type="date" value={formData.enrolment_date} onChange={handleInputChange} required InputLabelProps={{ shrink: true }} />
 							</Grid>
 							<Grid item xs={12} sm={6}>
 								<FormControl fullWidth required>
@@ -1284,12 +1384,12 @@ const StudentManager = (props) => {
 							</Grid>
 						</Grid>
 					</DialogContent>
-					<DialogActions>
-						<Button onClick={handleAddEditModalClose}>Cancel</Button>
+					   <DialogActions>
+						   <Button onClick={handleAddEditModalClose}>Cancel</Button>
 						<Button type="submit" variant="contained" color="primary">
-							{selectedStudent ? 'Update' : 'Add'} Student
+							{isEditMode ? 'Update Student' : 'Add Student'}
 						</Button>
-					</DialogActions>
+					   </DialogActions>
 				</form>
 			</Dialog>
 
@@ -1347,7 +1447,7 @@ const StudentManager = (props) => {
 								<TextField fullWidth label="Old School Name" name="old_school_name" value={formData.old_school_name} onChange={handleInputChange} />
 							</Grid>
 							<Grid item xs={12} sm={6}>
-								<TextField fullWidth label="Enrollment Date" name="enrollment_date" type="date" value={formData.enrollment_date} onChange={handleInputChange} required InputLabelProps={{ shrink: true }} />
+								<TextField fullWidth label="Enrollment Date" name="enrolment_date" type="date" value={formData.enrolment_date} onChange={handleInputChange} required InputLabelProps={{ shrink: true }} />
 							</Grid>
 							<Grid item xs={12} sm={6}>
 								<FormControl fullWidth required>

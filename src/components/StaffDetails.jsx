@@ -610,24 +610,26 @@ const StaffDetails = () => {
             <Button variant="outlined" startIcon={<Phone />} sx={{ mb: 1, width: '100%' }}>{staff.phone_number}</Button>
             <Paper elevation={1} sx={{ p: 2, mt: 2, width: '100%' }}>
               <Typography variant="subtitle2" fontWeight={600} gutterBottom>Personal Info</Typography>
-              <List dense>
-                <ListItem>
-                  <ListItemIcon><School color="primary" /></ListItemIcon>
-                  <ListItemText primary="Qualification" secondary={staff.qualification} />
-                </ListItem>
-                <ListItem>
-                  <ListItemIcon><Home color="warning" /></ListItemIcon>
-                  <ListItemText primary="Address" secondary={staff.address} />
-                </ListItem>
-                <ListItem>
-                  <ListItemIcon><CalendarToday color="info" /></ListItemIcon>
-                  <ListItemText primary="Date of Joining" secondary={staff.date_of_joining ? new Date(staff.date_of_joining).toLocaleDateString() : 'N/A'} />
-                </ListItem>
-                <ListItem>
-                  <ListItemIcon><CalendarToday color="error" /></ListItemIcon>
-                  <ListItemText primary="Date of Termination" secondary={staff.date_of_termination ? new Date(staff.date_of_termination).toLocaleDateString() : 'N/A'} />
-                </ListItem>
-              </List>
+              <Box sx={{ maxHeight: 220, overflowY: 'auto' }}>
+                <List dense sx={{ pr: 1, pb: 1, maxHeight: 320, overflowY: 'auto' }}>
+                  <ListItem>
+                    <ListItemIcon><School color="primary" /></ListItemIcon>
+                    <ListItemText primary="Qualification" secondary={staff.qualification} />
+                  </ListItem>
+                  <ListItem>
+                    <ListItemIcon><Home color="warning" /></ListItemIcon>
+                    <ListItemText primary="Address" secondary={staff.address} />
+                  </ListItem>
+                  <ListItem>
+                    <ListItemIcon><CalendarToday color="info" /></ListItemIcon>
+                    <ListItemText primary="Date of Joining" secondary={staff.date_of_joining ? new Date(staff.date_of_joining).toLocaleDateString() : 'N/A'} />
+                  </ListItem>
+                  <ListItem>
+                    <ListItemIcon><CalendarToday color="error" /></ListItemIcon>
+                    <ListItemText primary="Date of Termination" secondary={staff.date_of_termination ? new Date(staff.date_of_termination).toLocaleDateString() : 'N/A'} />
+                  </ListItem>
+                </List>
+              </Box>
             </Paper>
           </Box>
 
@@ -642,9 +644,9 @@ const StaffDetails = () => {
             </Tabs>
             {/* Tab Panels */}
             {tab === 0 && (
-              <Grid container spacing={4}>
+              <Grid container spacing={4} alignItems="flex-start">
                 <Grid item xs={12} md={6}>
-                  <Paper elevation={2} sx={{ p: 3, borderRadius: 2, height: '100%', minHeight: 260, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                  <Paper elevation={2} sx={{ p: 3, borderRadius: 2, display: 'flex', flexDirection: 'column', alignSelf: 'flex-start' }}>
                     <Typography variant="h6" fontWeight={600} gutterBottom>Personal Information</Typography>
                     <List dense>
                       <ListItem>
@@ -667,7 +669,7 @@ const StaffDetails = () => {
                   </Paper>
                 </Grid>
                 <Grid item xs={12} md={6}>
-                  <Paper elevation={2} sx={{ p: 3, borderRadius: 2, height: '100%', minHeight: 260, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                  <Paper elevation={2} sx={{ p: 3, borderRadius: 2, display: 'flex', flexDirection: 'column', alignSelf: 'flex-start', maxHeight: 500, overflowY: 'auto' }}>
                     <Typography variant="h6" fontWeight={600} gutterBottom>Active CTC Structure</Typography>
                     {activeCTC ? (
                       <>

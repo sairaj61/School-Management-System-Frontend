@@ -1,16 +1,114 @@
 import React, { useState, useEffect } from 'react';
 import {
   Box, Card, CardContent, Typography, Avatar, Grid, Chip, IconButton, Tooltip, Button, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, CircularProgress, Tabs, Tab,
-  List, ListItem, ListItemIcon, ListItemText, Dialog, DialogTitle, DialogContent, DialogActions, TextField, FormControl, InputLabel, Select, MenuItem, Alert, Snackbar
+  List, ListItem, ListItemIcon, ListItemText, Dialog, DialogTitle, DialogContent, DialogActions, TextField, FormControl, InputLabel, Select, MenuItem, Alert, Snackbar, Divider
 } from '@mui/material';
 import {
   Person, Email, Phone, Home, School, CalendarToday, Edit, Delete, Add, Payment, DirectionsBus, Restaurant, LocalLibrary, ArrowBackIosNew, CloudUpload, Visibility, Download, AttachFile, Work
 } from '@mui/icons-material';
 import axiosInstance from '../utils/axiosConfig';
+import { validatePhoneNumber } from '../utils/errorHandler';
 import appConfig from '../config/appConfig';
 import StudentAttendance from './StudentAttendance';
 
 const StudentDetails = ({ student, onBack, onEdit }) => {
+  // Add Parent Modal State
+  const [addParentModalOpen, setAddParentModalOpen] = useState(false);
+  const [newParentForm, setNewParentForm] = useState({
+    name: '',
+    email: '',
+    phone_number: '',
+    address: '',
+    gender: '',
+    occupation: '',
+    relationship: '',
+  });
+  const [addParentLoading, setAddParentLoading] = useState(false);
+  const [addParentError, setAddParentError] = useState('');
+
+  const handleNewParentInputChange = (e) => {
+    const { name, value } = e.target;
+    setNewParentForm(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleAddParentSubmit = async () => {
+    if (!validatePhoneNumber(newParentForm.phone_number)) {
+      setAddParentError('Invalid phone number.');
+      return;
+    }
+    if (!student?.id) {
+      setAddParentError('No student selected.');
+      return;
+    }
+    setAddParentLoading(true);
+    setAddParentError('');
+    try {
+      const payload = { ...newParentForm, student_id: student.id };
+      await axiosInstance.post(
+        `${appConfig.API_PREFIX_V1}/students-managements/parents/`,
+        payload,
+        { headers: { 'Content-Type': 'application/json' } }
+      );
+      setAddParentModalOpen(false);
+      setNewParentForm({ name: '', email: '', phone_number: '', address: '', gender: '', occupation: '', relationship: '' });
+      // Refetch parent details
+      const studentRes = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/students-managements/students/student-with-parent-details/${student.id}`);
+      setParentDetails(Array.isArray(studentRes.data.parent_details) ? studentRes.data.parent_details : []);
+    } catch (err) {
+      setAddParentError('Failed to add parent.');
+    } finally {
+      setAddParentLoading(false);
+    }
+  };
+  // State for edit parent form
+  const [editParentLoading, setEditParentLoading] = useState(false);
+  const [editParentError, setEditParentError] = useState('');
+
+  // Handle parent field change
+  const handleEditParentChange = (e) => {
+    const { name, value } = e.target;
+    setEditParentData(prev => ({ ...prev, [name]: value }));
+  };
+
+  // Update parent API call
+  const handleUpdateParent = async () => {
+    if (!editParentData?.parent_id) {
+      setEditParentError('Parent ID missing. Cannot update.');
+      return;
+    }
+    if (!validatePhoneNumber(editParentData.phone_number)) {
+      setEditParentError('Invalid phone number. Please enter a valid Indian mobile number.');
+      return;
+    }
+    setEditParentLoading(true);
+    setEditParentError('');
+    try {
+      console.log('PUT payload:', editParentData);
+      const response = await axiosInstance.put(
+        `${appConfig.API_PREFIX_V1}/students-managements/parents/${editParentData.parent_id}`,
+        editParentData,
+        {
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      console.log('PUT response:', response);
+      // Refetch parent details
+      const studentRes = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/students-managements/students/student-with-parent-details/${student.id}`);
+      setParentDetails(Array.isArray(studentRes.data.parent_details) ? studentRes.data.parent_details : []);
+      setEditParentModalOpen(false);
+    } catch (err) {
+      console.error('PUT error:', err);
+      let msg = 'Failed to update parent.';
+      if (err.response && err.response.data) {
+        msg = err.response.data.detail || err.response.data.message || msg;
+      }
+      setEditParentError(msg);
+    } finally {
+      setEditParentLoading(false);
+    }
+  };
   const [tab, setTab] = useState(0);
   const [fixedFees, setFixedFees] = useState([]);
   const [facilities, setFacilities] = useState([]);
@@ -46,6 +144,9 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
 
   // Add state for parent details
   const [parentDetails, setParentDetails] = useState([]);
+  // State for editing parent
+  const [editParentModalOpen, setEditParentModalOpen] = useState(false);
+  const [editParentData, setEditParentData] = useState(null);
 
   // Document management functions
   const fetchStudentDocuments = async (studentId) => {
@@ -417,80 +518,138 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
   return (
     <>
       <Box sx={{ width: '100%', maxWidth: '100%', height: '100vh', background: '#eef2f6', p: { xs: 2, md: 4 }, overflow: 'hidden' }}>
+        {/* Edit Parent Modal */}
+        <Dialog open={editParentModalOpen} onClose={() => setEditParentModalOpen(false)} maxWidth="sm" fullWidth>
+          <DialogTitle>Edit Parent Details</DialogTitle>
+          <DialogContent dividers>
+            {editParentError && <Alert severity="error" sx={{ mb: 2 }}>{editParentError}</Alert>}
+            {editParentData && (
+              <Grid container spacing={2}>
+                <Grid item xs={12}>
+                  <TextField label="Name" name="name" fullWidth value={editParentData.name || ''} onChange={handleEditParentChange} />
+                </Grid>
+                <Grid item xs={12}>
+                  <TextField label="Email" name="email" fullWidth value={editParentData.email || ''} onChange={handleEditParentChange} />
+                </Grid>
+                <Grid item xs={12}>
+                  <TextField label="Phone Number" name="phone_number" fullWidth value={editParentData.phone_number || ''} onChange={handleEditParentChange} />
+                </Grid>
+                <Grid item xs={12}>
+                  <TextField label="Address" name="address" fullWidth value={editParentData.address || ''} onChange={handleEditParentChange} />
+                </Grid>
+                <Grid item xs={12}>
+                  <FormControl fullWidth>
+                    <InputLabel>Gender</InputLabel>
+                    <Select name="gender" value={editParentData.gender || ''} label="Gender" onChange={handleEditParentChange}>
+                      <MenuItem value="MALE">Male</MenuItem>
+                      <MenuItem value="FEMALE">Female</MenuItem>
+                      <MenuItem value="OTHER">Other</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Grid>
+                <Grid item xs={12}>
+                  <TextField label="Occupation" name="occupation" fullWidth value={editParentData.occupation || ''} onChange={handleEditParentChange} />
+                </Grid>
+              </Grid>
+            )}
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setEditParentModalOpen(false)} color="secondary">Cancel</Button>
+            <Button onClick={handleUpdateParent} color="primary" variant="contained" disabled={editParentLoading}>
+              {editParentLoading ? <CircularProgress size={20} /> : 'Update'}
+            </Button>
+          </DialogActions>
+        </Dialog>
         <Card sx={{ p: { xs: 2, md: 4 }, borderRadius: 3, boxShadow: 6, position: 'relative', height: '100%', width: '100%', maxWidth: '100%' }}>
           {/* Back Button */}
           <Tooltip title="Go Back">
-            <Button
-              variant="outlined"
-              startIcon={<ArrowBackIosNew />}
+            <IconButton
               onClick={onBack}
               sx={{
                 position: 'absolute',
-                top: 16,
-                left: 16,
-                borderRadius: 2,
-                textTransform: 'none',
-                fontWeight: 600,
+                top: 18,
+                left: 18,
+                bgcolor: 'white',
+                border: '2px solid',
                 borderColor: 'primary.main',
                 color: 'primary.main',
+                boxShadow: 2,
+                width: 48,
+                height: 48,
+                borderRadius: '50%',
+                transition: 'background 0.2s',
                 '&:hover': {
-                  backgroundColor: 'primary.main',
+                  bgcolor: 'primary.main',
                   color: 'white',
-                  borderColor: 'primary.main',
                 }
               }}
             >
-              Back
-            </Button>
+              <ArrowBackIosNew fontSize="medium" />
+            </IconButton>
           </Tooltip>
 
           <Box sx={{ display: 'flex', flexDirection: 'row', height: 'calc(100vh - 32px)' }}>
             {/* Sidebar: Student Details */}
             <Box sx={{ width: { xs: '100%', md: '22%' }, minWidth: 220, maxWidth: 340, pr: { md: 3 }, borderRight: { md: '1px solid #e0e0e0' }, display: 'flex', flexDirection: 'column', alignItems: 'center', pt: 2 }}>
-              <Avatar src={profileImage} sx={{ width: 120, height: 120, bgcolor: 'primary.main', border: '3px solid', borderColor: 'primary.light', mb: 2 }}>
-                <Person fontSize="large" sx={{ fontSize: 60 }} />
-              </Avatar>
-              <IconButton
-                component="label"
-                sx={{ position: 'relative', background: 'rgba(0,0,0,0.1)', color: 'primary.main', mb: 2 }}
-                disabled={uploading}
-              >
-                {uploading ? <CircularProgress size={20} /> : <CloudUpload fontSize="small" />}
-                <input type="file" hidden accept="image/*" onChange={handleProfileImageUpload} />
-              </IconButton>
-              <Typography variant="h5" fontWeight={700} color="text.primary" sx={{ mb: 1 }}>{student.name}</Typography>
-              <Chip
-                label={`${student.class_name} - ${student.section_name}`}
-                color="primary"
-                sx={{ mb: 2, fontWeight: 600, fontSize: 14 }}
-              />
-              <Chip
-                label={student.status}
-                color={student.status === 'ACTIVE' ? 'success' : 'error'}
-                sx={{ mb: 2, fontWeight: 600, fontSize: 14 }}
-              />
+              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 2 }}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 2 }}>
+                  <Avatar
+                    src={profileImage}
+                    sx={{ width: 180, height: 180, bgcolor: 'primary.main', border: '3px solid', borderColor: 'primary.light', borderRadius: 2 }}
+                  >
+                    <Person fontSize="large" sx={{ fontSize: 100 }} />
+                  </Avatar>
+                  <Typography variant="h5" fontWeight={700} color="text.primary" sx={{ mt: 2, mb: 1 }}>
+                    {student.name}
+                  </Typography>
+                  <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', mt: 1, gap: 2 }}>
+                    <IconButton
+                      component="label"
+                      color="primary"
+                      sx={{ background: 'rgba(0,0,0,0.08)' }}
+                      disabled={uploading}
+                    >
+                      {uploading ? <CircularProgress size={24} /> : <CloudUpload fontSize="large" />}
+                      <input type="file" hidden accept="image/*" onChange={handleProfileImageUpload} />
+                    </IconButton>
+                    <IconButton
+                      color="primary"
+                      sx={{ background: 'rgba(0,0,0,0.08)' }}
+                      onClick={() => onEdit && onEdit(student)}
+                    >
+                      <Edit fontSize="large" />
+                    </IconButton>
+                  </Box>
+                </Box>
+              </Box>
               <Button variant="outlined" startIcon={<Email />} sx={{ mb: 1, width: '100%' }}>{student.email}</Button>
               <Button variant="outlined" startIcon={<Phone />} sx={{ mb: 1, width: '100%' }}>{student.phone_number}</Button>
               <Paper elevation={1} sx={{ p: 2, mt: 2, width: '100%' }}>
                 <Typography variant="subtitle2" fontWeight={600} gutterBottom>Personal Info</Typography>
-                <List dense>
-                  <ListItem>
-                    <ListItemIcon><School color="primary" /></ListItemIcon>
-                    <ListItemText primary="Roll Number" secondary={student.roll_number} />
-                  </ListItem>
-                  <ListItem>
-                    <ListItemIcon><CalendarToday color="warning" /></ListItemIcon>
-                    <ListItemText primary="Date of Birth" secondary={student.date_of_birth ? new Date(student.date_of_birth).toLocaleDateString() : 'N/A'} />
-                  </ListItem>
-                  <ListItem>
-                    <ListItemIcon><Person color="info" /></ListItemIcon>
-                    <ListItemText primary="Gender" secondary={student.gender || 'N/A'} />
-                  </ListItem>
-                  <ListItem>
-                    <ListItemIcon><Home color="success" /></ListItemIcon>
-                    <ListItemText primary="Address" secondary={student.address || 'N/A'} />
-                  </ListItem>
-                </List>
+                <Box sx={{ maxHeight: 220, overflowY: 'auto' }}>
+                  <List dense sx={{ pr: 1, pb: 1, maxHeight: 320, overflowY: 'auto' }}>
+                    <ListItem>
+                      <ListItemIcon><School color="primary" /></ListItemIcon>
+                      <ListItemText primary="Roll Number" secondary={student.roll_number} />
+                    </ListItem>
+                    <ListItem>
+                      <ListItemIcon><CalendarToday color="warning" /></ListItemIcon>
+                      <ListItemText primary="Date of Birth" secondary={student.date_of_birth ? new Date(student.date_of_birth).toLocaleDateString() : 'N/A'} />
+                    </ListItem>
+                    <ListItem>
+                      <ListItemIcon><CalendarToday color="warning" /></ListItemIcon>
+                      <ListItemText primary="Enrollment Date" secondary={student.enrolment_date ? new Date(student.enrolment_date).toLocaleDateString() : 'N/A'} />
+                    </ListItem>
+                    <ListItem>
+                      <ListItemIcon><Person color="info" /></ListItemIcon>
+                      <ListItemText primary="Gender" secondary={student.gender || 'N/A'} />
+                    </ListItem>
+                    <ListItem>
+                      <ListItemIcon><Home color="success" /></ListItemIcon>
+                      <ListItemText primary="Address" secondary={student.address || 'N/A'} />
+                    </ListItem>
+                  </List>
+                </Box>
               </Paper>
             </Box>
 
@@ -506,18 +665,77 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
 
               {/* Tab Panels */}
               {tab === 0 && (
-                <Grid container spacing={4}>
+                <Grid container spacing={4} alignItems="flex-start">
                   <Grid item xs={12} md={6}>
-                    <Paper elevation={2} sx={{ p: 2, borderRadius: 2, height: '100%', minHeight: 260, display: 'flex', flexDirection: 'column' }}>
-                      <Typography variant="h6" fontWeight={600} gutterBottom>Parent Information</Typography>
+                    <Paper elevation={2} sx={{ p: 2, borderRadius: 2, display: 'flex', flexDirection: 'column', alignSelf: 'flex-start', maxHeight: 500, overflowY: 'auto' }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                        <Typography variant="h6" fontWeight={600} gutterBottom>Parent Information</Typography>
+                        <IconButton
+                          color="primary"
+                          sx={{ background: 'rgba(0,0,0,0.08)' }}
+                          onClick={() => setAddParentModalOpen(true)}
+                        >
+                          <Add />
+                        </IconButton>
+                      </Box>
+                      <Dialog open={addParentModalOpen} onClose={() => setAddParentModalOpen(false)} maxWidth="sm" fullWidth>
+                        <DialogTitle>Add New Parent</DialogTitle>
+                        <DialogContent dividers>
+                          {addParentError && <Alert severity="error" sx={{ mb: 2 }}>{addParentError}</Alert>}
+                          <Grid container spacing={2}>
+                            <Grid item xs={12}>
+                              <TextField label="Name" name="name" fullWidth value={newParentForm.name} onChange={handleNewParentInputChange} />
+                            </Grid>
+                            <Grid item xs={12}>
+                              <TextField label="Email" name="email" fullWidth value={newParentForm.email} onChange={handleNewParentInputChange} />
+                            </Grid>
+                            <Grid item xs={12}>
+                              <TextField label="Phone Number" name="phone_number" fullWidth value={newParentForm.phone_number} onChange={handleNewParentInputChange} />
+                            </Grid>
+                            <Grid item xs={12}>
+                              <TextField label="Address" name="address" fullWidth value={newParentForm.address} onChange={handleNewParentInputChange} />
+                            </Grid>
+                            <Grid item xs={12}>
+                              <FormControl fullWidth>
+                                <InputLabel>Gender</InputLabel>
+                                <Select name="gender" value={newParentForm.gender} label="Gender" onChange={handleNewParentInputChange}>
+                                  <MenuItem value="MALE">Male</MenuItem>
+                                  <MenuItem value="FEMALE">Female</MenuItem>
+                                  <MenuItem value="OTHER">Other</MenuItem>
+                                </Select>
+                              </FormControl>
+                            </Grid>
+                            <Grid item xs={12}>
+                              <TextField label="Occupation" name="occupation" fullWidth value={newParentForm.occupation} onChange={handleNewParentInputChange} />
+                            </Grid>
+                            <Grid item xs={12}>
+                              <FormControl fullWidth>
+                                <InputLabel>Relationship</InputLabel>
+                                <Select name="relationship" value={newParentForm.relationship} label="Relationship" onChange={handleNewParentInputChange}>
+                                  <MenuItem value="Father">Father</MenuItem>
+                                  <MenuItem value="Mother">Mother</MenuItem>
+                                  <MenuItem value="Guardian">Guardian</MenuItem>
+                                  <MenuItem value="Other">Other</MenuItem>
+                                </Select>
+                              </FormControl>
+                            </Grid>
+                          </Grid>
+                        </DialogContent>
+                        <DialogActions>
+                          <Button onClick={() => setAddParentModalOpen(false)} color="secondary">Cancel</Button>
+                          <Button onClick={handleAddParentSubmit} color="primary" variant="contained" disabled={addParentLoading}>
+                            {addParentLoading ? <CircularProgress size={20} /> : 'Add Parent'}
+                          </Button>
+                        </DialogActions>
+                      </Dialog>
                       {parentDetails.length === 0 ? (
                         <Typography color="text.secondary">No parent details available.</Typography>
                       ) : (
-                        <Box sx={{ overflowY: 'auto', flex: 1 }}>
+                        <Box sx={{ flex: 1 }}>
                           <Grid container spacing={2}>
                             {parentDetails.map((parent, index) => (
                               <Grid item xs={12} key={index}>
-                                <Card sx={{ p: 2, borderRadius: 2, boxShadow: 1 }}>
+                                <Card sx={{ p: 2, borderRadius: 2, boxShadow: 1, position: 'relative', mb: 2 }}>
                                   <Typography variant="subtitle1" fontWeight={600} gutterBottom>
                                     {parent.name} ({parent.relationship_to_student})
                                   </Typography>
@@ -548,6 +766,34 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                                       </Typography>
                                     </Grid>
                                   </Grid>
+                                  <Box sx={{ position: 'absolute', top: 8, right: 8, display: 'flex', gap: 1 }}>
+                                    <IconButton
+                                      color="primary"
+                                      sx={{ background: 'rgba(0,0,0,0.08)' }}
+                                      onClick={() => {
+                                        setEditParentData({ ...parent, parent_id: parent.parent_id });
+                                        setEditParentModalOpen(true);
+                                      }}
+                                    >
+                                      <Edit />
+                                    </IconButton>
+                                    <IconButton
+                                      color="error"
+                                      sx={{ background: 'rgba(0,0,0,0.08)' }}
+                                      onClick={async () => {
+                                        if (!window.confirm(`Are you sure you want to delete parent '${parent.name}'?`)) return;
+                                        try {
+                                          await axiosInstance.delete(`${appConfig.API_PREFIX_V1}/students-managements/parents/${parent.parent_id}`);
+                                          setParentDetails(prev => prev.filter(p => p.parent_id !== parent.parent_id));
+                                          setAlert({ open: true, message: 'Parent deleted successfully!', severity: 'success' });
+                                        } catch (err) {
+                                          setAlert({ open: true, message: 'Failed to delete parent.', severity: 'error' });
+                                        }
+                                      }}
+                                    >
+                                      <Delete />
+                                    </IconButton>
+                                  </Box>
                                 </Card>
                               </Grid>
                             ))}
@@ -557,7 +803,7 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                     </Paper>
                   </Grid>
                   <Grid item xs={12} md={6}>
-                    <Paper elevation={2} sx={{ p: 3, borderRadius: 2, height: '100%', minHeight: 260, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                    <Paper elevation={2} sx={{ p: 3, borderRadius: 2, display: 'flex', flexDirection: 'column', alignSelf: 'flex-start' }}>
                       <Typography variant="h6" fontWeight={600} gutterBottom>Academic Information</Typography>
                       <List dense>
                         <ListItem>
@@ -566,7 +812,7 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                         </ListItem>
                         <ListItem>
                           <ListItemIcon><CalendarToday color="warning" /></ListItemIcon>
-                          <ListItemText primary="Enrollment Date" secondary={student.enrollment_date ? new Date(student.enrollment_date).toLocaleDateString() : 'N/A'} />
+                          <ListItemText primary="Enrollment Date" secondary={student.enrolment_date ? new Date(student.enrolment_date).toLocaleDateString() : 'N/A'} />
                         </ListItem>
                         <ListItem>
                           <ListItemIcon><Person color="info" /></ListItemIcon>
