@@ -23,27 +23,35 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
 
   // Update parent API call
   const handleUpdateParent = async () => {
-    if (!editParentData?.id) return;
+    if (!editParentData?.parent_id) {
+      setEditParentError('Parent ID missing. Cannot update.');
+      return;
+    }
     setEditParentLoading(true);
     setEditParentError('');
     try {
-      await axiosInstance.put(
-        `${appConfig.API_PREFIX_V1}/students-managements/parents/${editParentData.id}`,
+      console.log('PUT payload:', editParentData);
+      const response = await axiosInstance.put(
+        `${appConfig.API_PREFIX_V1}/students-managements/parents/${editParentData.parent_id}`,
         editParentData,
         {
           headers: {
-            'Content-Type': 'application/json',
-            // Add Authorization header if needed, e.g. from localStorage
-            ...(localStorage.getItem('token') ? { Authorization: `Bearer ${localStorage.getItem('token')}` } : {})
+            'Content-Type': 'application/json'
           }
         }
       );
+      console.log('PUT response:', response);
       // Refetch parent details
       const studentRes = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/students-managements/students/student-with-parent-details/${student.id}`);
       setParentDetails(Array.isArray(studentRes.data.parent_details) ? studentRes.data.parent_details : []);
       setEditParentModalOpen(false);
     } catch (err) {
-      setEditParentError('Failed to update parent.');
+      console.error('PUT error:', err);
+      let msg = 'Failed to update parent.';
+      if (err.response && err.response.data) {
+        msg = err.response.data.detail || err.response.data.message || msg;
+      }
+      setEditParentError(msg);
     } finally {
       setEditParentLoading(false);
     }
@@ -635,7 +643,11 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                                     size="small"
                                     startIcon={<Edit />}
                                     sx={{ position: 'absolute', top: 8, right: 8 }}
-                                    onClick={() => { setEditParentData(parent); setEditParentModalOpen(true); }}
+                                    onClick={() => {
+                                      console.log('Edit button clicked for parent:', parent);
+                                      setEditParentData({ ...parent, parent_id: parent.parent_id });
+                                      setEditParentModalOpen(true);
+                                    }}
                                   >
                                     Edit
                                   </Button>
