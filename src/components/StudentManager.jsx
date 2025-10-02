@@ -290,35 +290,42 @@ const StudentManager = (props) => {
 	};
 
 	const handleAddEditModalOpen = (student = null) => {
-		if (student) {
-			// Only open modal and populate formData, do NOT set selectedStudent (which triggers detail view)
-			setFormData({
-				name: student.name || '',
-				roll_number: student.roll_number || '',
-				date_of_birth: student.date_of_birth || '',
-				gender: student.gender || '',
-				email: student.email || '',
-				phone_number: student.phone_number || '',
-				address: student.address || '',
-				class_id: student.class_id || '',
-				section_id: student.section_id || '',
-				academic_year_id: student.academic_year_id || '',
-				medical_history: student.medical_history || '',
-				emergency_contact_number: student.emergency_contact_number || '',
-				old_school_name: student.old_school_name || '',
-				enrollment_date: student.enrollment_date || '',
-				fee_categories_with_concession: student.fee_categories_with_concession || [],
-				parents: student.parents || []
-			});
-			setFilteredSectionsForDropdown(sections.filter(section => section.class_id === student.class_id));
-			setClassFees([]); // Optionally fetch fees if needed
-			setOptionalFeesForSelectedClass([]);
-			setParentForm({ name: '', phone_number: '', email: '', address: '', gender: '', occupation: '', relationship_to_student: '' });
-			setParentEditIndex(null);
-		} else {
-			resetFormData();
-		}
-		setAddEditModalOpen(true);
+		   if (student) {
+			   // Format date_of_birth and enrollment_date to yyyy-MM-dd for input type="date"
+			   const formatDate = (dateStr) => {
+				   if (!dateStr) return '';
+				   // Handles ISO string or yyyy-MM-dd
+				   const d = new Date(dateStr);
+				   if (isNaN(d.getTime())) return dateStr.split('T')[0];
+				   return d.toISOString().split('T')[0];
+			   };
+			   setFormData({
+				   name: student.name || '',
+				   roll_number: student.roll_number || '',
+				   date_of_birth: formatDate(student.date_of_birth),
+				   gender: student.gender || '',
+				   email: student.email || '',
+				   phone_number: student.phone_number || '',
+				   address: student.address || '',
+				   class_id: student.class_id || '',
+				   section_id: student.section_id || '',
+				   academic_year_id: student.academic_year_id || '',
+				   medical_history: student.medical_history || '',
+				   emergency_contact_number: student.emergency_contact_number || '',
+				   old_school_name: student.old_school_name || '',
+				   enrollment_date: formatDate(student.enrollment_date),
+				   fee_categories_with_concession: student.fee_categories_with_concession || [],
+				   parents: student.parents || []
+			   });
+			   setFilteredSectionsForDropdown(sections.filter(section => section.class_id === student.class_id));
+			   setClassFees([]); // Optionally fetch fees if needed
+			   setOptionalFeesForSelectedClass([]);
+			   setParentForm({ name: '', phone_number: '', email: '', address: '', gender: '', occupation: '', relationship_to_student: '' });
+			   setParentEditIndex(null);
+		   } else {
+			   resetFormData();
+		   }
+		   setAddEditModalOpen(true);
 	};
 
 	const handleAddEditModalClose = () => {
@@ -1233,15 +1240,15 @@ const StudentManager = (props) => {
 
 			{/* Dialog for Add/Edit Student (Generic) */}
 			<Dialog open={addEditModalOpen} onClose={handleAddEditModalClose} maxWidth="md" fullWidth>
-				<DialogTitle>
-					{selectedStudent ? 'Edit Student' : 'Add Student (Generic)'}
-					<IconButton
-						onClick={handleAddEditModalClose}
-						sx={{ position: 'absolute', right: 8, top: 8 }}
-					>
-						<CloseIcon />
-					</IconButton>
-				</DialogTitle>
+				   <DialogTitle>
+					   {formData && formData.name ? 'Edit Student' : 'Add Student (Generic)'}
+					   <IconButton
+						   onClick={handleAddEditModalClose}
+						   sx={{ position: 'absolute', right: 8, top: 8 }}
+					   >
+						   <CloseIcon />
+					   </IconButton>
+				   </DialogTitle>
 				<form onSubmit={handleSubmit}>
 					<DialogContent dividers>
 						<Grid container spacing={2}>
