@@ -642,9 +642,9 @@ const StaffDetails = () => {
             </Tabs>
             {/* Tab Panels */}
             {tab === 0 && (
-              <Grid container spacing={4}>
+              <Grid container spacing={4} alignItems="flex-start">
                 <Grid item xs={12} md={6}>
-                  <Paper elevation={2} sx={{ p: 3, borderRadius: 2, height: '100%', minHeight: 260, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                  <Paper elevation={2} sx={{ p: 3, borderRadius: 2, display: 'flex', flexDirection: 'column', alignSelf: 'flex-start' }}>
                     <Typography variant="h6" fontWeight={600} gutterBottom>Personal Information</Typography>
                     <List dense>
                       <ListItem>
@@ -667,7 +667,7 @@ const StaffDetails = () => {
                   </Paper>
                 </Grid>
                 <Grid item xs={12} md={6}>
-                  <Paper elevation={2} sx={{ p: 3, borderRadius: 2, height: '100%', minHeight: 260, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                  <Paper elevation={2} sx={{ p: 3, borderRadius: 2, display: 'flex', flexDirection: 'column', alignSelf: 'flex-start', maxHeight: 500, overflowY: 'auto' }}>
                     <Typography variant="h6" fontWeight={600} gutterBottom>Active CTC Structure</Typography>
                     {activeCTC ? (
                       <>
