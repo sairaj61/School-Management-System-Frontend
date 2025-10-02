@@ -494,7 +494,7 @@ const StudentManager = (props) => {
 				   roll_number: formData.roll_number.trim(),
 				   // father_name and mother_name removed as per request
 				   date_of_birth: formData.date_of_birth,
-				   enrollment_date: formData.enrollment_date,
+				   enrolment_date: formData.enrolment_date,
 				   gender: formData.gender,
 				   email: formData.email.trim(),
 				   phone_number: formData.phone_number.trim(),
@@ -516,8 +516,9 @@ const StudentManager = (props) => {
 				   setAlert({ open: true, message: 'Student added successfully!', severity: 'success' });
 			   }
 
+			// Only close the modal, do not switch to list page
 			handleAddEditModalClose();
-			fetchStudents(filterStatus, filterAcademicYear);
+			// Optionally, refresh the details of the student if needed
 		} catch (error) {
 			handleApiError(error, setAlert);
 		}
