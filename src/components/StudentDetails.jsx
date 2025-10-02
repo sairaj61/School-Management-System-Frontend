@@ -617,7 +617,7 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
               <Paper elevation={1} sx={{ p: 2, mt: 2, width: '100%' }}>
                 <Typography variant="subtitle2" fontWeight={600} gutterBottom>Personal Info</Typography>
                 <Box sx={{ maxHeight: 220, overflowY: 'auto' }}>
-                  <List dense>
+                  <List dense sx={{ pr: 1, pb: 1, maxHeight: 320, overflowY: 'auto' }}>
                     <ListItem>
                       <ListItemIcon><School color="primary" /></ListItemIcon>
                       <ListItemText primary="Roll Number" secondary={student.roll_number} />
