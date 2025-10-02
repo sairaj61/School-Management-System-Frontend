@@ -563,28 +563,29 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
         <Card sx={{ p: { xs: 2, md: 4 }, borderRadius: 3, boxShadow: 6, position: 'relative', height: '100%', width: '100%', maxWidth: '100%' }}>
           {/* Back Button */}
           <Tooltip title="Go Back">
-            <Button
-              variant="outlined"
-              startIcon={<ArrowBackIosNew />}
+            <IconButton
               onClick={onBack}
               sx={{
                 position: 'absolute',
-                top: 16,
-                left: 16,
-                borderRadius: 2,
-                textTransform: 'none',
-                fontWeight: 600,
+                top: 18,
+                left: 18,
+                bgcolor: 'white',
+                border: '2px solid',
                 borderColor: 'primary.main',
                 color: 'primary.main',
+                boxShadow: 2,
+                width: 48,
+                height: 48,
+                borderRadius: '50%',
+                transition: 'background 0.2s',
                 '&:hover': {
-                  backgroundColor: 'primary.main',
+                  bgcolor: 'primary.main',
                   color: 'white',
-                  borderColor: 'primary.main',
                 }
               }}
             >
-              Back
-            </Button>
+              <ArrowBackIosNew fontSize="medium" />
+            </IconButton>
           </Tooltip>
 
           <Box sx={{ display: 'flex', flexDirection: 'row', height: 'calc(100vh - 32px)' }}>
