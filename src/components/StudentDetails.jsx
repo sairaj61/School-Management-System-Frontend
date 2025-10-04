@@ -12,6 +12,17 @@ import appConfig from '../config/appConfig';
 import StudentAttendance from './StudentAttendance';
 
 const StudentDetails = ({ student, onBack, onEdit }) => {
+  // Delete facility API call
+  const handleDeleteFacility = async (studentId, facilityMappingId) => {
+    if (!window.confirm('Are you sure you want to delete this facility?')) return;
+    try {
+      await axiosInstance.delete(`${appConfig.API_PREFIX_V1}/students-managements/students-facility/${studentId}/facilities/${facilityMappingId}`);
+      setFacilities(prev => prev.filter(f => f.id !== facilityMappingId));
+      setAlert({ open: true, message: 'Facility deleted successfully!', severity: 'success' });
+    } catch (error) {
+      setAlert({ open: true, message: 'Failed to delete facility.', severity: 'error' });
+    }
+  } 
   // Add Parent Modal State
   const [addParentModalOpen, setAddParentModalOpen] = useState(false);
   const [newParentForm, setNewParentForm] = useState({
@@ -1003,7 +1014,7 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                               />
                             </TableCell>
                             <TableCell>
-                              <IconButton color="error" onClick={() => handleDeleteFacility(facility.id)}>
+                              <IconButton color="error" onClick={() => handleDeleteFacility(student.id, facility.id)}>
                                 <Delete />
                               </IconButton>
                             </TableCell>
