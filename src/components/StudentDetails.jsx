@@ -987,10 +987,11 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                   ) : (
                     <>
                       {/* Active Facilities Table */}
-                      <TableContainer component={Paper} sx={{ mt: 2, boxShadow: 2, borderRadius: 2 }}>
+                      <TableContainer component={Paper} sx={{ mt: 2, boxShadow: 2, borderRadius: 2, maxHeight: 260, overflowY: 'auto', position: 'relative' }}>
                         <Table>
                           <TableHead sx={{ backgroundColor: 'primary.light' }}>
                             <TableRow>
+                              <TableCell sx={{ fontWeight: 'bold', width: 40 }}>#</TableCell>
                               <TableCell sx={{ fontWeight: 'bold' }}>Facility Type</TableCell>
                               <TableCell sx={{ fontWeight: 'bold' }}>Start Date</TableCell>
                               <TableCell sx={{ fontWeight: 'bold' }}>End Date</TableCell>
@@ -1002,8 +1003,9 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                             </TableRow>
                           </TableHead>
                           <TableBody>
-                            {facilities.filter(facility => facility.status !== 'DELETED').map(facility => (
+                            {facilities.filter(facility => facility.status !== 'DELETED').map((facility, idx) => (
                               <TableRow key={facility.id} hover>
+                                <TableCell>{idx + 1}</TableCell>
                                 <TableCell>{facility.fee_category?.category_name || 'N/A'}</TableCell>
                                 <TableCell>{facility.start_date ? new Date(facility.start_date).toLocaleDateString() : 'N/A'}</TableCell>
                                 <TableCell>{facility.end_date ? new Date(facility.end_date).toLocaleDateString() : 'N/A'}</TableCell>
@@ -1033,10 +1035,11 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                       {facilities.some(facility => facility.status === 'DELETED') && (
                         <>
                           <Typography variant="h6" sx={{ mt: 4, mb: 2, color: 'error.main' }}>Deleted Facilities</Typography>
-                          <TableContainer component={Paper} sx={{ mb: 2, boxShadow: 2, borderRadius: 2 }}>
+                          <TableContainer component={Paper} sx={{ mb: 2, boxShadow: 2, borderRadius: 2, maxHeight: 180, overflowY: 'auto', position: 'relative' }}>
                             <Table>
                               <TableHead sx={{ backgroundColor: 'error.light' }}>
                                 <TableRow>
+                                  <TableCell sx={{ fontWeight: 'bold', width: 40 }}>#</TableCell>
                                   <TableCell sx={{ fontWeight: 'bold' }}>Facility Type</TableCell>
                                   <TableCell sx={{ fontWeight: 'bold' }}>Start Date</TableCell>
                                   <TableCell sx={{ fontWeight: 'bold' }}>End Date</TableCell>
@@ -1047,8 +1050,9 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                                 </TableRow>
                               </TableHead>
                               <TableBody>
-                                {facilities.filter(facility => facility.status === 'DELETED').map(facility => (
+                                {facilities.filter(facility => facility.status === 'DELETED').map((facility, idx) => (
                                   <TableRow key={facility.id} hover>
+                                    <TableCell>{idx + 1}</TableCell>
                                     <TableCell>{facility.fee_category?.category_name || 'N/A'}</TableCell>
                                     <TableCell>{facility.start_date ? new Date(facility.start_date).toLocaleDateString() : 'N/A'}</TableCell>
                                     <TableCell>{facility.end_date ? new Date(facility.end_date).toLocaleDateString() : 'N/A'}</TableCell>
