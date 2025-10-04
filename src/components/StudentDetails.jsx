@@ -1036,7 +1036,7 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                         {/* Active Facilities Table */}
                         <TableContainer component={Paper} sx={{ mt: 2, boxShadow: 2, borderRadius: 2, maxHeight: 260, overflowY: 'auto', position: 'relative' }}>
                           <Table stickyHeader>
-                            <TableHead sx={{ backgroundColor: 'primary.light' }}>
+                            <TableHead sx={{ backgroundColor: theme => theme.palette.secondary.main }}>
                               <TableRow>
                                 <TableCell sx={{ fontWeight: 'bold', width: 40 }}>#</TableCell>
                                 <TableCell sx={{ fontWeight: 'bold' }}>Facility Type</TableCell>
@@ -1100,7 +1100,7 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                         <Typography variant="h6" sx={{ mt: 4, mb: 2, color: 'info.main' }}>Non-Core Facilities</Typography>
                         <TableContainer component={Paper} sx={{ mb: 2, boxShadow: 2, borderRadius: 2, maxHeight: 180, overflowY: 'auto', position: 'relative' }}>
                           <Table stickyHeader>
-                            <TableHead sx={{ backgroundColor: 'info.light' }}>
+                            <TableHead sx={{ backgroundColor: theme => theme.palette.primary.main }}>
                               <TableRow>
                                 <TableCell sx={{ fontWeight: 'bold', width: 40 }}>#</TableCell>
                                 <TableCell sx={{ fontWeight: 'bold' }}>Facility Type</TableCell>
