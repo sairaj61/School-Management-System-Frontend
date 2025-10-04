@@ -567,7 +567,7 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
               onClick={onBack}
               sx={{
                 position: 'absolute',
-                top: 18,
+                top: 6,
                 left: 18,
                 bgcolor: 'white',
                 border: '2px solid',
@@ -578,6 +578,7 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                 height: 48,
                 borderRadius: '50%',
                 transition: 'background 0.2s',
+                zIndex: 10,
                 '&:hover': {
                   bgcolor: 'primary.main',
                   color: 'white',
@@ -592,17 +593,17 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
             {/* Sidebar: Student Details */}
             <Box sx={{ width: { xs: '100%', md: '22%' }, minWidth: 220, maxWidth: 340, pr: { md: 3 }, borderRight: { md: '1px solid #e0e0e0' }, display: 'flex', flexDirection: 'column', alignItems: 'center', pt: 2 }}>
               <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 2 }}>
-                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 2 }}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 2, mt: 5 }}>
                   <Avatar
                     src={profileImage}
-                    sx={{ width: 180, height: 180, bgcolor: 'primary.main', border: '3px solid', borderColor: 'primary.light', borderRadius: 2 }}
+                    sx={{ width: 240, height: 240, bgcolor: 'primary.main', border: '3px solid', borderColor: 'primary.light', borderRadius: 2, m: 0 }}
                   >
-                    <Person fontSize="large" sx={{ fontSize: 100 }} />
+                    <Person fontSize="large" sx={{ fontSize: 140 }} />
                   </Avatar>
-                  <Typography variant="h5" fontWeight={700} color="text.primary" sx={{ mt: 2, mb: 1 }}>
+                  <Typography variant="h5" fontWeight={700} color="text.primary" sx={{ mt: 1, mb: 1 }}>
                     {student.name}
                   </Typography>
-                  <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', mt: 1, gap: 2 }}>
+                  <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', mt: 1, gap: 1 }}>
                     <IconButton
                       component="label"
                       color="primary"
