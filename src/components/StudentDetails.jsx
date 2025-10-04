@@ -1014,9 +1014,11 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                               />
                             </TableCell>
                             <TableCell>
-                              <IconButton color="error" onClick={() => handleDeleteFacility(student.id, facility.id)}>
-                                <Delete />
-                              </IconButton>
+                              {facility.status !== 'DELETED' && (
+                                <IconButton color="error" onClick={() => handleDeleteFacility(student.id, facility.id)}>
+                                  <Delete />
+                                </IconButton>
+                              )}
                             </TableCell>
                           </TableRow>
                         ))}
