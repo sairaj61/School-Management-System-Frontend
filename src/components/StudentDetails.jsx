@@ -17,7 +17,9 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
     if (!window.confirm('Are you sure you want to delete this facility?')) return;
     try {
       await axiosInstance.delete(`${appConfig.API_PREFIX_V1}/students-managements/students-facility/${studentId}/facilities/${facilityMappingId}`);
-      setFacilities(prev => prev.filter(f => f.id !== facilityMappingId));
+      // Refetch facilities after delete
+      const facilitiesRes = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/students-managements/students-facility/${studentId}/facilities`);
+      setFacilities(Array.isArray(facilitiesRes.data) ? facilitiesRes.data : []);
       setAlert({ open: true, message: 'Facility deleted successfully!', severity: 'success' });
     } catch (error) {
       setAlert({ open: true, message: 'Failed to delete facility.', severity: 'error' });
