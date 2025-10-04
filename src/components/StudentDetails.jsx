@@ -996,8 +996,10 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                               <TableCell sx={{ fontWeight: 'bold' }}>Start Date</TableCell>
                               <TableCell sx={{ fontWeight: 'bold' }}>End Date</TableCell>
                               <TableCell sx={{ fontWeight: 'bold' }}>Amount</TableCell>
+                              <TableCell sx={{ fontWeight: 'bold' }}>Concession Type</TableCell>
                               <TableCell sx={{ fontWeight: 'bold' }}>Concession</TableCell>
                               <TableCell sx={{ fontWeight: 'bold' }}>Net Amount</TableCell>
+                              <TableCell sx={{ fontWeight: 'bold' }}>Payment Schedule</TableCell>
                               <TableCell sx={{ fontWeight: 'bold' }}>Status</TableCell>
                               <TableCell sx={{ fontWeight: 'bold' }}>Actions</TableCell>
                             </TableRow>
@@ -1006,12 +1008,24 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                             {facilities.filter(facility => facility.status !== 'DELETED').map((facility, idx) => (
                               <TableRow key={facility.id} hover>
                                 <TableCell>{idx + 1}</TableCell>
-                                <TableCell>{facility.fee_category?.category_name || 'N/A'}</TableCell>
+                                <TableCell>
+                                  <Tooltip title={facility.fee?.description || ''} arrow>
+                                    <span>{facility.fee_category?.category_name || 'N/A'}</span>
+                                  </Tooltip>
+                                </TableCell>
                                 <TableCell>{facility.start_date ? new Date(facility.start_date).toLocaleDateString() : 'N/A'}</TableCell>
                                 <TableCell>{facility.end_date ? new Date(facility.end_date).toLocaleDateString() : 'N/A'}</TableCell>
-                                <TableCell>₹{parseFloat(facility.amount || facility.fee?.amount || 0).toLocaleString()}</TableCell>
+                                <TableCell>₹{parseFloat(facility.fee?.amount || 0).toLocaleString()}</TableCell>
+                                <TableCell>
+                                  {facility.concession_type ? (
+                                    <Tooltip title={facility.concession_type.description || ''} arrow>
+                                      <span>{facility.concession_type.concession_name || '-'}</span>
+                                    </Tooltip>
+                                  ) : '-'}
+                                </TableCell>
                                 <TableCell>₹{parseFloat(facility.concession_amount || 0).toLocaleString()}</TableCell>
-                                <TableCell>₹{parseFloat((facility.amount || facility.fee?.amount || 0) - (facility.concession_amount || 0)).toLocaleString()}</TableCell>
+                                <TableCell>₹{parseFloat(facility.amount || 0).toLocaleString()}</TableCell>
+                                <TableCell>{facility.fee?.payment_schedule || '-'}</TableCell>
                                 <TableCell>
                                   <Chip
                                     label={facility.status || 'ACTIVE'}
@@ -1044,8 +1058,10 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                                   <TableCell sx={{ fontWeight: 'bold' }}>Start Date</TableCell>
                                   <TableCell sx={{ fontWeight: 'bold' }}>End Date</TableCell>
                                   <TableCell sx={{ fontWeight: 'bold' }}>Amount</TableCell>
+                                  <TableCell sx={{ fontWeight: 'bold' }}>Concession Type</TableCell>
                                   <TableCell sx={{ fontWeight: 'bold' }}>Concession</TableCell>
                                   <TableCell sx={{ fontWeight: 'bold' }}>Net Amount</TableCell>
+                                  <TableCell sx={{ fontWeight: 'bold' }}>Payment Schedule</TableCell>
                                   <TableCell sx={{ fontWeight: 'bold' }}>Status</TableCell>
                                 </TableRow>
                               </TableHead>
@@ -1053,12 +1069,24 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                                 {facilities.filter(facility => facility.status === 'DELETED').map((facility, idx) => (
                                   <TableRow key={facility.id} hover>
                                     <TableCell>{idx + 1}</TableCell>
-                                    <TableCell>{facility.fee_category?.category_name || 'N/A'}</TableCell>
+                                    <TableCell>
+                                      <Tooltip title={facility.fee?.description || ''} arrow>
+                                        <span>{facility.fee_category?.category_name || 'N/A'}</span>
+                                      </Tooltip>
+                                    </TableCell>
                                     <TableCell>{facility.start_date ? new Date(facility.start_date).toLocaleDateString() : 'N/A'}</TableCell>
                                     <TableCell>{facility.end_date ? new Date(facility.end_date).toLocaleDateString() : 'N/A'}</TableCell>
-                                    <TableCell>₹{parseFloat(facility.amount || facility.fee?.amount || 0).toLocaleString()}</TableCell>
+                                    <TableCell>₹{parseFloat(facility.fee?.amount || 0).toLocaleString()}</TableCell>
+                                    <TableCell>
+                                      {facility.concession_type ? (
+                                        <Tooltip title={facility.concession_type.description || ''} arrow>
+                                          <span>{facility.concession_type.concession_name || '-'}</span>
+                                        </Tooltip>
+                                      ) : '-'}
+                                    </TableCell>
                                     <TableCell>₹{parseFloat(facility.concession_amount || 0).toLocaleString()}</TableCell>
-                                    <TableCell>₹{parseFloat((facility.amount || facility.fee?.amount || 0) - (facility.concession_amount || 0)).toLocaleString()}</TableCell>
+                                    <TableCell>₹{parseFloat(facility.amount || 0).toLocaleString()}</TableCell>
+                                    <TableCell>{facility.fee?.payment_schedule || '-'}</TableCell>
                                     <TableCell>
                                       <Chip
                                         label={facility.status || 'DELETED'}
