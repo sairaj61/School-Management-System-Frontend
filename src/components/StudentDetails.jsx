@@ -985,49 +985,92 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                   {facilities.length === 0 ? (
                     <Typography color="text.secondary">No facilities enrolled.</Typography>
                   ) : (
-                    <TableContainer component={Paper} sx={{ mt: 2, boxShadow: 2, borderRadius: 2 }}>
-                      <Table>
-                        <TableHead sx={{ backgroundColor: 'primary.light' }}>
-                          <TableRow>
-                            <TableCell sx={{ fontWeight: 'bold' }}>Facility Type</TableCell>
-                            <TableCell sx={{ fontWeight: 'bold' }}>Start Date</TableCell>
-                            <TableCell sx={{ fontWeight: 'bold' }}>End Date</TableCell>
-                            <TableCell sx={{ fontWeight: 'bold' }}>Amount</TableCell>
-                            <TableCell sx={{ fontWeight: 'bold' }}>Concession</TableCell>
-                            <TableCell sx={{ fontWeight: 'bold' }}>Net Amount</TableCell>
-                            <TableCell sx={{ fontWeight: 'bold' }}>Status</TableCell>
-                            <TableCell sx={{ fontWeight: 'bold' }}>Actions</TableCell>
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {facilities.map(facility => (
-                          <TableRow key={facility.id} hover>
-                            <TableCell>{facility.fee_category?.category_name || 'N/A'}</TableCell>
-                            <TableCell>{facility.start_date ? new Date(facility.start_date).toLocaleDateString() : 'N/A'}</TableCell>
-                            <TableCell>{facility.end_date ? new Date(facility.end_date).toLocaleDateString() : 'N/A'}</TableCell>
-                            <TableCell>₹{parseFloat(facility.amount || facility.fee?.amount || 0).toLocaleString()}</TableCell>
-                            <TableCell>₹{parseFloat(facility.concession_amount || 0).toLocaleString()}</TableCell>
-                            <TableCell>₹{parseFloat((facility.amount || facility.fee?.amount || 0) - (facility.concession_amount || 0)).toLocaleString()}</TableCell>
-                            <TableCell>
-                              <Chip
-                                label={facility.status || 'ACTIVE'}
-                                color={facility.status === 'ACTIVE' ? 'success' : 'warning'}
-                                size="small"
-                              />
-                            </TableCell>
-                            <TableCell>
-                              {facility.status !== 'DELETED' && (
-                                <IconButton color="error" onClick={() => handleDeleteFacility(student.id, facility.id)}>
-                                  <Delete />
-                                </IconButton>
-                              )}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </TableContainer>
-                )}
+                    <>
+                      {/* Active Facilities Table */}
+                      <TableContainer component={Paper} sx={{ mt: 2, boxShadow: 2, borderRadius: 2 }}>
+                        <Table>
+                          <TableHead sx={{ backgroundColor: 'primary.light' }}>
+                            <TableRow>
+                              <TableCell sx={{ fontWeight: 'bold' }}>Facility Type</TableCell>
+                              <TableCell sx={{ fontWeight: 'bold' }}>Start Date</TableCell>
+                              <TableCell sx={{ fontWeight: 'bold' }}>End Date</TableCell>
+                              <TableCell sx={{ fontWeight: 'bold' }}>Amount</TableCell>
+                              <TableCell sx={{ fontWeight: 'bold' }}>Concession</TableCell>
+                              <TableCell sx={{ fontWeight: 'bold' }}>Net Amount</TableCell>
+                              <TableCell sx={{ fontWeight: 'bold' }}>Status</TableCell>
+                              <TableCell sx={{ fontWeight: 'bold' }}>Actions</TableCell>
+                            </TableRow>
+                          </TableHead>
+                          <TableBody>
+                            {facilities.filter(facility => facility.status !== 'DELETED').map(facility => (
+                              <TableRow key={facility.id} hover>
+                                <TableCell>{facility.fee_category?.category_name || 'N/A'}</TableCell>
+                                <TableCell>{facility.start_date ? new Date(facility.start_date).toLocaleDateString() : 'N/A'}</TableCell>
+                                <TableCell>{facility.end_date ? new Date(facility.end_date).toLocaleDateString() : 'N/A'}</TableCell>
+                                <TableCell>₹{parseFloat(facility.amount || facility.fee?.amount || 0).toLocaleString()}</TableCell>
+                                <TableCell>₹{parseFloat(facility.concession_amount || 0).toLocaleString()}</TableCell>
+                                <TableCell>₹{parseFloat((facility.amount || facility.fee?.amount || 0) - (facility.concession_amount || 0)).toLocaleString()}</TableCell>
+                                <TableCell>
+                                  <Chip
+                                    label={facility.status || 'ACTIVE'}
+                                    color={facility.status === 'ACTIVE' ? 'success' : 'warning'}
+                                    size="small"
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  {facility.status !== 'DELETED' && (
+                                    <IconButton color="error" onClick={() => handleDeleteFacility(student.id, facility.id)}>
+                                      <Delete />
+                                    </IconButton>
+                                  )}
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </TableContainer>
+                      {/* Deleted Facilities Table */}
+                      {facilities.some(facility => facility.status === 'DELETED') && (
+                        <>
+                          <Typography variant="h6" sx={{ mt: 4, mb: 2, color: 'error.main' }}>Deleted Facilities</Typography>
+                          <TableContainer component={Paper} sx={{ mb: 2, boxShadow: 2, borderRadius: 2 }}>
+                            <Table>
+                              <TableHead sx={{ backgroundColor: 'error.light' }}>
+                                <TableRow>
+                                  <TableCell sx={{ fontWeight: 'bold' }}>Facility Type</TableCell>
+                                  <TableCell sx={{ fontWeight: 'bold' }}>Start Date</TableCell>
+                                  <TableCell sx={{ fontWeight: 'bold' }}>End Date</TableCell>
+                                  <TableCell sx={{ fontWeight: 'bold' }}>Amount</TableCell>
+                                  <TableCell sx={{ fontWeight: 'bold' }}>Concession</TableCell>
+                                  <TableCell sx={{ fontWeight: 'bold' }}>Net Amount</TableCell>
+                                  <TableCell sx={{ fontWeight: 'bold' }}>Status</TableCell>
+                                </TableRow>
+                              </TableHead>
+                              <TableBody>
+                                {facilities.filter(facility => facility.status === 'DELETED').map(facility => (
+                                  <TableRow key={facility.id} hover>
+                                    <TableCell>{facility.fee_category?.category_name || 'N/A'}</TableCell>
+                                    <TableCell>{facility.start_date ? new Date(facility.start_date).toLocaleDateString() : 'N/A'}</TableCell>
+                                    <TableCell>{facility.end_date ? new Date(facility.end_date).toLocaleDateString() : 'N/A'}</TableCell>
+                                    <TableCell>₹{parseFloat(facility.amount || facility.fee?.amount || 0).toLocaleString()}</TableCell>
+                                    <TableCell>₹{parseFloat(facility.concession_amount || 0).toLocaleString()}</TableCell>
+                                    <TableCell>₹{parseFloat((facility.amount || facility.fee?.amount || 0) - (facility.concession_amount || 0)).toLocaleString()}</TableCell>
+                                    <TableCell>
+                                      <Chip
+                                        label={facility.status || 'DELETED'}
+                                        color="error"
+                                        size="small"
+                                      />
+                                    </TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                          </TableContainer>
+                        </>
+                      )}
+                    </>
+                  )}
               </Box>
             )}
           </Box>
