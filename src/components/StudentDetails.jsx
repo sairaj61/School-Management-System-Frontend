@@ -1000,6 +1000,37 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                     });
                     const activeMappings = allMappings.filter(m => m.status !== 'DELETED');
                     const deletedMappings = allMappings.filter(m => m.status === 'DELETED');
+                    // For non-core, include fees with core_fee: false even if no facility_mappings
+                    const nonCoreFees = fixedFees.filter(fee => fee.fee_category && fee.fee_category.core_fee === false);
+                    // If facility_mappings exists, use those, else use the fee itself
+                    const nonCoreRows = [];
+                    nonCoreFees.forEach(fee => {
+                      if (fee.facility_mappings && fee.facility_mappings.length > 0) {
+                        fee.facility_mappings.forEach(mapping => {
+                          nonCoreRows.push({
+                            ...mapping,
+                            fee,
+                            fee_category: fee.fee_category,
+                            concession_type: fee.concession_type,
+                            concession_amount: fee.concession_amount,
+                            amount: fee.amount,
+                            status: mapping.status || fee.status,
+                          });
+                        });
+                      } else {
+                        nonCoreRows.push({
+                          id: fee.id,
+                          fee,
+                          fee_category: fee.fee_category,
+                          concession_type: fee.concession_type,
+                          concession_amount: fee.concession_amount,
+                          amount: fee.amount,
+                          status: fee.status,
+                          start_date: fee.created_at,
+                          end_date: fee.updated_at,
+                        });
+                      }
+                    });
                     return (
                       <>
                         {/* Active Facilities Table */}
@@ -1044,7 +1075,7 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                                     </TableCell>
                                     <TableCell>₹{parseFloat(mapping.concession_amount || 0).toLocaleString()}</TableCell>
                                     <TableCell>₹{parseFloat(mapping.amount || 0).toLocaleString()}</TableCell>
-                                    <TableCell>{mapping.fee?.payment_schedule || '-'}</TableCell>
+                                    <TableCell>{mapping.fee_category?.payment_schedule || '-'}</TableCell>
                                     <TableCell>
                                       <Chip
                                         label={mapping.status || 'ACTIVE'}
@@ -1058,6 +1089,62 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                                           <Delete />
                                         </IconButton>
                                       )}
+                                    </TableCell>
+                                  </TableRow>
+                                ))
+                              )}
+                            </TableBody>
+                          </Table>
+                        </TableContainer>
+                        {/* Non-Core Facilities Table */}
+                        <Typography variant="h6" sx={{ mt: 4, mb: 2, color: 'info.main' }}>Non-Core Facilities</Typography>
+                        <TableContainer component={Paper} sx={{ mb: 2, boxShadow: 2, borderRadius: 2, maxHeight: 180, overflowY: 'auto', position: 'relative' }}>
+                          <Table>
+                            <TableHead sx={{ backgroundColor: 'info.light' }}>
+                              <TableRow>
+                                <TableCell sx={{ fontWeight: 'bold', width: 40 }}>#</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold' }}>Facility Type</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold' }}>Start Date</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold' }}>Amount</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold' }}>Concession Type</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold' }}>Concession</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold' }}>Net Amount</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold' }}>Payment Schedule</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold' }}>Status</TableCell>
+                              </TableRow>
+                            </TableHead>
+                            <TableBody>
+                              {nonCoreRows.length === 0 ? (
+                                <TableRow>
+                                  <TableCell colSpan={9} align="center">No non-core facilities found.</TableCell>
+                                </TableRow>
+                              ) : (
+                                nonCoreRows.map((row, idx) => (
+                                  <TableRow key={row.id} hover>
+                                    <TableCell>{idx + 1}</TableCell>
+                                    <TableCell>
+                                      <Tooltip title={row.fee?.description || ''} arrow>
+                                        <span>{row.fee_category?.category_name || 'N/A'}</span>
+                                      </Tooltip>
+                                    </TableCell>
+                                    <TableCell>{row.start_date ? new Date(row.start_date).toLocaleDateString() : 'N/A'}</TableCell>
+                                    <TableCell>₹{parseFloat(row.fee?.amount || 0).toLocaleString()}</TableCell>
+                                    <TableCell>
+                                      {row.concession_type ? (
+                                        <Tooltip title={row.concession_type.description || ''} arrow>
+                                          <span>{row.concession_type.concession_name || '-'}</span>
+                                        </Tooltip>
+                                      ) : '-'}
+                                    </TableCell>
+                                    <TableCell>₹{parseFloat(row.concession_amount || 0).toLocaleString()}</TableCell>
+                                    <TableCell>₹{parseFloat(row.amount || 0).toLocaleString()}</TableCell>
+                                    <TableCell>{row.fee_category?.payment_schedule || '-'}</TableCell>
+                                    <TableCell>
+                                      <Chip
+                                        label={row.status || 'ACTIVE'}
+                                        color={row.status === 'ACTIVE' ? 'success' : 'warning'}
+                                        size="small"
+                                      />
                                     </TableCell>
                                   </TableRow>
                                 ))
@@ -1106,7 +1193,7 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                                       </TableCell>
                                       <TableCell>₹{parseFloat(mapping.concession_amount || 0).toLocaleString()}</TableCell>
                                       <TableCell>₹{parseFloat(mapping.amount || 0).toLocaleString()}</TableCell>
-                                      <TableCell>{mapping.fee?.payment_schedule || '-'}</TableCell>
+                                      <TableCell>{mapping.fee_category?.payment_schedule || '-'}</TableCell>
                                       <TableCell>
                                         <Chip
                                           label={mapping.status || 'DELETED'}
