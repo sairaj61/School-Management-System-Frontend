@@ -1110,13 +1110,14 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                                 <TableCell sx={{ fontWeight: 'bold' }}>Concession</TableCell>
                                 <TableCell sx={{ fontWeight: 'bold' }}>Net Amount</TableCell>
                                 <TableCell sx={{ fontWeight: 'bold' }}>Payment Schedule</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold' }}>Educational Supplies</TableCell>
                                 <TableCell sx={{ fontWeight: 'bold' }}>Status</TableCell>
                               </TableRow>
                             </TableHead>
                             <TableBody>
                               {nonCoreRows.length === 0 ? (
                                 <TableRow>
-                                  <TableCell colSpan={9} align="center">No non-core facilities found.</TableCell>
+                                  <TableCell colSpan={10} align="center">No non-core facilities found.</TableCell>
                                 </TableRow>
                               ) : (
                                 nonCoreRows.map((row, idx) => (
@@ -1139,6 +1140,7 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                                     <TableCell>₹{parseFloat(row.concession_amount || 0).toLocaleString()}</TableCell>
                                     <TableCell>₹{parseFloat(row.amount || 0).toLocaleString()}</TableCell>
                                     <TableCell>{row.fee_category?.payment_schedule || '-'}</TableCell>
+                                    <TableCell>{row.fee_category?.educational_supplies ? 'Yes' : 'No'}</TableCell>
                                     <TableCell>
                                       <Chip
                                         label={row.status || 'ACTIVE'}
