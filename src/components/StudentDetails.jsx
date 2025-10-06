@@ -17,14 +17,14 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
     if (!window.confirm('Are you sure you want to delete this facility?')) return;
     try {
       await axiosInstance.delete(`${appConfig.API_PREFIX_V1}/students-managements/students-facility/${studentId}/facilities/${facilityMappingId}`);
-      // Refetch facilities after delete
-      const facilitiesRes = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/students-managements/students-facility/${studentId}/facilities`);
-      setFacilities(Array.isArray(facilitiesRes.data) ? facilitiesRes.data : []);
+      // Refetch fees after delete (no need to refetch facilities)
+      const feesRes = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/students-managements/students/${studentId}/fees`);
+      setFixedFees(Array.isArray(feesRes.data.fixed_fees) ? feesRes.data.fixed_fees : []);
       setAlert({ open: true, message: 'Facility deleted successfully!', severity: 'success' });
     } catch (error) {
       setAlert({ open: true, message: 'Failed to delete facility.', severity: 'error' });
     }
-  } 
+  }
   // Add Parent Modal State
   const [addParentModalOpen, setAddParentModalOpen] = useState(false);
   const [newParentForm, setNewParentForm] = useState({
