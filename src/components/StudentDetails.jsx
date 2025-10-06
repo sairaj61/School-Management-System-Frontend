@@ -12,6 +12,19 @@ import appConfig from '../config/appConfig';
 import StudentAttendance from './StudentAttendance';
 
 const StudentDetails = ({ student, onBack, onEdit }) => {
+  // Delete facility API call
+  const handleDeleteFacility = async (studentId, facilityMappingId) => {
+    if (!window.confirm('Are you sure you want to delete this facility?')) return;
+    try {
+      await axiosInstance.delete(`${appConfig.API_PREFIX_V1}/students-managements/students-facility/${studentId}/facilities/${facilityMappingId}`);
+      // Refetch fees after delete (no need to refetch facilities)
+      const feesRes = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/students-managements/students/${studentId}/fees`);
+      setFixedFees(Array.isArray(feesRes.data.fixed_fees) ? feesRes.data.fixed_fees : []);
+      setAlert({ open: true, message: 'Facility deleted successfully!', severity: 'success' });
+    } catch (error) {
+      setAlert({ open: true, message: 'Failed to delete facility.', severity: 'error' });
+    }
+  }
   // Add Parent Modal State
   const [addParentModalOpen, setAddParentModalOpen] = useState(false);
   const [newParentForm, setNewParentForm] = useState({
@@ -567,7 +580,7 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
               onClick={onBack}
               sx={{
                 position: 'absolute',
-                top: 18,
+                top: 6,
                 left: 18,
                 bgcolor: 'white',
                 border: '2px solid',
@@ -578,6 +591,7 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                 height: 48,
                 borderRadius: '50%',
                 transition: 'background 0.2s',
+                zIndex: 10,
                 '&:hover': {
                   bgcolor: 'primary.main',
                   color: 'white',
@@ -592,17 +606,17 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
             {/* Sidebar: Student Details */}
             <Box sx={{ width: { xs: '100%', md: '22%' }, minWidth: 220, maxWidth: 340, pr: { md: 3 }, borderRight: { md: '1px solid #e0e0e0' }, display: 'flex', flexDirection: 'column', alignItems: 'center', pt: 2 }}>
               <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 2 }}>
-                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 2 }}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 2, mt: 5 }}>
                   <Avatar
                     src={profileImage}
-                    sx={{ width: 180, height: 180, bgcolor: 'primary.main', border: '3px solid', borderColor: 'primary.light', borderRadius: 2 }}
+                    sx={{ width: 240, height: 240, bgcolor: 'primary.main', border: '3px solid', borderColor: 'primary.light', borderRadius: 2, m: 0 }}
                   >
-                    <Person fontSize="large" sx={{ fontSize: 100 }} />
+                    <Person fontSize="large" sx={{ fontSize: 140 }} />
                   </Avatar>
-                  <Typography variant="h5" fontWeight={700} color="text.primary" sx={{ mt: 2, mb: 1 }}>
+                  <Typography variant="h5" fontWeight={700} color="text.primary" sx={{ mt: 1, mb: 1 }}>
                     {student.name}
                   </Typography>
-                  <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', mt: 1, gap: 2 }}>
+                  <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', mt: 1, gap: 1 }}>
                     <IconButton
                       component="label"
                       color="primary"
@@ -968,51 +982,238 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                       Add Facility
                     </Button>
                   </Box>
-                  {facilities.length === 0 ? (
-                    <Typography color="text.secondary">No facilities enrolled.</Typography>
-                  ) : (
-                    <TableContainer component={Paper} sx={{ mt: 2, boxShadow: 2, borderRadius: 2 }}>
-                      <Table>
-                        <TableHead sx={{ backgroundColor: 'primary.light' }}>
-                          <TableRow>
-                            <TableCell sx={{ fontWeight: 'bold' }}>Facility Type</TableCell>
-                            <TableCell sx={{ fontWeight: 'bold' }}>Start Date</TableCell>
-                            <TableCell sx={{ fontWeight: 'bold' }}>End Date</TableCell>
-                            <TableCell sx={{ fontWeight: 'bold' }}>Amount</TableCell>
-                            <TableCell sx={{ fontWeight: 'bold' }}>Concession</TableCell>
-                            <TableCell sx={{ fontWeight: 'bold' }}>Net Amount</TableCell>
-                            <TableCell sx={{ fontWeight: 'bold' }}>Status</TableCell>
-                            <TableCell sx={{ fontWeight: 'bold' }}>Actions</TableCell>
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {facilities.map(facility => (
-                          <TableRow key={facility.id} hover>
-                            <TableCell>{facility.fee_category?.category_name || 'N/A'}</TableCell>
-                            <TableCell>{facility.start_date ? new Date(facility.start_date).toLocaleDateString() : 'N/A'}</TableCell>
-                            <TableCell>{facility.end_date ? new Date(facility.end_date).toLocaleDateString() : 'N/A'}</TableCell>
-                            <TableCell>₹{parseFloat(facility.amount || facility.fee?.amount || 0).toLocaleString()}</TableCell>
-                            <TableCell>₹{parseFloat(facility.concession_amount || 0).toLocaleString()}</TableCell>
-                            <TableCell>₹{parseFloat((facility.amount || facility.fee?.amount || 0) - (facility.concession_amount || 0)).toLocaleString()}</TableCell>
-                            <TableCell>
-                              <Chip
-                                label={facility.status || 'ACTIVE'}
-                                color={facility.status === 'ACTIVE' ? 'success' : 'warning'}
-                                size="small"
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <IconButton color="error" onClick={() => handleDeleteFacility(facility.id)}>
-                                <Delete />
-                              </IconButton>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </TableContainer>
-                )}
-              </Box>
+                  {/* Map facility_mappings from fixedFees */}
+                  {(() => {
+                    // Flatten all facility mappings with fee info
+                    const allMappings = [];
+                    fixedFees.forEach((fee) => {
+                      (fee.facility_mappings || []).forEach((mapping) => {
+                        allMappings.push({
+                          ...mapping,
+                          fee,
+                          fee_category: fee.fee_category,
+                          concession_type: fee.concession_type,
+                          concession_amount: fee.concession_amount,
+                          amount: fee.amount,
+                        });
+                      });
+                    });
+                    const activeMappings = allMappings.filter(m => m.status !== 'DELETED');
+                    const deletedMappings = allMappings.filter(m => m.status === 'DELETED');
+                    // For non-core, include fees with core_fee: false even if no facility_mappings
+                    const nonCoreFees = fixedFees.filter(fee => fee.fee_category && fee.fee_category.core_fee === false);
+                    // If facility_mappings exists, use those, else use the fee itself
+                    const nonCoreRows = [];
+                    nonCoreFees.forEach(fee => {
+                      if (fee.facility_mappings && fee.facility_mappings.length > 0) {
+                        fee.facility_mappings.forEach(mapping => {
+                          nonCoreRows.push({
+                            ...mapping,
+                            fee,
+                            fee_category: fee.fee_category,
+                            concession_type: fee.concession_type,
+                            concession_amount: fee.concession_amount,
+                            amount: fee.amount,
+                            status: mapping.status || fee.status,
+                          });
+                        });
+                      } else {
+                        nonCoreRows.push({
+                          id: fee.id,
+                          fee,
+                          fee_category: fee.fee_category,
+                          concession_type: fee.concession_type,
+                          concession_amount: fee.concession_amount,
+                          amount: fee.amount,
+                          status: fee.status,
+                          start_date: fee.created_at,
+                          end_date: fee.updated_at,
+                        });
+                      }
+                    });
+                    return (
+                      <>
+                        {/* Active Facilities Table */}
+                        <TableContainer component={Paper} sx={{ mt: 2, boxShadow: 2, borderRadius: 2, maxHeight: 260, overflowY: 'auto', position: 'relative' }}>
+                          <Table stickyHeader>
+                            <TableHead sx={{ backgroundColor: theme => theme.palette.secondary.main }}>
+                              <TableRow>
+                                <TableCell sx={{ fontWeight: 'bold', width: 40 }}>#</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold' }}>Facility Type</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold' }}>Start Date</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold' }}>Amount</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold' }}>Concession Type</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold' }}>Concession</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold' }}>Net Amount</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold' }}>Payment Schedule</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold' }}>Status</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold' }}>Actions</TableCell>
+                              </TableRow>
+                            </TableHead>
+                            <TableBody>
+                              {activeMappings.length === 0 ? (
+                                <TableRow>
+                                  <TableCell colSpan={10} align="center">No active facilities enrolled.</TableCell>
+                                </TableRow>
+                              ) : (
+                                activeMappings.map((mapping, idx) => (
+                                  <TableRow key={mapping.id} hover>
+                                    <TableCell>{idx + 1}</TableCell>
+                                    <TableCell>
+                                      <Tooltip title={mapping.fee?.description || ''} arrow>
+                                        <span>{mapping.fee_category?.category_name || 'N/A'}</span>
+                                      </Tooltip>
+                                    </TableCell>
+                                    <TableCell>{mapping.start_date ? new Date(mapping.start_date).toLocaleDateString() : 'N/A'}</TableCell>
+                                    <TableCell>₹{parseFloat(mapping.fee?.amount || 0).toLocaleString()}</TableCell>
+                                    <TableCell>
+                                      {mapping.concession_type ? (
+                                        <Tooltip title={mapping.concession_type.description || ''} arrow>
+                                          <span>{mapping.concession_type.concession_name || '-'}</span>
+                                        </Tooltip>
+                                      ) : '-'}
+                                    </TableCell>
+                                    <TableCell>₹{parseFloat(mapping.concession_amount || 0).toLocaleString()}</TableCell>
+                                    <TableCell>₹{parseFloat(mapping.amount || 0).toLocaleString()}</TableCell>
+                                    <TableCell>{mapping.fee_category?.payment_schedule || '-'}</TableCell>
+                                    <TableCell>
+                                      <Chip
+                                        label={mapping.status || 'ACTIVE'}
+                                        color={mapping.status === 'ACTIVE' ? 'success' : 'warning'}
+                                        size="small"
+                                      />
+                                    </TableCell>
+                                    <TableCell>
+                                      {mapping.status !== 'DELETED' && (
+                                        <IconButton color="error" onClick={() => handleDeleteFacility(student.id, mapping.id)}>
+                                          <Delete />
+                                        </IconButton>
+                                      )}
+                                    </TableCell>
+                                  </TableRow>
+                                ))
+                              )}
+                            </TableBody>
+                          </Table>
+                        </TableContainer>
+                        {/* Non-Core Facilities Table */}
+                        <Typography variant="h6" sx={{ mt: 4, mb: 2, color: 'info.main' }}>Non-Core Facilities</Typography>
+                        <TableContainer component={Paper} sx={{ mb: 2, boxShadow: 2, borderRadius: 2, maxHeight: 180, overflowY: 'auto', position: 'relative' }}>
+                          <Table stickyHeader>
+                            <TableHead sx={{ backgroundColor: theme => theme.palette.primary.main }}>
+                              <TableRow>
+                                <TableCell sx={{ fontWeight: 'bold', width: 40 }}>#</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold' }}>Facility Type</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold' }}>Start Date</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold' }}>Amount</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold' }}>Concession Type</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold' }}>Concession</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold' }}>Net Amount</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold' }}>Payment Schedule</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold' }}>Educational Supplies</TableCell>
+                                <TableCell sx={{ fontWeight: 'bold' }}>Status</TableCell>
+                              </TableRow>
+                            </TableHead>
+                            <TableBody>
+                              {nonCoreRows.length === 0 ? (
+                                <TableRow>
+                                  <TableCell colSpan={10} align="center">No non-core facilities found.</TableCell>
+                                </TableRow>
+                              ) : (
+                                nonCoreRows.map((row, idx) => (
+                                  <TableRow key={row.id} hover>
+                                    <TableCell>{idx + 1}</TableCell>
+                                    <TableCell>
+                                      <Tooltip title={row.fee?.description || ''} arrow>
+                                        <span>{row.fee_category?.category_name || 'N/A'}</span>
+                                      </Tooltip>
+                                    </TableCell>
+                                    <TableCell>{row.start_date ? new Date(row.start_date).toLocaleDateString() : 'N/A'}</TableCell>
+                                    <TableCell>₹{parseFloat(row.fee?.amount || 0).toLocaleString()}</TableCell>
+                                    <TableCell>
+                                      {row.concession_type ? (
+                                        <Tooltip title={row.concession_type.description || ''} arrow>
+                                          <span>{row.concession_type.concession_name || '-'}</span>
+                                        </Tooltip>
+                                      ) : '-'}
+                                    </TableCell>
+                                    <TableCell>₹{parseFloat(row.concession_amount || 0).toLocaleString()}</TableCell>
+                                    <TableCell>₹{parseFloat(row.amount || 0).toLocaleString()}</TableCell>
+                                    <TableCell>{row.fee_category?.payment_schedule || '-'}</TableCell>
+                                    <TableCell>{row.fee_category?.educational_supplies ? 'Yes' : 'No'}</TableCell>
+                                    <TableCell>
+                                      <Chip
+                                        label={row.status || 'ACTIVE'}
+                                        color={row.status === 'ACTIVE' ? 'success' : 'warning'}
+                                        size="small"
+                                      />
+                                    </TableCell>
+                                  </TableRow>
+                                ))
+                              )}
+                            </TableBody>
+                          </Table>
+                        </TableContainer>
+                        {/* Deleted Facilities Table */}
+                        {deletedMappings.length > 0 && (
+                          <>
+                            <Typography variant="h6" sx={{ mt: 4, mb: 2, color: 'error.main' }}>Deleted Facilities</Typography>
+                            <TableContainer component={Paper} sx={{ mb: 2, boxShadow: 2, borderRadius: 2, maxHeight: 180, overflowY: 'auto', position: 'relative' }}>
+                              <Table>
+                                <TableHead sx={{ backgroundColor: 'error.light' }}>
+                                  <TableRow>
+                                    <TableCell sx={{ fontWeight: 'bold', width: 40 }}>#</TableCell>
+                                    <TableCell sx={{ fontWeight: 'bold' }}>Facility Type</TableCell>
+                                    <TableCell sx={{ fontWeight: 'bold' }}>Start Date</TableCell>
+                                    <TableCell sx={{ fontWeight: 'bold' }}>End Date</TableCell>
+                                    <TableCell sx={{ fontWeight: 'bold' }}>Amount</TableCell>
+                                    <TableCell sx={{ fontWeight: 'bold' }}>Concession Type</TableCell>
+                                    <TableCell sx={{ fontWeight: 'bold' }}>Concession</TableCell>
+                                    <TableCell sx={{ fontWeight: 'bold' }}>Net Amount</TableCell>
+                                    <TableCell sx={{ fontWeight: 'bold' }}>Payment Schedule</TableCell>
+                                    <TableCell sx={{ fontWeight: 'bold' }}>Status</TableCell>
+                                  </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                  {deletedMappings.map((mapping, idx) => (
+                                    <TableRow key={mapping.id} hover>
+                                      <TableCell>{idx + 1}</TableCell>
+                                      <TableCell>
+                                        <Tooltip title={mapping.fee?.description || ''} arrow>
+                                          <span>{mapping.fee_category?.category_name || 'N/A'}</span>
+                                        </Tooltip>
+                                      </TableCell>
+                                      <TableCell>{mapping.start_date ? new Date(mapping.start_date).toLocaleDateString() : 'N/A'}</TableCell>
+                                      <TableCell>{mapping.end_date ? new Date(mapping.end_date).toLocaleDateString() : 'N/A'}</TableCell>
+                                      <TableCell>₹{parseFloat(mapping.fee?.amount || 0).toLocaleString()}</TableCell>
+                                      <TableCell>
+                                        {mapping.concession_type ? (
+                                          <Tooltip title={mapping.concession_type.description || ''} arrow>
+                                            <span>{mapping.concession_type.concession_name || '-'}</span>
+                                          </Tooltip>
+                                        ) : '-'}
+                                      </TableCell>
+                                      <TableCell>₹{parseFloat(mapping.concession_amount || 0).toLocaleString()}</TableCell>
+                                      <TableCell>₹{parseFloat(mapping.amount || 0).toLocaleString()}</TableCell>
+                                      <TableCell>{mapping.fee_category?.payment_schedule || '-'}</TableCell>
+                                      <TableCell>
+                                        <Chip
+                                          label={mapping.status || 'DELETED'}
+                                          color="error"
+                                          size="small"
+                                        />
+                                      </TableCell>
+                                    </TableRow>
+                                  ))}
+                                </TableBody>
+                              </Table>
+                            </TableContainer>
+                          </>
+                        )}
+                      </>
+                    );
+                  })()}
+                </Box>
             )}
           </Box>
           </Box>
