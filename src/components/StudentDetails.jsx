@@ -1374,46 +1374,29 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                 />
               </Grid>
               {isFacilityTransport && (
-                <>
-                  <Grid item xs={12} sm={6}>
-                    <FormControl fullWidth required={isFacilityTransport}>
-                      <InputLabel id="route-label">Route</InputLabel>
-                      <Select
-                        labelId="route-label"
-                        name="route_id"
-                        value={facilityForm.route_id}
-                        onChange={handleFacilityFormChange}
-                        label="Route"
-                      >
-                        <MenuItem value=""><em>None</em></MenuItem>
-                        {routes.map((route) => (
+                <Grid item xs={12} sm={6}>
+                  <FormControl fullWidth required={isFacilityTransport}>
+                    <InputLabel id="route-label">Route</InputLabel>
+                    <Select
+                      labelId="route-label"
+                      name="route_id"
+                      value={facilityForm.route_id}
+                      onChange={handleFacilityFormChange}
+                      label="Route"
+                    >
+                      <MenuItem value=""><em>None</em></MenuItem>
+                      {routes.map((route) => {
+                        const driver = drivers.find(d => d.id === route.driver_id);
+                        return (
                           <MenuItem key={route.id} value={route.id}>
-                            {route.route_name} - ₹{route.fee_amount}
+                            {route.route_name}
+                            {driver ? ` (${driver.driver_name})` : ''}
                           </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <FormControl fullWidth required={isFacilityTransport}>
-                      <InputLabel id="driver-label">Driver</InputLabel>
-                      <Select
-                        labelId="driver-label"
-                        name="driver_id"
-                        value={facilityForm.driver_id}
-                        onChange={handleFacilityFormChange}
-                        label="Driver"
-                      >
-                        <MenuItem value=""><em>None</em></MenuItem>
-                        {drivers.map((driver) => (
-                          <MenuItem key={driver.id} value={driver.id}>
-                            {driver.driver_name}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                  </Grid>
-                </>
+                        );
+                      })}
+                    </Select>
+                  </FormControl>
+                </Grid>
               )}
             </Grid>
           </DialogContent>
