@@ -999,7 +999,11 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                             });
                           });
                           const activeMappings = allMappings.filter(m => m.status !== 'DELETED');
-                          const total = activeMappings.reduce((sum, m) => sum + (parseFloat(m.amount || 0)), 0);
+                          const total = activeMappings.reduce((sum, m) => {
+                            const net = parseFloat(m.amount || 0);
+                            const schedule = parseInt(m.fee_category?.payment_schedule || 1);
+                            return sum + (isNaN(net) || isNaN(schedule) ? 0 : net * schedule);
+                          }, 0);
                           return total.toLocaleString();
                         })()}
                       </Box>
@@ -1034,7 +1038,11 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                               });
                             }
                           });
-                          const total = nonCoreRows.reduce((sum, row) => sum + (parseFloat(row.amount || 0)), 0);
+                          const total = nonCoreRows.reduce((sum, row) => {
+                            const net = parseFloat(row.amount || 0);
+                            const schedule = parseInt(row.fee_category?.payment_schedule || 1);
+                            return sum + (isNaN(net) || isNaN(schedule) ? 0 : net * schedule);
+                          }, 0);
                           return total.toLocaleString();
                         })()}
                       </Box>
@@ -1056,7 +1064,11 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                             });
                           });
                           const activeMappings = allMappings.filter(m => m.status !== 'DELETED');
-                          const facilityTotal = activeMappings.reduce((sum, m) => sum + (parseFloat(m.amount || 0)), 0);
+                          const facilityTotal = activeMappings.reduce((sum, m) => {
+                            const net = parseFloat(m.amount || 0);
+                            const schedule = parseInt(m.fee_category?.payment_schedule || 1);
+                            return sum + (isNaN(net) || isNaN(schedule) ? 0 : net * schedule);
+                          }, 0);
                           // Non Core Total
                           const nonCoreFees = fixedFees.filter(fee => fee.fee_category && fee.fee_category.core_fee === false);
                           const nonCoreRows = [];
@@ -1087,7 +1099,11 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                               });
                             }
                           });
-                          const nonCoreTotal = nonCoreRows.reduce((sum, row) => sum + (parseFloat(row.amount || 0)), 0);
+                          const nonCoreTotal = nonCoreRows.reduce((sum, row) => {
+                            const net = parseFloat(row.amount || 0);
+                            const schedule = parseInt(row.fee_category?.payment_schedule || 1);
+                            return sum + (isNaN(net) || isNaN(schedule) ? 0 : net * schedule);
+                          }, 0);
                           return (facilityTotal + nonCoreTotal).toLocaleString();
                         })()}
                       </Box>
@@ -1166,6 +1182,7 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                                   <TableCell sx={{ fontWeight: 700, fontSize: 13, py: 0.5, px: 1 }}>Concession</TableCell>
                                   <TableCell sx={{ fontWeight: 700, fontSize: 13, py: 0.5, px: 1 }}>Net Amount</TableCell>
                                   <TableCell sx={{ fontWeight: 700, fontSize: 13, py: 0.5, px: 1 }}>Payment Schedule</TableCell>
+                                  <TableCell sx={{ fontWeight: 700, fontSize: 13, py: 0.5, px: 1 }}>Total Amount</TableCell>
                                   <TableCell sx={{ fontWeight: 700, fontSize: 13, py: 0.5, px: 1 }}>Status</TableCell>
                                   <TableCell sx={{ fontWeight: 700, fontSize: 13, py: 0.5, px: 1 }}>Actions</TableCell>
                                 </TableRow>
@@ -1198,6 +1215,14 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                                         <TableCell>₹{parseFloat(mapping.amount || 0).toLocaleString()}</TableCell>
                                         <TableCell>{mapping.fee_category?.payment_schedule || '-'}</TableCell>
                                         <TableCell>
+                                          {(() => {
+                                            const net = parseFloat(mapping.amount || 0);
+                                            const schedule = parseInt(mapping.fee_category?.payment_schedule || 1);
+                                            if (isNaN(net) || isNaN(schedule)) return 'N/A';
+                                            return `₹${(net * schedule).toLocaleString()}`;
+                                          })()}
+                                        </TableCell>
+                                        <TableCell>
                                           <Chip
                                             label={mapping.status || 'ACTIVE'}
                                             color={mapping.status === 'ACTIVE' ? 'success' : 'warning'}
@@ -1215,11 +1240,15 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                                     ))}
                                     {/* Total Row */}
                                     <TableRow sx={{ fontWeight: 700 }}>
-                                      <TableCell colSpan={6} align="right" sx={{ fontWeight: 700 }}>Total Net Amount</TableCell>
+                                      <TableCell colSpan={8} align="right" sx={{ fontWeight: 700 }}>Total Amount</TableCell>
                                       <TableCell sx={{ fontWeight: 700 }}>
-                                        ₹{activeMappings.reduce((sum, m) => sum + (parseFloat(m.amount || 0)), 0).toLocaleString()}
+                                        ₹{activeMappings.reduce((sum, m) => {
+                                          const net = parseFloat(m.amount || 0);
+                                          const schedule = parseInt(m.fee_category?.payment_schedule || 1);
+                                          return sum + (isNaN(net) || isNaN(schedule) ? 0 : net * schedule);
+                                        }, 0).toLocaleString()}
                                       </TableCell>
-                                      <TableCell colSpan={3} />
+                                      <TableCell colSpan={2} />
                                     </TableRow>
                                   </>
                                 )}
@@ -1240,6 +1269,7 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                                   <TableCell sx={{ fontWeight: 700, fontSize: 13, py: 0.5, px: 1 }}>Concession</TableCell>
                                   <TableCell sx={{ fontWeight: 700, fontSize: 13, py: 0.5, px: 1 }}>Net Amount</TableCell>
                                   <TableCell sx={{ fontWeight: 700, fontSize: 13, py: 0.5, px: 1 }}>Payment Schedule</TableCell>
+                                  <TableCell sx={{ fontWeight: 700, fontSize: 13, py: 0.5, px: 1 }}>Total Amount</TableCell>
                                   <TableCell sx={{ fontWeight: 700, fontSize: 13, py: 0.5, px: 1 }}>Educational Supplies</TableCell>
                                   <TableCell sx={{ fontWeight: 700, fontSize: 13, py: 0.5, px: 1 }}>Status</TableCell>
                                 </TableRow>
@@ -1271,6 +1301,14 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                                         <TableCell>₹{parseFloat(row.concession_amount || 0).toLocaleString()}</TableCell>
                                         <TableCell>₹{parseFloat(row.amount || 0).toLocaleString()}</TableCell>
                                         <TableCell>{row.fee_category?.payment_schedule || '-'}</TableCell>
+                                        <TableCell>
+                                          {(() => {
+                                            const net = parseFloat(row.amount || 0);
+                                            const schedule = parseInt(row.fee_category?.payment_schedule || 1);
+                                            if (isNaN(net) || isNaN(schedule)) return 'N/A';
+                                            return `₹${(net * schedule).toLocaleString()}`;
+                                          })()}
+                                        </TableCell>
                                         <TableCell>{row.fee_category?.educational_supplies ? 'Yes' : 'No'}</TableCell>
                                         <TableCell>
                                           <Chip
@@ -1283,11 +1321,15 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                                     ))}
                                     {/* Total Row */}
                                     <TableRow sx={{ fontWeight: 700 }}>
-                                      <TableCell colSpan={6} align="right" sx={{ fontWeight: 700 }}>Total Net Amount</TableCell>
+                                      <TableCell colSpan={8} align="right" sx={{ fontWeight: 700 }}>Total Amount</TableCell>
                                       <TableCell sx={{ fontWeight: 700 }}>
-                                        ₹{nonCoreRows.reduce((sum, row) => sum + (parseFloat(row.amount || 0)), 0).toLocaleString()}
+                                        ₹{nonCoreRows.reduce((sum, row) => {
+                                          const net = parseFloat(row.amount || 0);
+                                          const schedule = parseInt(row.fee_category?.payment_schedule || 1);
+                                          return sum + (isNaN(net) || isNaN(schedule) ? 0 : net * schedule);
+                                        }, 0).toLocaleString()}
                                       </TableCell>
-                                      <TableCell colSpan={3} />
+                                      <TableCell colSpan={2} />
                                     </TableRow>
                                   </>
                                 )}
