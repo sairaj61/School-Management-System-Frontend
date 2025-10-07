@@ -983,7 +983,7 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                   <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', mb: 2 }}>
                     {/* Individual totals and grand total beside Add Facility button */}
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mr: 2 }}>
-                      <Box sx={{ bgcolor: 'secondary.light', color: 'secondary.contrastText', px: 2, py: 1, borderRadius: 2, fontWeight: 700, fontSize: 16, boxShadow: 2 }}>
+                      <Box sx={{ px: 2, py: 1, borderRadius: 2, fontWeight: 700, fontSize: 16 }}>
                         Facility Enrolled Total: ₹{(() => {
                           const allMappings = [];
                           fixedFees.forEach((fee) => {
@@ -1003,7 +1003,7 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                           return total.toLocaleString();
                         })()}
                       </Box>
-                      <Box sx={{ bgcolor: 'primary.light', color: 'primary.contrastText', px: 2, py: 1, borderRadius: 2, fontWeight: 700, fontSize: 16, boxShadow: 2 }}>
+                      <Box sx={{ px: 2, py: 1, borderRadius: 2, fontWeight: 700, fontSize: 16 }}>
                         Non Core Total: ₹{(() => {
                           const nonCoreFees = fixedFees.filter(fee => fee.fee_category && fee.fee_category.core_fee === false);
                           const nonCoreRows = [];
@@ -1039,7 +1039,7 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                         })()}
                       </Box>
                       {/* Grand Total */}
-                      <Box sx={{ bgcolor: 'warning.light', color: 'warning.contrastText', px: 2, py: 1, borderRadius: 2, fontWeight: 700, fontSize: 16, boxShadow: 2 }}>
+                      <Box sx={{ px: 2, py: 1, borderRadius: 2, fontWeight: 700, fontSize: 16 }}>
                         Grand Total: ₹{(() => {
                           // Facility Enrolled Total
                           const allMappings = [];
