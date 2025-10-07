@@ -464,20 +464,23 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
       console.log('Adding facility with data:', selectedFee.category_name.toUpperCase());
       if (selectedFee.category_name.toUpperCase()=== 'TRANSPORT FEE') {
         // Transport assignment
+        // Always send the driver_id from the selected route
+        const selectedRoute = routes.find(r => r.id === facilityForm.route_id);
+        const transportPayload = {
+          student_id: student.id,
+          route_id: facilityForm.route_id,
+          driver_id: selectedRoute ? selectedRoute.driver_id : null,
+          fee_categories_with_concession: {
+            start_date: facilityForm.start_date,
+            end_date: facilityForm.end_date || null,
+            fee_category_id: selectedFee.fee_category_id,
+            concession_type_id: facilityForm.concession_type_id || null,
+            concession_amount: parseFloat(facilityForm.concession_amount) || 0
+          }
+        };
         await axiosInstance.post(
           `${appConfig.API_PREFIX_V1}/students-managements/students-facility/${student.id}/transport-assignment`,
-          {
-            student_id: student.id,
-            route_id: facilityForm.route_id,
-            driver_id: facilityForm.driver_id,
-            fee_categories_with_concession: {
-              start_date: facilityForm.start_date,
-              end_date: facilityForm.end_date || null,
-              fee_category_id: selectedFee.fee_category_id,
-              concession_type_id: facilityForm.concession_type_id || null,
-              concession_amount: parseFloat(facilityForm.concession_amount) || 0
-            }
-          }
+          transportPayload
         );
       } else {
         // Generic facility
