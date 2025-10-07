@@ -981,11 +981,10 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
               {tab === 4 && (
                 <Box>
                   <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', mb: 2 }}>
-                    {/* Highlighted sums beside Add Facility button */}
+                    {/* Individual totals and grand total beside Add Facility button */}
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mr: 2 }}>
                       <Box sx={{ bgcolor: 'secondary.light', color: 'secondary.contrastText', px: 2, py: 1, borderRadius: 2, fontWeight: 700, fontSize: 16, boxShadow: 2 }}>
                         Facility Enrolled Total: ₹{(() => {
-                          // Calculate sum of net amount for Facilities Enrolled
                           const allMappings = [];
                           fixedFees.forEach((fee) => {
                             (fee.facility_mappings || []).forEach((mapping) => {
@@ -1006,7 +1005,6 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                       </Box>
                       <Box sx={{ bgcolor: 'primary.light', color: 'primary.contrastText', px: 2, py: 1, borderRadius: 2, fontWeight: 700, fontSize: 16, boxShadow: 2 }}>
                         Non Core Total: ₹{(() => {
-                          // Calculate sum of net amount for Non Core Facility
                           const nonCoreFees = fixedFees.filter(fee => fee.fee_category && fee.fee_category.core_fee === false);
                           const nonCoreRows = [];
                           nonCoreFees.forEach(fee => {
@@ -1038,6 +1036,59 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                           });
                           const total = nonCoreRows.reduce((sum, row) => sum + (parseFloat(row.amount || 0)), 0);
                           return total.toLocaleString();
+                        })()}
+                      </Box>
+                      {/* Grand Total */}
+                      <Box sx={{ bgcolor: 'warning.light', color: 'warning.contrastText', px: 2, py: 1, borderRadius: 2, fontWeight: 700, fontSize: 16, boxShadow: 2 }}>
+                        Grand Total: ₹{(() => {
+                          // Facility Enrolled Total
+                          const allMappings = [];
+                          fixedFees.forEach((fee) => {
+                            (fee.facility_mappings || []).forEach((mapping) => {
+                              allMappings.push({
+                                ...mapping,
+                                fee,
+                                fee_category: fee.fee_category,
+                                concession_type: fee.concession_type,
+                                concession_amount: fee.concession_amount,
+                                amount: fee.amount,
+                              });
+                            });
+                          });
+                          const activeMappings = allMappings.filter(m => m.status !== 'DELETED');
+                          const facilityTotal = activeMappings.reduce((sum, m) => sum + (parseFloat(m.amount || 0)), 0);
+                          // Non Core Total
+                          const nonCoreFees = fixedFees.filter(fee => fee.fee_category && fee.fee_category.core_fee === false);
+                          const nonCoreRows = [];
+                          nonCoreFees.forEach(fee => {
+                            if (fee.facility_mappings && fee.facility_mappings.length > 0) {
+                              fee.facility_mappings.forEach(mapping => {
+                                nonCoreRows.push({
+                                  ...mapping,
+                                  fee,
+                                  fee_category: fee.fee_category,
+                                  concession_type: fee.concession_type,
+                                  concession_amount: fee.concession_amount,
+                                  amount: fee.amount,
+                                  status: mapping.status || fee.status,
+                                });
+                              });
+                            } else {
+                              nonCoreRows.push({
+                                id: fee.id,
+                                fee,
+                                fee_category: fee.fee_category,
+                                concession_type: fee.concession_type,
+                                concession_amount: fee.concession_amount,
+                                amount: fee.amount,
+                                status: fee.status,
+                                start_date: fee.created_at,
+                                end_date: fee.updated_at,
+                              });
+                            }
+                          });
+                          const nonCoreTotal = nonCoreRows.reduce((sum, row) => sum + (parseFloat(row.amount || 0)), 0);
+                          return (facilityTotal + nonCoreTotal).toLocaleString();
                         })()}
                       </Box>
                     </Box>
