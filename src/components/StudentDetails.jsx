@@ -436,11 +436,11 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
     return fee ? fee.fee_category?.category_name || 'N/A' : 'N/A';
   };
 
-  // Helper: is selected facility transport
+  // Helper: is selected facility transport (case-insensitive, match 'TRANSPORT FEE')
   const isFacilityTransport = (() => {
     const selectedFee = optionalFees.find(f => f.id === facilityForm.fee_category_id);
     if (!selectedFee) return false;
-    return selectedFee.fee_category?.category_name === 'TRANSPORT';
+    return selectedFee.category_name?.toUpperCase() === 'TRANSPORT FEE';
   })();
 
   // Handle add facility form change
@@ -461,22 +461,26 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
       return;
     }
     try {
-      if (selectedFee.fee_category?.category_name === 'TRANSPORT') {
+      console.log('Adding facility with data:', selectedFee.category_name.toUpperCase());
+      if (selectedFee.category_name.toUpperCase()=== 'TRANSPORT FEE') {
         // Transport assignment
+        // Always send the driver_id from the selected route
+        const selectedRoute = routes.find(r => r.id === facilityForm.route_id);
+        const transportPayload = {
+          student_id: student.id,
+          route_id: facilityForm.route_id,
+          driver_id: selectedRoute ? selectedRoute.driver_id : null,
+          fee_categories_with_concession: {
+            start_date: facilityForm.start_date,
+            end_date: facilityForm.end_date || null,
+            fee_category_id: selectedFee.fee_category_id,
+            concession_type_id: facilityForm.concession_type_id || null,
+            concession_amount: parseFloat(facilityForm.concession_amount) || 0
+          }
+        };
         await axiosInstance.post(
           `${appConfig.API_PREFIX_V1}/students-managements/students-facility/${student.id}/transport-assignment`,
-          {
-            student_id: student.id,
-            route_id: facilityForm.route_id,
-            driver_id: facilityForm.driver_id,
-            fee_categories_with_concession: {
-              start_date: facilityForm.start_date,
-              end_date: facilityForm.end_date || null,
-              fee_category_id: selectedFee.fee_category_id,
-              concession_type_id: facilityForm.concession_type_id || null,
-              concession_amount: parseFloat(facilityForm.concession_amount) || 0
-            }
-          }
+          transportPayload
         );
       } else {
         // Generic facility
@@ -1373,46 +1377,29 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                 />
               </Grid>
               {isFacilityTransport && (
-                <>
-                  <Grid item xs={12} sm={6}>
-                    <FormControl fullWidth required={isFacilityTransport}>
-                      <InputLabel id="route-label">Route</InputLabel>
-                      <Select
-                        labelId="route-label"
-                        name="route_id"
-                        value={facilityForm.route_id}
-                        onChange={handleFacilityFormChange}
-                        label="Route"
-                      >
-                        <MenuItem value=""><em>None</em></MenuItem>
-                        {routes.map((route) => (
+                <Grid item xs={12} sm={6}>
+                  <FormControl fullWidth required={isFacilityTransport}>
+                    <InputLabel id="route-label">Route</InputLabel>
+                    <Select
+                      labelId="route-label"
+                      name="route_id"
+                      value={facilityForm.route_id}
+                      onChange={handleFacilityFormChange}
+                      label="Route"
+                    >
+                      <MenuItem value=""><em>None</em></MenuItem>
+                      {routes.map((route) => {
+                        const driver = drivers.find(d => d.id === route.driver_id);
+                        return (
                           <MenuItem key={route.id} value={route.id}>
-                            {route.route_name} - ₹{route.fee_amount}
+                            {route.route_name}
+                            {driver ? ` (${driver.driver_name})` : ''}
                           </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <FormControl fullWidth required={isFacilityTransport}>
-                      <InputLabel id="driver-label">Driver</InputLabel>
-                      <Select
-                        labelId="driver-label"
-                        name="driver_id"
-                        value={facilityForm.driver_id}
-                        onChange={handleFacilityFormChange}
-                        label="Driver"
-                      >
-                        <MenuItem value=""><em>None</em></MenuItem>
-                        {drivers.map((driver) => (
-                          <MenuItem key={driver.id} value={driver.id}>
-                            {driver.driver_name}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                  </Grid>
-                </>
+                        );
+                      })}
+                    </Select>
+                  </FormControl>
+                </Grid>
               )}
             </Grid>
           </DialogContent>
