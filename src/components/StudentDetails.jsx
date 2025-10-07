@@ -1154,20 +1154,20 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                           <Tab label="Deleted Facility" />
                         </Tabs>
                         {facilityTab === 0 && (
-                          <TableContainer component={Paper} sx={{ boxShadow: 2, borderRadius: 2, maxHeight: 260, overflowY: 'auto', position: 'relative' }}>
-                            <Table stickyHeader>
+                          <TableContainer component={Paper} sx={{ boxShadow: 1, borderRadius: 1, maxHeight: 320, overflowY: 'auto', position: 'relative', m: 0, p: 0 }}>
+                            <Table stickyHeader size="small">
                               <TableHead sx={{ backgroundColor: theme => theme.palette.secondary.main }}>
-                                <TableRow>
-                                  <TableCell sx={{ fontWeight: 'bold', width: 40 }}>#</TableCell>
-                                  <TableCell sx={{ fontWeight: 'bold' }}>Facility Type</TableCell>
-                                  <TableCell sx={{ fontWeight: 'bold' }}>Start Date</TableCell>
-                                  <TableCell sx={{ fontWeight: 'bold' }}>Amount</TableCell>
-                                  <TableCell sx={{ fontWeight: 'bold' }}>Concession Type</TableCell>
-                                  <TableCell sx={{ fontWeight: 'bold' }}>Concession</TableCell>
-                                  <TableCell sx={{ fontWeight: 'bold' }}>Net Amount</TableCell>
-                                  <TableCell sx={{ fontWeight: 'bold' }}>Payment Schedule</TableCell>
-                                  <TableCell sx={{ fontWeight: 'bold' }}>Status</TableCell>
-                                  <TableCell sx={{ fontWeight: 'bold' }}>Actions</TableCell>
+                                <TableRow sx={{ height: 32 }}>
+                                  <TableCell sx={{ fontWeight: 700, fontSize: 13, py: 0.5, px: 1, width: 32 }}>#</TableCell>
+                                  <TableCell sx={{ fontWeight: 700, fontSize: 13, py: 0.5, px: 1 }}>Facility Type</TableCell>
+                                  <TableCell sx={{ fontWeight: 700, fontSize: 13, py: 0.5, px: 1 }}>Start Date</TableCell>
+                                  <TableCell sx={{ fontWeight: 700, fontSize: 13, py: 0.5, px: 1 }}>Amount</TableCell>
+                                  <TableCell sx={{ fontWeight: 700, fontSize: 13, py: 0.5, px: 1 }}>Concession Type</TableCell>
+                                  <TableCell sx={{ fontWeight: 700, fontSize: 13, py: 0.5, px: 1 }}>Concession</TableCell>
+                                  <TableCell sx={{ fontWeight: 700, fontSize: 13, py: 0.5, px: 1 }}>Net Amount</TableCell>
+                                  <TableCell sx={{ fontWeight: 700, fontSize: 13, py: 0.5, px: 1 }}>Payment Schedule</TableCell>
+                                  <TableCell sx={{ fontWeight: 700, fontSize: 13, py: 0.5, px: 1 }}>Status</TableCell>
+                                  <TableCell sx={{ fontWeight: 700, fontSize: 13, py: 0.5, px: 1 }}>Actions</TableCell>
                                 </TableRow>
                               </TableHead>
                               <TableBody>
@@ -1228,20 +1228,20 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                           </TableContainer>
                         )}
                         {facilityTab === 1 && (
-                          <TableContainer component={Paper} sx={{ boxShadow: 2, borderRadius: 2, maxHeight: 180, overflowY: 'auto', position: 'relative' }}>
-                            <Table stickyHeader>
+                          <TableContainer component={Paper} sx={{ boxShadow: 1, borderRadius: 1, maxHeight: 220, overflowY: 'auto', position: 'relative', m: 0, p: 0 }}>
+                            <Table stickyHeader size="small">
                               <TableHead sx={{ backgroundColor: theme => theme.palette.primary.main }}>
-                                <TableRow>
-                                  <TableCell sx={{ fontWeight: 'bold', width: 40 }}>#</TableCell>
-                                  <TableCell sx={{ fontWeight: 'bold' }}>Facility Type</TableCell>
-                                  <TableCell sx={{ fontWeight: 'bold' }}>Start Date</TableCell>
-                                  <TableCell sx={{ fontWeight: 'bold' }}>Amount</TableCell>
-                                  <TableCell sx={{ fontWeight: 'bold' }}>Concession Type</TableCell>
-                                  <TableCell sx={{ fontWeight: 'bold' }}>Concession</TableCell>
-                                  <TableCell sx={{ fontWeight: 'bold' }}>Net Amount</TableCell>
-                                  <TableCell sx={{ fontWeight: 'bold' }}>Payment Schedule</TableCell>
-                                  <TableCell sx={{ fontWeight: 'bold' }}>Educational Supplies</TableCell>
-                                  <TableCell sx={{ fontWeight: 'bold' }}>Status</TableCell>
+                                <TableRow sx={{ height: 32 }}>
+                                  <TableCell sx={{ fontWeight: 700, fontSize: 13, py: 0.5, px: 1, width: 32 }}>#</TableCell>
+                                  <TableCell sx={{ fontWeight: 700, fontSize: 13, py: 0.5, px: 1 }}>Facility Type</TableCell>
+                                  <TableCell sx={{ fontWeight: 700, fontSize: 13, py: 0.5, px: 1 }}>Start Date</TableCell>
+                                  <TableCell sx={{ fontWeight: 700, fontSize: 13, py: 0.5, px: 1 }}>Amount</TableCell>
+                                  <TableCell sx={{ fontWeight: 700, fontSize: 13, py: 0.5, px: 1 }}>Concession Type</TableCell>
+                                  <TableCell sx={{ fontWeight: 700, fontSize: 13, py: 0.5, px: 1 }}>Concession</TableCell>
+                                  <TableCell sx={{ fontWeight: 700, fontSize: 13, py: 0.5, px: 1 }}>Net Amount</TableCell>
+                                  <TableCell sx={{ fontWeight: 700, fontSize: 13, py: 0.5, px: 1 }}>Payment Schedule</TableCell>
+                                  <TableCell sx={{ fontWeight: 700, fontSize: 13, py: 0.5, px: 1 }}>Educational Supplies</TableCell>
+                                  <TableCell sx={{ fontWeight: 700, fontSize: 13, py: 0.5, px: 1 }}>Status</TableCell>
                                 </TableRow>
                               </TableHead>
                               <TableBody>
@@ -1296,20 +1296,20 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                           </TableContainer>
                         )}
                         {facilityTab === 2 && (
-                          <TableContainer component={Paper} sx={{ boxShadow: 2, borderRadius: 2, maxHeight: 180, overflowY: 'auto', position: 'relative' }}>
-                            <Table>
+                          <TableContainer component={Paper} sx={{ boxShadow: 1, borderRadius: 1, maxHeight: 180, overflowY: 'auto', position: 'relative', m: 0, p: 0 }}>
+                            <Table size="small">
                               <TableHead sx={{ backgroundColor: 'error.light' }}>
-                                <TableRow>
-                                  <TableCell sx={{ fontWeight: 'bold', width: 40 }}>#</TableCell>
-                                  <TableCell sx={{ fontWeight: 'bold' }}>Facility Type</TableCell>
-                                  <TableCell sx={{ fontWeight: 'bold' }}>Start Date</TableCell>
-                                  <TableCell sx={{ fontWeight: 'bold' }}>End Date</TableCell>
-                                  <TableCell sx={{ fontWeight: 'bold' }}>Amount</TableCell>
-                                  <TableCell sx={{ fontWeight: 'bold' }}>Concession Type</TableCell>
-                                  <TableCell sx={{ fontWeight: 'bold' }}>Concession</TableCell>
-                                  <TableCell sx={{ fontWeight: 'bold' }}>Net Amount</TableCell>
-                                  <TableCell sx={{ fontWeight: 'bold' }}>Payment Schedule</TableCell>
-                                  <TableCell sx={{ fontWeight: 'bold' }}>Status</TableCell>
+                                <TableRow sx={{ height: 32 }}>
+                                  <TableCell sx={{ fontWeight: 700, fontSize: 13, py: 0.5, px: 1, width: 32 }}>#</TableCell>
+                                  <TableCell sx={{ fontWeight: 700, fontSize: 13, py: 0.5, px: 1 }}>Facility Type</TableCell>
+                                  <TableCell sx={{ fontWeight: 700, fontSize: 13, py: 0.5, px: 1 }}>Start Date</TableCell>
+                                  <TableCell sx={{ fontWeight: 700, fontSize: 13, py: 0.5, px: 1 }}>End Date</TableCell>
+                                  <TableCell sx={{ fontWeight: 700, fontSize: 13, py: 0.5, px: 1 }}>Amount</TableCell>
+                                  <TableCell sx={{ fontWeight: 700, fontSize: 13, py: 0.5, px: 1 }}>Concession Type</TableCell>
+                                  <TableCell sx={{ fontWeight: 700, fontSize: 13, py: 0.5, px: 1 }}>Concession</TableCell>
+                                  <TableCell sx={{ fontWeight: 700, fontSize: 13, py: 0.5, px: 1 }}>Net Amount</TableCell>
+                                  <TableCell sx={{ fontWeight: 700, fontSize: 13, py: 0.5, px: 1 }}>Payment Schedule</TableCell>
+                                  <TableCell sx={{ fontWeight: 700, fontSize: 13, py: 0.5, px: 1 }}>Status</TableCell>
                                 </TableRow>
                               </TableHead>
                               <TableBody>
