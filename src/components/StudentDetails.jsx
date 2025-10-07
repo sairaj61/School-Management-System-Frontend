@@ -436,11 +436,11 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
     return fee ? fee.fee_category?.category_name || 'N/A' : 'N/A';
   };
 
-  // Helper: is selected facility transport
+  // Helper: is selected facility transport (case-insensitive, match 'TRANSPORT FEE')
   const isFacilityTransport = (() => {
     const selectedFee = optionalFees.find(f => f.id === facilityForm.fee_category_id);
     if (!selectedFee) return false;
-    return selectedFee.fee_category?.category_name === 'TRANSPORT';
+    return selectedFee.category_name?.toUpperCase() === 'TRANSPORT FEE';
   })();
 
   // Handle add facility form change
@@ -461,7 +461,8 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
       return;
     }
     try {
-      if (selectedFee.fee_category?.category_name === 'TRANSPORT') {
+      console.log('Adding facility with data:', selectedFee.category_name.toUpperCase());
+      if (selectedFee.category_name.toUpperCase()=== 'TRANSPORT FEE') {
         // Transport assignment
         await axiosInstance.post(
           `${appConfig.API_PREFIX_V1}/students-managements/students-facility/${student.id}/transport-assignment`,
