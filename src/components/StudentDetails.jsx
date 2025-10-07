@@ -1214,7 +1214,7 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                                       </TableRow>
                                     ))}
                                     {/* Total Row */}
-                                    <TableRow sx={{ bgcolor: 'secondary.light', fontWeight: 700 }}>
+                                    <TableRow sx={{ fontWeight: 700 }}>
                                       <TableCell colSpan={6} align="right" sx={{ fontWeight: 700 }}>Total Net Amount</TableCell>
                                       <TableCell sx={{ fontWeight: 700 }}>
                                         ₹{activeMappings.reduce((sum, m) => sum + (parseFloat(m.amount || 0)), 0).toLocaleString()}
@@ -1282,7 +1282,7 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                                       </TableRow>
                                     ))}
                                     {/* Total Row */}
-                                    <TableRow sx={{ bgcolor: 'primary.light', fontWeight: 700 }}>
+                                    <TableRow sx={{ fontWeight: 700 }}>
                                       <TableCell colSpan={6} align="right" sx={{ fontWeight: 700 }}>Total Net Amount</TableCell>
                                       <TableCell sx={{ fontWeight: 700 }}>
                                         ₹{nonCoreRows.reduce((sum, row) => sum + (parseFloat(row.amount || 0)), 0).toLocaleString()}
