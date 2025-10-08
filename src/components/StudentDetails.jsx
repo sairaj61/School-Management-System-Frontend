@@ -12,6 +12,16 @@ import appConfig from '../config/appConfig';
 import StudentAttendance from './StudentAttendance';
 
 const StudentDetails = ({ student, onBack, onEdit }) => {
+  // Payment selection and dialog state
+  const [selectedPayments, setSelectedPayments] = useState([]);
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  const [paymentForm, setPaymentForm] = useState([]);
+  const [paymentLoading, setPaymentLoading] = useState(false);
+  const [paymentError, setPaymentError] = useState('');
+  // State for payment status sub-tab
+  const [paymentStatusTab, setPaymentStatusTab] = useState(0);
+  // Facility tab state for nested facility tabs
+  const [facilityTab, setFacilityTab] = React.useState(0);
   // Delete facility API call
   const handleDeleteFacility = async (studentId, facilityMappingId) => {
     if (!window.confirm('Are you sure you want to delete this facility?')) return;
@@ -124,6 +134,9 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
   };
   const [tab, setTab] = useState(0);
   const [fixedFees, setFixedFees] = useState([]);
+  // State for new payment status API
+  const [studentPaymentStatus, setStudentPaymentStatus] = useState([]);
+  const [loadingPaymentStatus, setLoadingPaymentStatus] = useState(false);
   const [facilities, setFacilities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -176,6 +189,26 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
       setLoadingDocuments(false);
     }
   };
+
+  function formatCustomDate(dateStr) {
+  if (!dateStr) return 'N/A';
+  const date = new Date(dateStr);
+  if (isNaN(date)) return 'N/A';
+  const day = date.getDate();
+  const month = date.toLocaleString('default', { month: 'long' });
+  const year = date.getFullYear();
+  // Get ordinal suffix
+  function getOrdinal(n) {
+    if (n > 3 && n < 21) return 'th';
+    switch (n % 10) {
+      case 1: return 'st';
+      case 2: return 'nd';
+      case 3: return 'rd';
+      default: return 'th';
+    }
+  }
+  return `${day}${getOrdinal(day)} ${month}, ${year}`;
+}
 
   const uploadDocument = async (file) => {
     if (!student?.id) {
@@ -319,6 +352,18 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
         setFixedFees([]);
       })
       .finally(() => setLoading(false));
+
+    // Fetch new payment status for Payment tab
+    setLoadingPaymentStatus(true);
+    axiosInstance
+      .get(`/api/v1/fees-payments/student_payment_status/${student.id}`)
+      .then((res) => {
+        setStudentPaymentStatus(Array.isArray(res.data) ? res.data : []);
+      })
+      .catch(() => {
+        setStudentPaymentStatus([]);
+      })
+      .finally(() => setLoadingPaymentStatus(false));
 
     // Fetch facilities
     axiosInstance
@@ -848,42 +893,225 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
               {tab === 1 && (
                 <Box>
                   <Typography variant="h5" fontWeight={700} color="primary" gutterBottom>
-                    Fee Details & Payments
+                    Fee Payment Status
                   </Typography>
-                  {fixedFees.length === 0 ? (
-                    <Typography color="text.secondary">No fee details found.</Typography>
+                  {/* Sub-tabs for payment status filtering */}
+                  <Tabs
+                    value={paymentStatusTab}
+                    onChange={(e, v) => setPaymentStatusTab(v)}
+                    sx={{ mb: 2 }}
+                    indicatorColor="primary"
+                    textColor="primary"
+                  >
+                    <Tab label="Pending / Overdue" />
+                    <Tab label="Paid" />
+                    <Tab label="Waived" />
+                  </Tabs>
+                  {loadingPaymentStatus ? (
+                    <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+                      <CircularProgress size={40} />
+                      <Typography sx={{ ml: 2 }}>Loading payment status...</Typography>
+                    </Box>
+                  ) : studentPaymentStatus.length === 0 ? (
+                    <Typography color="text.secondary">No payment status data found.</Typography>
                   ) : (
-                    <TableContainer component={Paper} sx={{ mt: 2, boxShadow: 2, borderRadius: 2 }}>
-                      <Table>
+                    <TableContainer component={Paper} sx={{ mt: 2, boxShadow: 2, borderRadius: 2, maxHeight: 400, overflowY: 'auto' }}>
+                      <Table stickyHeader>
                         <TableHead sx={{ backgroundColor: 'primary.light' }}>
                           <TableRow>
-                            <TableCell sx={{ fontWeight: 'bold' }}>Fee Category</TableCell>
-                            <TableCell sx={{ fontWeight: 'bold' }}>Fee Name</TableCell>
-                            <TableCell sx={{ fontWeight: 'bold' }}>Amount</TableCell>
-                            <TableCell sx={{ fontWeight: 'bold' }}>Concession</TableCell>
-                            <TableCell sx={{ fontWeight: 'bold' }}>Net Amount</TableCell>
-                            <TableCell sx={{ fontWeight: 'bold' }}>Status</TableCell>
-                            <TableCell sx={{ fontWeight: 'bold' }}>Created At</TableCell>
+                            <TableCell sx={{ fontWeight: 'bold', backgroundColor: 'primary.light', top: 0, zIndex: 1 }}>Fee Category</TableCell>
+                            <TableCell sx={{ fontWeight: 'bold', backgroundColor: 'primary.light', top: 0, zIndex: 1 }}>Fees To Be Paid</TableCell>
+                            <TableCell sx={{ fontWeight: 'bold', backgroundColor: 'primary.light', top: 0, zIndex: 1 }}>Fees Paid</TableCell>
+                            <TableCell sx={{ fontWeight: 'bold', backgroundColor: 'primary.light', top: 0, zIndex: 1 }}>Payment Due Date</TableCell>
+                            <TableCell sx={{ fontWeight: 'bold', backgroundColor: 'primary.light', top: 0, zIndex: 1 }}>Paid Date</TableCell>
+                            <TableCell sx={{ fontWeight: 'bold', backgroundColor: 'primary.light', top: 0, zIndex: 1 }}>Payment Status</TableCell>
+                            <TableCell sx={{ fontWeight: 'bold', backgroundColor: 'primary.light', top: 0, zIndex: 1 }}>Pending Amount</TableCell>
                           </TableRow>
                         </TableHead>
                         <TableBody>
-                          {fixedFees.map(fee => (
-                            <TableRow key={fee.id} hover>
-                              <TableCell>{fee.fee_category?.category_name || 'N/A'}</TableCell>
-                              <TableCell>{fee.fee?.description || 'N/A'}</TableCell>
-                              <TableCell>₹{parseFloat(fee.amount || 0).toLocaleString()}</TableCell>
-                              <TableCell>₹{parseFloat(fee.concession_amount || 0).toLocaleString()}</TableCell>
-                              <TableCell>₹{parseFloat((fee.amount || 0) - (fee.concession_amount || 0)).toLocaleString()}</TableCell>
-                              <TableCell>
-                                <Chip
-                                  label={fee.status || 'ACTIVE'}
-                                  color={fee.status === 'ACTIVE' ? 'success' : 'warning'}
-                                  size="small"
-                                />
-                              </TableCell>
-                              <TableCell>{fee.created_at ? new Date(fee.created_at).toLocaleDateString() : 'N/A'}</TableCell>
-                            </TableRow>
-                          ))}
+                          {paymentStatusTab === 0 && (
+                            <>
+                              <TableRow>
+                                <TableCell colSpan={7}>
+                                  <Button
+                                    variant="contained"
+                                    color="primary"
+                                    disabled={selectedPayments.length === 0}
+                                    onClick={() => {
+                                      setPaymentForm(
+                                        studentPaymentStatus
+                                          .filter(row => selectedPayments.includes(row.student_fixed_fee_payment_schedule_mapping_id))
+                                          .map(row => ({
+                                            ...row,
+                                            amount_paying: parseFloat(row.pending_amount || 0)
+                                          }))
+                                      );
+                                      setPaymentDialogOpen(true);
+                                    }}
+                                    sx={{ mb: 1 }}
+                                  >
+                                    Make Payment
+                                  </Button>
+                                </TableCell>
+                              </TableRow>
+                              {studentPaymentStatus
+                                .filter(row => row.payment_status === 'PENDING' || row.payment_status === 'OVERDUE')
+                                .sort((a, b) => {
+                                  if (a.payment_status === b.payment_status) return 0;
+                                  if (a.payment_status === 'OVERDUE') return -1;
+                                  if (b.payment_status === 'OVERDUE') return 1;
+                                  if (a.payment_status === 'PENDING') return -1;
+                                  if (b.payment_status === 'PENDING') return 1;
+                                  return 0;
+                                })
+                                .map((row, idx) => (
+                                  <TableRow key={row.student_fixed_fee_payment_schedule_mapping_id} hover selected={selectedPayments.includes(row.student_fixed_fee_payment_schedule_mapping_id)}>
+                                    <TableCell padding="checkbox">
+                                      <input
+                                        type="checkbox"
+                                        checked={selectedPayments.includes(row.student_fixed_fee_payment_schedule_mapping_id)}
+                                        onChange={e => {
+                                          if (e.target.checked) {
+                                            setSelectedPayments(prev => [...prev, row.student_fixed_fee_payment_schedule_mapping_id]);
+                                          } else {
+                                            setSelectedPayments(prev => prev.filter(id => id !== row.student_fixed_fee_payment_schedule_mapping_id));
+                                          }
+                                        }}
+                                      />
+                                    </TableCell>
+                                    <TableCell>{row.fee_category_name}</TableCell>
+                                    <TableCell>₹{parseFloat(row.fees_to_be_paid || 0).toLocaleString()}</TableCell>
+                                    <TableCell>₹{parseFloat(row.fees_paid || 0).toLocaleString()}</TableCell>
+                                    <TableCell>{row.payment_due_date ? formatCustomDate(row.payment_due_date) : 'N/A'}</TableCell>
+                                    <TableCell>{row.paid_date ? formatCustomDate(row.paid_date) : 'N/A'}</TableCell>
+                                    <TableCell>
+                                      <Chip
+                                        label={row.payment_status}
+                                        color={row.payment_status === 'OVERDUE' ? 'error' : row.payment_status === 'PENDING' ? 'warning' : 'default'}
+                                        size="small"
+                                      />
+                                    </TableCell>
+                                    <TableCell>₹{parseFloat(row.pending_amount || 0).toLocaleString()}</TableCell>
+                                  </TableRow>
+                                ))}
+                            </>
+                          )}
+                          {paymentStatusTab !== 0 && (
+                            studentPaymentStatus
+                              .filter(row => {
+                                if (paymentStatusTab === 1) return row.payment_status === 'PAID';
+                                if (paymentStatusTab === 2) return row.payment_status === 'WAIVED';
+                                return false;
+                              })
+                              .map((row, idx) => (
+                                <TableRow key={idx} hover>
+                                  <TableCell>{row.fee_category_name}</TableCell>
+                                  <TableCell>₹{parseFloat(row.fees_to_be_paid || 0).toLocaleString()}</TableCell>
+                                  <TableCell>₹{parseFloat(row.fees_paid || 0).toLocaleString()}</TableCell>
+                                  <TableCell>{row.payment_due_date ? formatCustomDate(row.payment_due_date) : 'N/A'}</TableCell>
+                                  <TableCell>{row.paid_date ? formatCustomDate(row.paid_date) : 'N/A'}</TableCell>
+                                  <TableCell>
+                                    <Chip
+                                      label={row.payment_status}
+                                      color={row.payment_status === 'PAID' ? 'success' : row.payment_status === 'WAIVED' ? 'info' : 'default'}
+                                      size="small"
+                                    />
+                                  </TableCell>
+                                  <TableCell>₹{parseFloat(row.pending_amount || 0).toLocaleString()}</TableCell>
+                                </TableRow>
+                              ))
+                          )}
+      {/* Payment Dialog */}
+      <Dialog open={paymentDialogOpen} onClose={() => setPaymentDialogOpen(false)} maxWidth="md" fullWidth>
+        <DialogTitle>Process Payment</DialogTitle>
+        <DialogContent dividers>
+          {paymentError && <Alert severity="error" sx={{ mb: 2 }}>{paymentError}</Alert>}
+          <Table size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell>Fee Category</TableCell>
+                <TableCell>Total Payable</TableCell>
+                <TableCell>Amount Paying</TableCell>
+                <TableCell>Pending Amount</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {paymentForm.map((row, idx) => {
+                const totalPayable = parseFloat(row.fees_to_be_paid || 0);
+                const amountPaying = parseFloat(row.amount_paying || 0);
+                const pendingAmount = (totalPayable - amountPaying).toFixed(2);
+                return (
+                  <TableRow key={row.student_fixed_fee_payment_schedule_mapping_id}>
+                    <TableCell>{row.fee_category_name}</TableCell>
+                    <TableCell>₹{totalPayable.toLocaleString()}</TableCell>
+                    <TableCell>
+                      <TextField
+                        type="number"
+                        size="small"
+                        value={amountPaying}
+                        inputProps={{ min: 0, max: totalPayable, step: 0.01 }}
+                        onChange={e => {
+                          const value = parseFloat(e.target.value) || 0;
+                          setPaymentForm(form => form.map((f, i) => i === idx ? { ...f, amount_paying: value } : f));
+                        }}
+                      />
+                    </TableCell>
+                    <TableCell>₹{pendingAmount}</TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setPaymentDialogOpen(false)} color="secondary">Cancel</Button>
+          <Button
+            onClick={async () => {
+              setPaymentLoading(true);
+              setPaymentError('');
+              try {
+                const paymentDetails = paymentForm.map(row => {
+                  const totalPayable = parseFloat(row.fees_to_be_paid || 0);
+                  const amountPaying = parseFloat(row.amount_paying || 0);
+                  const pendingAmount = Number((totalPayable - amountPaying).toFixed(2));
+                  return {
+                    fee_id: row.fee_id,
+                    fee_category_id: row.fee_category_id,
+                    student_fixed_fee_id: row.student_fixed_fee_id,
+                    student_fixed_fee_payment_schedule_mapping_id: row.student_fixed_fee_payment_schedule_mapping_id,
+                    amount_paying: amountPaying,
+                    pending_amount: pendingAmount,
+                  };
+                });
+                await axiosInstance.post('/api/v1/fees-payments/process_payment', {
+                  student_id: student.id,
+                  academic_year_id: student.academic_year_id,
+                  payment_method: 'CASH', // or allow user to select
+                  description: '',
+                  payment_details: paymentDetails
+                });
+                setPaymentDialogOpen(false);
+                setSelectedPayments([]);
+                // Optionally show a success alert
+                // Refresh payment status
+                setLoadingPaymentStatus(true);
+                const res = await axiosInstance.get(`/api/v1/fees-payments/student_payment_status/${student.id}`);
+                setStudentPaymentStatus(Array.isArray(res.data) ? res.data : []);
+                setLoadingPaymentStatus(false);
+              } catch (err) {
+                setPaymentError('Failed to process payment.');
+              } finally {
+                setPaymentLoading(false);
+              }
+            }}
+            color="primary"
+            variant="contained"
+            disabled={paymentLoading || paymentForm.some(f => f.amount_paying <= 0 || f.amount_paying > f.pending_amount)}
+          >
+            {paymentLoading ? <CircularProgress size={20} /> : 'Submit Payment'}
+          </Button>
+        </DialogActions>
+      </Dialog>
                         </TableBody>
                       </Table>
                     </TableContainer>
@@ -978,15 +1206,139 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
               )}
               {tab === 4 && (
                 <Box>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                    <Typography variant="h5" fontWeight={700} color="primary">
-                      Facilities Enrolled
-                    </Typography>
+                  <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', mb: 2 }}>
+                    {/* Individual totals and grand total beside Add Facility button */}
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mr: 2 }}>
+                      <Box sx={{ px: 2, py: 1, borderRadius: 2, fontWeight: 700, fontSize: 16 }}>
+                        Facility Enrolled Total: ₹{(() => {
+                          const allMappings = [];
+                          fixedFees.forEach((fee) => {
+                            (fee.facility_mappings || []).forEach((mapping) => {
+                              allMappings.push({
+                                ...mapping,
+                                fee,
+                                fee_category: fee.fee_category,
+                                concession_type: fee.concession_type,
+                                concession_amount: fee.concession_amount,
+                                amount: fee.amount,
+                              });
+                            });
+                          });
+                          const activeMappings = allMappings.filter(m => m.status !== 'DELETED');
+                          const total = activeMappings.reduce((sum, m) => {
+                            const net = parseFloat(m.amount || 0);
+                            const schedule = parseInt(m.fee_category?.payment_schedule || 1);
+                            return sum + (isNaN(net) || isNaN(schedule) ? 0 : net * schedule);
+                          }, 0);
+                          return total.toLocaleString();
+                        })()}
+                      </Box>
+                      <Box sx={{ px: 2, py: 1, borderRadius: 2, fontWeight: 700, fontSize: 16 }}>
+                        Non Core Total: ₹{(() => {
+                          const nonCoreFees = fixedFees.filter(fee => fee.fee_category && fee.fee_category.core_fee === false);
+                          const nonCoreRows = [];
+                          nonCoreFees.forEach(fee => {
+                            if (fee.facility_mappings && fee.facility_mappings.length > 0) {
+                              fee.facility_mappings.forEach(mapping => {
+                                nonCoreRows.push({
+                                  ...mapping,
+                                  fee,
+                                  fee_category: fee.fee_category,
+                                  concession_type: fee.concession_type,
+                                  concession_amount: fee.concession_amount,
+                                  amount: fee.amount,
+                                  status: mapping.status || fee.status,
+                                });
+                              });
+                            } else {
+                              nonCoreRows.push({
+                                id: fee.id,
+                                fee,
+                                fee_category: fee.fee_category,
+                                concession_type: fee.concession_type,
+                                concession_amount: fee.concession_amount,
+                                amount: fee.amount,
+                                status: fee.status,
+                                start_date: fee.created_at,
+                                end_date: fee.updated_at,
+                              });
+                            }
+                          });
+                          const total = nonCoreRows.reduce((sum, row) => {
+                            const net = parseFloat(row.amount || 0);
+                            const schedule = parseInt(row.fee_category?.payment_schedule || 1);
+                            return sum + (isNaN(net) || isNaN(schedule) ? 0 : net * schedule);
+                          }, 0);
+                          return total.toLocaleString();
+                        })()}
+                      </Box>
+                      {/* Grand Total */}
+                      <Box sx={{ px: 2, py: 1, borderRadius: 2, fontWeight: 700, fontSize: 16 }}>
+                        Grand Total: ₹{(() => {
+                          // Facility Enrolled Total
+                          const allMappings = [];
+                          fixedFees.forEach((fee) => {
+                            (fee.facility_mappings || []).forEach((mapping) => {
+                              allMappings.push({
+                                ...mapping,
+                                fee,
+                                fee_category: fee.fee_category,
+                                concession_type: fee.concession_type,
+                                concession_amount: fee.concession_amount,
+                                amount: fee.amount,
+                              });
+                            });
+                          });
+                          const activeMappings = allMappings.filter(m => m.status !== 'DELETED');
+                          const facilityTotal = activeMappings.reduce((sum, m) => {
+                            const net = parseFloat(m.amount || 0);
+                            const schedule = parseInt(m.fee_category?.payment_schedule || 1);
+                            return sum + (isNaN(net) || isNaN(schedule) ? 0 : net * schedule);
+                          }, 0);
+                          // Non Core Total
+                          const nonCoreFees = fixedFees.filter(fee => fee.fee_category && fee.fee_category.core_fee === false);
+                          const nonCoreRows = [];
+                          nonCoreFees.forEach(fee => {
+                            if (fee.facility_mappings && fee.facility_mappings.length > 0) {
+                              fee.facility_mappings.forEach(mapping => {
+                                nonCoreRows.push({
+                                  ...mapping,
+                                  fee,
+                                  fee_category: fee.fee_category,
+                                  concession_type: fee.concession_type,
+                                  concession_amount: fee.concession_amount,
+                                  amount: fee.amount,
+                                  status: mapping.status || fee.status,
+                                });
+                              });
+                            } else {
+                              nonCoreRows.push({
+                                id: fee.id,
+                                fee,
+                                fee_category: fee.fee_category,
+                                concession_type: fee.concession_type,
+                                concession_amount: fee.concession_amount,
+                                amount: fee.amount,
+                                status: fee.status,
+                                start_date: fee.created_at,
+                                end_date: fee.updated_at,
+                              });
+                            }
+                          });
+                          const nonCoreTotal = nonCoreRows.reduce((sum, row) => {
+                            const net = parseFloat(row.amount || 0);
+                            const schedule = parseInt(row.fee_category?.payment_schedule || 1);
+                            return sum + (isNaN(net) || isNaN(schedule) ? 0 : net * schedule);
+                          }, 0);
+                          return (facilityTotal + nonCoreTotal).toLocaleString();
+                        })()}
+                      </Box>
+                    </Box>
                     <Button variant="contained" color="primary" startIcon={<Add />} onClick={() => setAddFacilityOpen(true)}>
                       Add Facility
                     </Button>
                   </Box>
-                  {/* Map facility_mappings from fixedFees */}
+                  {/* Tabbed view for Facilities */}
                   {(() => {
                     // Flatten all facility mappings with fee info
                     const allMappings = [];
@@ -1035,151 +1387,206 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                         });
                       }
                     });
+
                     return (
                       <>
-                        {/* Active Facilities Table */}
-                        <TableContainer component={Paper} sx={{ mt: 2, boxShadow: 2, borderRadius: 2, maxHeight: 260, overflowY: 'auto', position: 'relative' }}>
-                          <Table stickyHeader>
-                            <TableHead sx={{ backgroundColor: theme => theme.palette.secondary.main }}>
-                              <TableRow>
-                                <TableCell sx={{ fontWeight: 'bold', width: 40 }}>#</TableCell>
-                                <TableCell sx={{ fontWeight: 'bold' }}>Facility Type</TableCell>
-                                <TableCell sx={{ fontWeight: 'bold' }}>Start Date</TableCell>
-                                <TableCell sx={{ fontWeight: 'bold' }}>Amount</TableCell>
-                                <TableCell sx={{ fontWeight: 'bold' }}>Concession Type</TableCell>
-                                <TableCell sx={{ fontWeight: 'bold' }}>Concession</TableCell>
-                                <TableCell sx={{ fontWeight: 'bold' }}>Net Amount</TableCell>
-                                <TableCell sx={{ fontWeight: 'bold' }}>Payment Schedule</TableCell>
-                                <TableCell sx={{ fontWeight: 'bold' }}>Status</TableCell>
-                                <TableCell sx={{ fontWeight: 'bold' }}>Actions</TableCell>
-                              </TableRow>
-                            </TableHead>
-                            <TableBody>
-                              {activeMappings.length === 0 ? (
-                                <TableRow>
-                                  <TableCell colSpan={10} align="center">No active facilities enrolled.</TableCell>
+                        <Tabs value={facilityTab} onChange={(_, v) => setFacilityTab(v)} sx={{ mb: 2 }}>
+                          <Tab label="Facilities Enrolled" />
+                          <Tab label="Non Core Facility" />
+                          <Tab label="Deleted Facility" />
+                        </Tabs>
+                        {facilityTab === 0 && (
+                          <TableContainer component={Paper} sx={{ boxShadow: 1, borderRadius: 1, maxHeight: 320, overflowY: 'auto', position: 'relative', m: 0, p: 0 }}>
+                            <Table stickyHeader size="small">
+                              <TableHead sx={{ backgroundColor: theme => theme.palette.secondary.main }}>
+                                <TableRow sx={{ height: 32 }}>
+                                  <TableCell sx={{ fontWeight: 700, fontSize: 13, py: 0.5, px: 1, width: 32 }}>#</TableCell>
+                                  <TableCell sx={{ fontWeight: 700, fontSize: 13, py: 0.5, px: 1 }}>Facility Type</TableCell>
+                                  <TableCell sx={{ fontWeight: 700, fontSize: 13, py: 0.5, px: 1 }}>Start Date</TableCell>
+                                  <TableCell sx={{ fontWeight: 700, fontSize: 13, py: 0.5, px: 1 }}>Amount</TableCell>
+                                  <TableCell sx={{ fontWeight: 700, fontSize: 13, py: 0.5, px: 1 }}>Concession Type</TableCell>
+                                  <TableCell sx={{ fontWeight: 700, fontSize: 13, py: 0.5, px: 1 }}>Concession</TableCell>
+                                  <TableCell sx={{ fontWeight: 700, fontSize: 13, py: 0.5, px: 1 }}>Net Amount</TableCell>
+                                  <TableCell sx={{ fontWeight: 700, fontSize: 13, py: 0.5, px: 1 }}>Payment Schedule</TableCell>
+                                  <TableCell sx={{ fontWeight: 700, fontSize: 13, py: 0.5, px: 1 }}>Total Amount</TableCell>
+                                  <TableCell sx={{ fontWeight: 700, fontSize: 13, py: 0.5, px: 1 }}>Status</TableCell>
+                                  <TableCell sx={{ fontWeight: 700, fontSize: 13, py: 0.5, px: 1 }}>Actions</TableCell>
                                 </TableRow>
-                              ) : (
-                                activeMappings.map((mapping, idx) => (
-                                  <TableRow key={mapping.id} hover>
-                                    <TableCell>{idx + 1}</TableCell>
-                                    <TableCell>
-                                      <Tooltip title={mapping.fee?.description || ''} arrow>
-                                        <span>{mapping.fee_category?.category_name || 'N/A'}</span>
-                                      </Tooltip>
-                                    </TableCell>
-                                    <TableCell>{mapping.start_date ? new Date(mapping.start_date).toLocaleDateString() : 'N/A'}</TableCell>
-                                    <TableCell>₹{parseFloat(mapping.fee?.amount || 0).toLocaleString()}</TableCell>
-                                    <TableCell>
-                                      {mapping.concession_type ? (
-                                        <Tooltip title={mapping.concession_type.description || ''} arrow>
-                                          <span>{mapping.concession_type.concession_name || '-'}</span>
-                                        </Tooltip>
-                                      ) : '-'}
-                                    </TableCell>
-                                    <TableCell>₹{parseFloat(mapping.concession_amount || 0).toLocaleString()}</TableCell>
-                                    <TableCell>₹{parseFloat(mapping.amount || 0).toLocaleString()}</TableCell>
-                                    <TableCell>{mapping.fee_category?.payment_schedule || '-'}</TableCell>
-                                    <TableCell>
-                                      <Chip
-                                        label={mapping.status || 'ACTIVE'}
-                                        color={mapping.status === 'ACTIVE' ? 'success' : 'warning'}
-                                        size="small"
-                                      />
-                                    </TableCell>
-                                    <TableCell>
-                                      {mapping.status !== 'DELETED' && (
-                                        <IconButton color="error" onClick={() => handleDeleteFacility(student.id, mapping.id)}>
-                                          <Delete />
-                                        </IconButton>
-                                      )}
-                                    </TableCell>
-                                  </TableRow>
-                                ))
-                              )}
-                            </TableBody>
-                          </Table>
-                        </TableContainer>
-                        {/* Non-Core Facilities Table */}
-                        <Typography variant="h6" sx={{ mt: 4, mb: 2, color: 'info.main' }}>Non-Core Facilities</Typography>
-                        <TableContainer component={Paper} sx={{ mb: 2, boxShadow: 2, borderRadius: 2, maxHeight: 180, overflowY: 'auto', position: 'relative' }}>
-                          <Table stickyHeader>
-                            <TableHead sx={{ backgroundColor: theme => theme.palette.primary.main }}>
-                              <TableRow>
-                                <TableCell sx={{ fontWeight: 'bold', width: 40 }}>#</TableCell>
-                                <TableCell sx={{ fontWeight: 'bold' }}>Facility Type</TableCell>
-                                <TableCell sx={{ fontWeight: 'bold' }}>Start Date</TableCell>
-                                <TableCell sx={{ fontWeight: 'bold' }}>Amount</TableCell>
-                                <TableCell sx={{ fontWeight: 'bold' }}>Concession Type</TableCell>
-                                <TableCell sx={{ fontWeight: 'bold' }}>Concession</TableCell>
-                                <TableCell sx={{ fontWeight: 'bold' }}>Net Amount</TableCell>
-                                <TableCell sx={{ fontWeight: 'bold' }}>Payment Schedule</TableCell>
-                                <TableCell sx={{ fontWeight: 'bold' }}>Educational Supplies</TableCell>
-                                <TableCell sx={{ fontWeight: 'bold' }}>Status</TableCell>
-                              </TableRow>
-                            </TableHead>
-                            <TableBody>
-                              {nonCoreRows.length === 0 ? (
-                                <TableRow>
-                                  <TableCell colSpan={10} align="center">No non-core facilities found.</TableCell>
-                                </TableRow>
-                              ) : (
-                                nonCoreRows.map((row, idx) => (
-                                  <TableRow key={row.id} hover>
-                                    <TableCell>{idx + 1}</TableCell>
-                                    <TableCell>
-                                      <Tooltip title={row.fee?.description || ''} arrow>
-                                        <span>{row.fee_category?.category_name || 'N/A'}</span>
-                                      </Tooltip>
-                                    </TableCell>
-                                    <TableCell>{row.start_date ? new Date(row.start_date).toLocaleDateString() : 'N/A'}</TableCell>
-                                    <TableCell>₹{parseFloat(row.fee?.amount || 0).toLocaleString()}</TableCell>
-                                    <TableCell>
-                                      {row.concession_type ? (
-                                        <Tooltip title={row.concession_type.description || ''} arrow>
-                                          <span>{row.concession_type.concession_name || '-'}</span>
-                                        </Tooltip>
-                                      ) : '-'}
-                                    </TableCell>
-                                    <TableCell>₹{parseFloat(row.concession_amount || 0).toLocaleString()}</TableCell>
-                                    <TableCell>₹{parseFloat(row.amount || 0).toLocaleString()}</TableCell>
-                                    <TableCell>{row.fee_category?.payment_schedule || '-'}</TableCell>
-                                    <TableCell>{row.fee_category?.educational_supplies ? 'Yes' : 'No'}</TableCell>
-                                    <TableCell>
-                                      <Chip
-                                        label={row.status || 'ACTIVE'}
-                                        color={row.status === 'ACTIVE' ? 'success' : 'warning'}
-                                        size="small"
-                                      />
-                                    </TableCell>
-                                  </TableRow>
-                                ))
-                              )}
-                            </TableBody>
-                          </Table>
-                        </TableContainer>
-                        {/* Deleted Facilities Table */}
-                        {deletedMappings.length > 0 && (
-                          <>
-                            <Typography variant="h6" sx={{ mt: 4, mb: 2, color: 'error.main' }}>Deleted Facilities</Typography>
-                            <TableContainer component={Paper} sx={{ mb: 2, boxShadow: 2, borderRadius: 2, maxHeight: 180, overflowY: 'auto', position: 'relative' }}>
-                              <Table>
-                                <TableHead sx={{ backgroundColor: 'error.light' }}>
+                              </TableHead>
+                              <TableBody>
+                                {activeMappings.length === 0 ? (
                                   <TableRow>
-                                    <TableCell sx={{ fontWeight: 'bold', width: 40 }}>#</TableCell>
-                                    <TableCell sx={{ fontWeight: 'bold' }}>Facility Type</TableCell>
-                                    <TableCell sx={{ fontWeight: 'bold' }}>Start Date</TableCell>
-                                    <TableCell sx={{ fontWeight: 'bold' }}>End Date</TableCell>
-                                    <TableCell sx={{ fontWeight: 'bold' }}>Amount</TableCell>
-                                    <TableCell sx={{ fontWeight: 'bold' }}>Concession Type</TableCell>
-                                    <TableCell sx={{ fontWeight: 'bold' }}>Concession</TableCell>
-                                    <TableCell sx={{ fontWeight: 'bold' }}>Net Amount</TableCell>
-                                    <TableCell sx={{ fontWeight: 'bold' }}>Payment Schedule</TableCell>
-                                    <TableCell sx={{ fontWeight: 'bold' }}>Status</TableCell>
+                                    <TableCell colSpan={10} align="center">No active facilities enrolled.</TableCell>
                                   </TableRow>
-                                </TableHead>
-                                <TableBody>
-                                  {deletedMappings.map((mapping, idx) => (
+                                ) : (
+                                  <>
+                                    {activeMappings.map((mapping, idx) => (
+                                      <TableRow key={mapping.id} hover>
+                                        <TableCell>{idx + 1}</TableCell>
+                                        <TableCell>
+                                          <Tooltip title={mapping.fee?.description || ''} arrow>
+                                            <span>{mapping.fee_category?.category_name || 'N/A'}</span>
+                                          </Tooltip>
+                                        </TableCell>
+                                        <TableCell>{mapping.start_date ? new Date(mapping.start_date).toLocaleDateString() : 'N/A'}</TableCell>
+                                        <TableCell>₹{parseFloat(mapping.fee?.amount || 0).toLocaleString()}</TableCell>
+                                        <TableCell>
+                                          {mapping.concession_type ? (
+                                            <Tooltip title={mapping.concession_type.description || ''} arrow>
+                                              <span>{mapping.concession_type.concession_name || '-'}</span>
+                                            </Tooltip>
+                                          ) : '-'}
+                                        </TableCell>
+                                        <TableCell>₹{parseFloat(mapping.concession_amount || 0).toLocaleString()}</TableCell>
+                                        <TableCell>₹{parseFloat(mapping.amount || 0).toLocaleString()}</TableCell>
+                                        <TableCell>{mapping.fee_category?.payment_schedule || '-'}</TableCell>
+                                        <TableCell>
+                                          {(() => {
+                                            const net = parseFloat(mapping.amount || 0);
+                                            const schedule = parseInt(mapping.fee_category?.payment_schedule || 1);
+                                            if (isNaN(net) || isNaN(schedule)) return 'N/A';
+                                            return `₹${(net * schedule).toLocaleString()}`;
+                                          })()}
+                                        </TableCell>
+                                        <TableCell>
+                                          <Chip
+                                            label={mapping.status || 'ACTIVE'}
+                                            color={mapping.status === 'ACTIVE' ? 'success' : 'warning'}
+                                            size="small"
+                                          />
+                                        </TableCell>
+                                        <TableCell>
+                                          {mapping.status !== 'DELETED' && (
+                                            <IconButton color="error" onClick={() => handleDeleteFacility(student.id, mapping.id)}>
+                                              <Delete />
+                                            </IconButton>
+                                          )}
+                                        </TableCell>
+                                      </TableRow>
+                                    ))}
+                                    {/* Total Row */}
+                                    <TableRow sx={{ fontWeight: 700 }}>
+                                      <TableCell colSpan={8} align="right" sx={{ fontWeight: 700 }}>Total Amount</TableCell>
+                                      <TableCell sx={{ fontWeight: 700 }}>
+                                        ₹{activeMappings.reduce((sum, m) => {
+                                          const net = parseFloat(m.amount || 0);
+                                          const schedule = parseInt(m.fee_category?.payment_schedule || 1);
+                                          return sum + (isNaN(net) || isNaN(schedule) ? 0 : net * schedule);
+                                        }, 0).toLocaleString()}
+                                      </TableCell>
+                                      <TableCell colSpan={2} />
+                                    </TableRow>
+                                  </>
+                                )}
+                              </TableBody>
+                            </Table>
+                          </TableContainer>
+                        )}
+                        {facilityTab === 1 && (
+                          <TableContainer component={Paper} sx={{ boxShadow: 1, borderRadius: 1, maxHeight: 220, overflowY: 'auto', position: 'relative', m: 0, p: 0 }}>
+                            <Table stickyHeader size="small">
+                              <TableHead sx={{ backgroundColor: theme => theme.palette.primary.main }}>
+                                <TableRow sx={{ height: 32 }}>
+                                  <TableCell sx={{ fontWeight: 700, fontSize: 13, py: 0.5, px: 1, width: 32 }}>#</TableCell>
+                                  <TableCell sx={{ fontWeight: 700, fontSize: 13, py: 0.5, px: 1 }}>Facility Type</TableCell>
+                                  <TableCell sx={{ fontWeight: 700, fontSize: 13, py: 0.5, px: 1 }}>Start Date</TableCell>
+                                  <TableCell sx={{ fontWeight: 700, fontSize: 13, py: 0.5, px: 1 }}>Amount</TableCell>
+                                  <TableCell sx={{ fontWeight: 700, fontSize: 13, py: 0.5, px: 1 }}>Concession Type</TableCell>
+                                  <TableCell sx={{ fontWeight: 700, fontSize: 13, py: 0.5, px: 1 }}>Concession</TableCell>
+                                  <TableCell sx={{ fontWeight: 700, fontSize: 13, py: 0.5, px: 1 }}>Net Amount</TableCell>
+                                  <TableCell sx={{ fontWeight: 700, fontSize: 13, py: 0.5, px: 1 }}>Payment Schedule</TableCell>
+                                  <TableCell sx={{ fontWeight: 700, fontSize: 13, py: 0.5, px: 1 }}>Total Amount</TableCell>
+                                  <TableCell sx={{ fontWeight: 700, fontSize: 13, py: 0.5, px: 1 }}>Educational Supplies</TableCell>
+                                  <TableCell sx={{ fontWeight: 700, fontSize: 13, py: 0.5, px: 1 }}>Status</TableCell>
+                                </TableRow>
+                              </TableHead>
+                              <TableBody>
+                                {nonCoreRows.length === 0 ? (
+                                  <TableRow>
+                                    <TableCell colSpan={10} align="center">No non-core facilities found.</TableCell>
+                                  </TableRow>
+                                ) : (
+                                  <>
+                                    {nonCoreRows.map((row, idx) => (
+                                      <TableRow key={row.id} hover>
+                                        <TableCell>{idx + 1}</TableCell>
+                                        <TableCell>
+                                          <Tooltip title={row.fee?.description || ''} arrow>
+                                            <span>{row.fee_category?.category_name || 'N/A'}</span>
+                                          </Tooltip>
+                                        </TableCell>
+                                        <TableCell>{row.start_date ? new Date(row.start_date).toLocaleDateString() : 'N/A'}</TableCell>
+                                        <TableCell>₹{parseFloat(row.fee?.amount || 0).toLocaleString()}</TableCell>
+                                        <TableCell>
+                                          {row.concession_type ? (
+                                            <Tooltip title={row.concession_type.description || ''} arrow>
+                                              <span>{row.concession_type.concession_name || '-'}</span>
+                                            </Tooltip>
+                                          ) : '-'}
+                                        </TableCell>
+                                        <TableCell>₹{parseFloat(row.concession_amount || 0).toLocaleString()}</TableCell>
+                                        <TableCell>₹{parseFloat(row.amount || 0).toLocaleString()}</TableCell>
+                                        <TableCell>{row.fee_category?.payment_schedule || '-'}</TableCell>
+                                        <TableCell>
+                                          {(() => {
+                                            const net = parseFloat(row.amount || 0);
+                                            const schedule = parseInt(row.fee_category?.payment_schedule || 1);
+                                            if (isNaN(net) || isNaN(schedule)) return 'N/A';
+                                            return `₹${(net * schedule).toLocaleString()}`;
+                                          })()}
+                                        </TableCell>
+                                        <TableCell>{row.fee_category?.educational_supplies ? 'Yes' : 'No'}</TableCell>
+                                        <TableCell>
+                                          <Chip
+                                            label={row.status || 'ACTIVE'}
+                                            color={row.status === 'ACTIVE' ? 'success' : 'warning'}
+                                            size="small"
+                                          />
+                                        </TableCell>
+                                      </TableRow>
+                                    ))}
+                                    {/* Total Row */}
+                                    <TableRow sx={{ fontWeight: 700 }}>
+                                      <TableCell colSpan={8} align="right" sx={{ fontWeight: 700 }}>Total Amount</TableCell>
+                                      <TableCell sx={{ fontWeight: 700 }}>
+                                        ₹{nonCoreRows.reduce((sum, row) => {
+                                          const net = parseFloat(row.amount || 0);
+                                          const schedule = parseInt(row.fee_category?.payment_schedule || 1);
+                                          return sum + (isNaN(net) || isNaN(schedule) ? 0 : net * schedule);
+                                        }, 0).toLocaleString()}
+                                      </TableCell>
+                                      <TableCell colSpan={2} />
+                                    </TableRow>
+                                  </>
+                                )}
+                              </TableBody>
+                            </Table>
+                          </TableContainer>
+                        )}
+                        {facilityTab === 2 && (
+                          <TableContainer component={Paper} sx={{ boxShadow: 1, borderRadius: 1, maxHeight: 180, overflowY: 'auto', position: 'relative', m: 0, p: 0 }}>
+                            <Table size="small">
+                              <TableHead sx={{ backgroundColor: 'error.light' }}>
+                                <TableRow sx={{ height: 32 }}>
+                                  <TableCell sx={{ fontWeight: 700, fontSize: 13, py: 0.5, px: 1, width: 32 }}>#</TableCell>
+                                  <TableCell sx={{ fontWeight: 700, fontSize: 13, py: 0.5, px: 1 }}>Facility Type</TableCell>
+                                  <TableCell sx={{ fontWeight: 700, fontSize: 13, py: 0.5, px: 1 }}>Start Date</TableCell>
+                                  <TableCell sx={{ fontWeight: 700, fontSize: 13, py: 0.5, px: 1 }}>End Date</TableCell>
+                                  <TableCell sx={{ fontWeight: 700, fontSize: 13, py: 0.5, px: 1 }}>Amount</TableCell>
+                                  <TableCell sx={{ fontWeight: 700, fontSize: 13, py: 0.5, px: 1 }}>Concession Type</TableCell>
+                                  <TableCell sx={{ fontWeight: 700, fontSize: 13, py: 0.5, px: 1 }}>Concession</TableCell>
+                                  <TableCell sx={{ fontWeight: 700, fontSize: 13, py: 0.5, px: 1 }}>Net Amount</TableCell>
+                                  <TableCell sx={{ fontWeight: 700, fontSize: 13, py: 0.5, px: 1 }}>Payment Schedule</TableCell>
+                                  <TableCell sx={{ fontWeight: 700, fontSize: 13, py: 0.5, px: 1 }}>Status</TableCell>
+                                </TableRow>
+                              </TableHead>
+                              <TableBody>
+                                {deletedMappings.length === 0 ? (
+                                  <TableRow>
+                                    <TableCell colSpan={10} align="center">No deleted facilities found.</TableCell>
+                                  </TableRow>
+                                ) : (
+                                  deletedMappings.map((mapping, idx) => (
                                     <TableRow key={mapping.id} hover>
                                       <TableCell>{idx + 1}</TableCell>
                                       <TableCell>
@@ -1208,11 +1615,11 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                                         />
                                       </TableCell>
                                     </TableRow>
-                                  ))}
-                                </TableBody>
-                              </Table>
-                            </TableContainer>
-                          </>
+                                  ))
+                                )}
+                              </TableBody>
+                            </Table>
+                          </TableContainer>
                         )}
                       </>
                     );
