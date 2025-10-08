@@ -934,6 +934,18 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                               }
                               return false;
                             })
+                            .sort((a, b) => {
+                              // For Pending/Overdue tab: OVERDUE first, then PENDING
+                              if (paymentStatusTab === 0) {
+                                if (a.payment_status === b.payment_status) return 0;
+                                if (a.payment_status === 'OVERDUE') return -1;
+                                if (b.payment_status === 'OVERDUE') return 1;
+                                if (a.payment_status === 'PENDING') return -1;
+                                if (b.payment_status === 'PENDING') return 1;
+                                return 0;
+                              }
+                              return 0;
+                            })
                             .map((row, idx) => (
                               <TableRow key={idx} hover>
                                 <TableCell>{row.fee_category_name}</TableCell>
@@ -944,7 +956,13 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                                 <TableCell>
                                   <Chip
                                     label={row.payment_status}
-                                    color={row.payment_status === 'PAID' ? 'success' : row.payment_status === 'PENDING' || row.payment_status === 'OVERDUE' ? 'warning' : row.payment_status === 'WAIVED' ? 'info' : 'default'}
+                                    color={
+                                      row.payment_status === 'PAID' ? 'success'
+                                      : row.payment_status === 'OVERDUE' ? 'error'
+                                      : row.payment_status === 'PENDING' ? 'warning'
+                                      : row.payment_status === 'WAIVED' ? 'info'
+                                      : 'default'
+                                    }
                                     size="small"
                                   />
                                 </TableCell>
