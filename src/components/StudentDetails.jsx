@@ -12,6 +12,12 @@ import appConfig from '../config/appConfig';
 import StudentAttendance from './StudentAttendance';
 
 const StudentDetails = ({ student, onBack, onEdit }) => {
+  // Payment selection and dialog state
+  const [selectedPayments, setSelectedPayments] = useState([]);
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  const [paymentForm, setPaymentForm] = useState([]);
+  const [paymentLoading, setPaymentLoading] = useState(false);
+  const [paymentError, setPaymentError] = useState('');
   // State for payment status sub-tab
   const [paymentStatusTab, setPaymentStatusTab] = useState(0);
   // Facility tab state for nested facility tabs
@@ -923,52 +929,178 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                           </TableRow>
                         </TableHead>
                         <TableBody>
-                          {studentPaymentStatus
-                            .filter(row => {
-                              if (paymentStatusTab === 0) {
-                                return row.payment_status === 'PENDING' || row.payment_status === 'OVERDUE';
-                              } else if (paymentStatusTab === 1) {
-                                return row.payment_status === 'PAID';
-                              } else if (paymentStatusTab === 2) {
-                                return row.payment_status === 'WAIVED';
-                              }
-                              return false;
-                            })
-                            .sort((a, b) => {
-                              // For Pending/Overdue tab: OVERDUE first, then PENDING
-                              if (paymentStatusTab === 0) {
-                                if (a.payment_status === b.payment_status) return 0;
-                                if (a.payment_status === 'OVERDUE') return -1;
-                                if (b.payment_status === 'OVERDUE') return 1;
-                                if (a.payment_status === 'PENDING') return -1;
-                                if (b.payment_status === 'PENDING') return 1;
-                                return 0;
-                              }
-                              return 0;
-                            })
-                            .map((row, idx) => (
-                              <TableRow key={idx} hover>
-                                <TableCell>{row.fee_category_name}</TableCell>
-                                <TableCell>₹{parseFloat(row.fees_to_be_paid || 0).toLocaleString()}</TableCell>
-                                <TableCell>₹{parseFloat(row.fees_paid || 0).toLocaleString()}</TableCell>
-                                <TableCell>{row.payment_due_date ? formatCustomDate(row.payment_due_date) : 'N/A'}</TableCell>
-                                <TableCell>{row.paid_date ? formatCustomDate(row.paid_date) : 'N/A'}</TableCell>
-                                <TableCell>
-                                  <Chip
-                                    label={row.payment_status}
-                                    color={
-                                      row.payment_status === 'PAID' ? 'success'
-                                      : row.payment_status === 'OVERDUE' ? 'error'
-                                      : row.payment_status === 'PENDING' ? 'warning'
-                                      : row.payment_status === 'WAIVED' ? 'info'
-                                      : 'default'
-                                    }
-                                    size="small"
-                                  />
+                          {paymentStatusTab === 0 && (
+                            <>
+                              <TableRow>
+                                <TableCell colSpan={7}>
+                                  <Button
+                                    variant="contained"
+                                    color="primary"
+                                    disabled={selectedPayments.length === 0}
+                                    onClick={() => {
+                                      setPaymentForm(
+                                        studentPaymentStatus
+                                          .filter(row => selectedPayments.includes(row.student_fixed_fee_payment_schedule_mapping_id))
+                                          .map(row => ({
+                                            ...row,
+                                            amount_paying: parseFloat(row.pending_amount || 0)
+                                          }))
+                                      );
+                                      setPaymentDialogOpen(true);
+                                    }}
+                                    sx={{ mb: 1 }}
+                                  >
+                                    Make Payment
+                                  </Button>
                                 </TableCell>
-                                <TableCell>₹{parseFloat(row.pending_amount || 0).toLocaleString()}</TableCell>
                               </TableRow>
-                            ))}
+                              {studentPaymentStatus
+                                .filter(row => row.payment_status === 'PENDING' || row.payment_status === 'OVERDUE')
+                                .sort((a, b) => {
+                                  if (a.payment_status === b.payment_status) return 0;
+                                  if (a.payment_status === 'OVERDUE') return -1;
+                                  if (b.payment_status === 'OVERDUE') return 1;
+                                  if (a.payment_status === 'PENDING') return -1;
+                                  if (b.payment_status === 'PENDING') return 1;
+                                  return 0;
+                                })
+                                .map((row, idx) => (
+                                  <TableRow key={row.student_fixed_fee_payment_schedule_mapping_id} hover selected={selectedPayments.includes(row.student_fixed_fee_payment_schedule_mapping_id)}>
+                                    <TableCell padding="checkbox">
+                                      <input
+                                        type="checkbox"
+                                        checked={selectedPayments.includes(row.student_fixed_fee_payment_schedule_mapping_id)}
+                                        onChange={e => {
+                                          if (e.target.checked) {
+                                            setSelectedPayments(prev => [...prev, row.student_fixed_fee_payment_schedule_mapping_id]);
+                                          } else {
+                                            setSelectedPayments(prev => prev.filter(id => id !== row.student_fixed_fee_payment_schedule_mapping_id));
+                                          }
+                                        }}
+                                      />
+                                    </TableCell>
+                                    <TableCell>{row.fee_category_name}</TableCell>
+                                    <TableCell>₹{parseFloat(row.fees_to_be_paid || 0).toLocaleString()}</TableCell>
+                                    <TableCell>₹{parseFloat(row.fees_paid || 0).toLocaleString()}</TableCell>
+                                    <TableCell>{row.payment_due_date ? formatCustomDate(row.payment_due_date) : 'N/A'}</TableCell>
+                                    <TableCell>{row.paid_date ? formatCustomDate(row.paid_date) : 'N/A'}</TableCell>
+                                    <TableCell>
+                                      <Chip
+                                        label={row.payment_status}
+                                        color={row.payment_status === 'OVERDUE' ? 'error' : row.payment_status === 'PENDING' ? 'warning' : 'default'}
+                                        size="small"
+                                      />
+                                    </TableCell>
+                                    <TableCell>₹{parseFloat(row.pending_amount || 0).toLocaleString()}</TableCell>
+                                  </TableRow>
+                                ))}
+                            </>
+                          )}
+                          {paymentStatusTab !== 0 && (
+                            studentPaymentStatus
+                              .filter(row => {
+                                if (paymentStatusTab === 1) return row.payment_status === 'PAID';
+                                if (paymentStatusTab === 2) return row.payment_status === 'WAIVED';
+                                return false;
+                              })
+                              .map((row, idx) => (
+                                <TableRow key={idx} hover>
+                                  <TableCell>{row.fee_category_name}</TableCell>
+                                  <TableCell>₹{parseFloat(row.fees_to_be_paid || 0).toLocaleString()}</TableCell>
+                                  <TableCell>₹{parseFloat(row.fees_paid || 0).toLocaleString()}</TableCell>
+                                  <TableCell>{row.payment_due_date ? formatCustomDate(row.payment_due_date) : 'N/A'}</TableCell>
+                                  <TableCell>{row.paid_date ? formatCustomDate(row.paid_date) : 'N/A'}</TableCell>
+                                  <TableCell>
+                                    <Chip
+                                      label={row.payment_status}
+                                      color={row.payment_status === 'PAID' ? 'success' : row.payment_status === 'WAIVED' ? 'info' : 'default'}
+                                      size="small"
+                                    />
+                                  </TableCell>
+                                  <TableCell>₹{parseFloat(row.pending_amount || 0).toLocaleString()}</TableCell>
+                                </TableRow>
+                              ))
+                          )}
+      {/* Payment Dialog */}
+      <Dialog open={paymentDialogOpen} onClose={() => setPaymentDialogOpen(false)} maxWidth="md" fullWidth>
+        <DialogTitle>Process Payment</DialogTitle>
+        <DialogContent dividers>
+          {paymentError && <Alert severity="error" sx={{ mb: 2 }}>{paymentError}</Alert>}
+          <Table size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell>Fee Category</TableCell>
+                <TableCell>Pending Amount</TableCell>
+                <TableCell>Amount Paying</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {paymentForm.map((row, idx) => (
+                <TableRow key={row.student_fixed_fee_payment_schedule_mapping_id}>
+                  <TableCell>{row.fee_category_name}</TableCell>
+                  <TableCell>₹{parseFloat(row.pending_amount || 0).toLocaleString()}</TableCell>
+                  <TableCell>
+                    <TextField
+                      type="number"
+                      size="small"
+                      value={row.amount_paying}
+                      inputProps={{ min: 0, max: row.pending_amount, step: 1 }}
+                      onChange={e => {
+                        const value = parseFloat(e.target.value) || 0;
+                        setPaymentForm(form => form.map((f, i) => i === idx ? { ...f, amount_paying: value } : f));
+                      }}
+                    />
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setPaymentDialogOpen(false)} color="secondary">Cancel</Button>
+          <Button
+            onClick={async () => {
+              setPaymentLoading(true);
+              setPaymentError('');
+              try {
+                const paymentDetails = paymentForm.map(row => ({
+                  fee_id: row.fee_id,
+                  fee_category_id: row.fee_category_id,
+                  student_fixed_fee_id: row.student_fixed_fee_id,
+                  student_fixed_fee_payment_schedule_mapping_id: row.student_fixed_fee_payment_schedule_mapping_id,
+                  amount_paying: row.amount_paying,
+                  pending_amount: row.pending_amount,
+                  payment_date: new Date().toISOString(),
+                }));
+                await axiosInstance.post('/api/v1/fees-payments/process_payment', {
+                  student_id: student.id,
+                  academic_year_id: student.academic_year_id,
+                  payment_method: 'CASH', // or allow user to select
+                  description: '',
+                  payment_details: paymentDetails
+                });
+                setPaymentDialogOpen(false);
+                setSelectedPayments([]);
+                // Optionally show a success alert
+                // Refresh payment status
+                setLoadingPaymentStatus(true);
+                const res = await axiosInstance.get(`/api/v1/fees-payments/student_payment_status/${student.id}`);
+                setStudentPaymentStatus(Array.isArray(res.data) ? res.data : []);
+                setLoadingPaymentStatus(false);
+              } catch (err) {
+                setPaymentError('Failed to process payment.');
+              } finally {
+                setPaymentLoading(false);
+              }
+            }}
+            color="primary"
+            variant="contained"
+            disabled={paymentLoading || paymentForm.some(f => f.amount_paying <= 0 || f.amount_paying > f.pending_amount)}
+          >
+            {paymentLoading ? <CircularProgress size={20} /> : 'Submit Payment'}
+          </Button>
+        </DialogActions>
+      </Dialog>
                         </TableBody>
                       </Table>
                     </TableContainer>
