@@ -1081,7 +1081,6 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                     student_fixed_fee_payment_schedule_mapping_id: row.student_fixed_fee_payment_schedule_mapping_id,
                     amount_paying: amountPaying,
                     pending_amount: pendingAmount,
-                    payment_date: new Date().toISOString(),
                   };
                 });
                 await axiosInstance.post('/api/v1/fees-payments/process_payment', {
