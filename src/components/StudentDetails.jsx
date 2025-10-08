@@ -12,6 +12,8 @@ import appConfig from '../config/appConfig';
 import StudentAttendance from './StudentAttendance';
 
 const StudentDetails = ({ student, onBack, onEdit }) => {
+  // State for payment status sub-tab
+  const [paymentStatusTab, setPaymentStatusTab] = useState(0);
   // Facility tab state for nested facility tabs
   const [facilityTab, setFacilityTab] = React.useState(0);
   // Delete facility API call
@@ -887,6 +889,18 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                   <Typography variant="h5" fontWeight={700} color="primary" gutterBottom>
                     Fee Payment Status
                   </Typography>
+                  {/* Sub-tabs for payment status filtering */}
+                  <Tabs
+                    value={paymentStatusTab}
+                    onChange={(e, v) => setPaymentStatusTab(v)}
+                    sx={{ mb: 2 }}
+                    indicatorColor="primary"
+                    textColor="primary"
+                  >
+                    <Tab label="Pending / Overdue" />
+                    <Tab label="Paid" />
+                    <Tab label="Waived" />
+                  </Tabs>
                   {loadingPaymentStatus ? (
                     <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
                       <CircularProgress size={40} />
@@ -909,24 +923,34 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                           </TableRow>
                         </TableHead>
                         <TableBody>
-                          {studentPaymentStatus.map((row, idx) => (
-                            <TableRow key={idx} hover>
-                              <TableCell>{row.fee_category_name}</TableCell>
-                              <TableCell>₹{parseFloat(row.fees_to_be_paid || 0).toLocaleString()}</TableCell>
-                              <TableCell>₹{parseFloat(row.fees_paid || 0).toLocaleString()}</TableCell>
-                              <TableCell>{row.payment_due_date ? formatCustomDate(row.payment_due_date) : 'N/A'}</TableCell>
-                              <TableCell>{row.paid_date ? formatCustomDate(row.paid_date) : 'N/A'}</TableCell>
-
-                              <TableCell>
-                                <Chip
-                                  label={row.payment_status}
-                                  color={row.payment_status === 'PAID' ? 'success' : row.payment_status === 'PENDING' ? 'warning' : 'default'}
-                                  size="small"
-                                />
-                              </TableCell>
-                              <TableCell>₹{parseFloat(row.pending_amount || 0).toLocaleString()}</TableCell>
-                            </TableRow>
-                          ))}
+                          {studentPaymentStatus
+                            .filter(row => {
+                              if (paymentStatusTab === 0) {
+                                return row.payment_status === 'PENDING' || row.payment_status === 'OVERDUE';
+                              } else if (paymentStatusTab === 1) {
+                                return row.payment_status === 'PAID';
+                              } else if (paymentStatusTab === 2) {
+                                return row.payment_status === 'WAIVED';
+                              }
+                              return false;
+                            })
+                            .map((row, idx) => (
+                              <TableRow key={idx} hover>
+                                <TableCell>{row.fee_category_name}</TableCell>
+                                <TableCell>₹{parseFloat(row.fees_to_be_paid || 0).toLocaleString()}</TableCell>
+                                <TableCell>₹{parseFloat(row.fees_paid || 0).toLocaleString()}</TableCell>
+                                <TableCell>{row.payment_due_date ? formatCustomDate(row.payment_due_date) : 'N/A'}</TableCell>
+                                <TableCell>{row.paid_date ? formatCustomDate(row.paid_date) : 'N/A'}</TableCell>
+                                <TableCell>
+                                  <Chip
+                                    label={row.payment_status}
+                                    color={row.payment_status === 'PAID' ? 'success' : row.payment_status === 'PENDING' || row.payment_status === 'OVERDUE' ? 'warning' : row.payment_status === 'WAIVED' ? 'info' : 'default'}
+                                    size="small"
+                                  />
+                                </TableCell>
+                                <TableCell>₹{parseFloat(row.pending_amount || 0).toLocaleString()}</TableCell>
+                              </TableRow>
+                            ))}
                         </TableBody>
                       </Table>
                     </TableContainer>
