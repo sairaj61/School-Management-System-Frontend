@@ -1030,29 +1030,36 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
             <TableHead>
               <TableRow>
                 <TableCell>Fee Category</TableCell>
-                <TableCell>Pending Amount</TableCell>
+                <TableCell>Total Payable</TableCell>
                 <TableCell>Amount Paying</TableCell>
+                <TableCell>Pending Amount</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {paymentForm.map((row, idx) => (
-                <TableRow key={row.student_fixed_fee_payment_schedule_mapping_id}>
-                  <TableCell>{row.fee_category_name}</TableCell>
-                  <TableCell>₹{parseFloat(row.pending_amount || 0).toLocaleString()}</TableCell>
-                  <TableCell>
-                    <TextField
-                      type="number"
-                      size="small"
-                      value={row.amount_paying}
-                      inputProps={{ min: 0, max: row.pending_amount, step: 1 }}
-                      onChange={e => {
-                        const value = parseFloat(e.target.value) || 0;
-                        setPaymentForm(form => form.map((f, i) => i === idx ? { ...f, amount_paying: value } : f));
-                      }}
-                    />
-                  </TableCell>
-                </TableRow>
-              ))}
+              {paymentForm.map((row, idx) => {
+                const totalPayable = parseFloat(row.fees_to_be_paid || 0);
+                const amountPaying = parseFloat(row.amount_paying || 0);
+                const pendingAmount = (totalPayable - amountPaying).toFixed(2);
+                return (
+                  <TableRow key={row.student_fixed_fee_payment_schedule_mapping_id}>
+                    <TableCell>{row.fee_category_name}</TableCell>
+                    <TableCell>₹{totalPayable.toLocaleString()}</TableCell>
+                    <TableCell>
+                      <TextField
+                        type="number"
+                        size="small"
+                        value={amountPaying}
+                        inputProps={{ min: 0, max: totalPayable, step: 0.01 }}
+                        onChange={e => {
+                          const value = parseFloat(e.target.value) || 0;
+                          setPaymentForm(form => form.map((f, i) => i === idx ? { ...f, amount_paying: value } : f));
+                        }}
+                      />
+                    </TableCell>
+                    <TableCell>₹{pendingAmount}</TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </DialogContent>
@@ -1063,15 +1070,20 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
               setPaymentLoading(true);
               setPaymentError('');
               try {
-                const paymentDetails = paymentForm.map(row => ({
-                  fee_id: row.fee_id,
-                  fee_category_id: row.fee_category_id,
-                  student_fixed_fee_id: row.student_fixed_fee_id,
-                  student_fixed_fee_payment_schedule_mapping_id: row.student_fixed_fee_payment_schedule_mapping_id,
-                  amount_paying: row.amount_paying,
-                  pending_amount: row.pending_amount,
-                  payment_date: new Date().toISOString(),
-                }));
+                const paymentDetails = paymentForm.map(row => {
+                  const totalPayable = parseFloat(row.fees_to_be_paid || 0);
+                  const amountPaying = parseFloat(row.amount_paying || 0);
+                  const pendingAmount = (totalPayable - amountPaying).toFixed(2);
+                  return {
+                    fee_id: row.fee_id,
+                    fee_category_id: row.fee_category_id,
+                    student_fixed_fee_id: row.student_fixed_fee_id,
+                    student_fixed_fee_payment_schedule_mapping_id: row.student_fixed_fee_payment_schedule_mapping_id,
+                    amount_paying: amountPaying,
+                    pending_amount: pendingAmount,
+                    payment_date: new Date().toISOString(),
+                  };
+                });
                 await axiosInstance.post('/api/v1/fees-payments/process_payment', {
                   student_id: student.id,
                   academic_year_id: student.academic_year_id,
