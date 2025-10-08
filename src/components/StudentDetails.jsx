@@ -1073,7 +1073,7 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                 const paymentDetails = paymentForm.map(row => {
                   const totalPayable = parseFloat(row.fees_to_be_paid || 0);
                   const amountPaying = parseFloat(row.amount_paying || 0);
-                  const pendingAmount = (totalPayable - amountPaying).toFixed(2);
+                  const pendingAmount = Number((totalPayable - amountPaying).toFixed(2));
                   return {
                     fee_id: row.fee_id,
                     fee_category_id: row.fee_category_id,
