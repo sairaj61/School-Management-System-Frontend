@@ -126,6 +126,9 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
   };
   const [tab, setTab] = useState(0);
   const [fixedFees, setFixedFees] = useState([]);
+  // State for new payment status API
+  const [studentPaymentStatus, setStudentPaymentStatus] = useState([]);
+  const [loadingPaymentStatus, setLoadingPaymentStatus] = useState(false);
   const [facilities, setFacilities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -178,6 +181,26 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
       setLoadingDocuments(false);
     }
   };
+
+  function formatCustomDate(dateStr) {
+  if (!dateStr) return 'N/A';
+  const date = new Date(dateStr);
+  if (isNaN(date)) return 'N/A';
+  const day = date.getDate();
+  const month = date.toLocaleString('default', { month: 'long' });
+  const year = date.getFullYear();
+  // Get ordinal suffix
+  function getOrdinal(n) {
+    if (n > 3 && n < 21) return 'th';
+    switch (n % 10) {
+      case 1: return 'st';
+      case 2: return 'nd';
+      case 3: return 'rd';
+      default: return 'th';
+    }
+  }
+  return `${day}${getOrdinal(day)} ${month}, ${year}`;
+}
 
   const uploadDocument = async (file) => {
     if (!student?.id) {
@@ -321,6 +344,18 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
         setFixedFees([]);
       })
       .finally(() => setLoading(false));
+
+    // Fetch new payment status for Payment tab
+    setLoadingPaymentStatus(true);
+    axiosInstance
+      .get(`/api/v1/fees-payments/student_payment_status/${student.id}`)
+      .then((res) => {
+        setStudentPaymentStatus(Array.isArray(res.data) ? res.data : []);
+      })
+      .catch(() => {
+        setStudentPaymentStatus([]);
+      })
+      .finally(() => setLoadingPaymentStatus(false));
 
     // Fetch facilities
     axiosInstance
@@ -850,40 +885,46 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
               {tab === 1 && (
                 <Box>
                   <Typography variant="h5" fontWeight={700} color="primary" gutterBottom>
-                    Fee Details & Payments
+                    Fee Payment Status
                   </Typography>
-                  {fixedFees.length === 0 ? (
-                    <Typography color="text.secondary">No fee details found.</Typography>
+                  {loadingPaymentStatus ? (
+                    <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+                      <CircularProgress size={40} />
+                      <Typography sx={{ ml: 2 }}>Loading payment status...</Typography>
+                    </Box>
+                  ) : studentPaymentStatus.length === 0 ? (
+                    <Typography color="text.secondary">No payment status data found.</Typography>
                   ) : (
                     <TableContainer component={Paper} sx={{ mt: 2, boxShadow: 2, borderRadius: 2 }}>
                       <Table>
                         <TableHead sx={{ backgroundColor: 'primary.light' }}>
                           <TableRow>
                             <TableCell sx={{ fontWeight: 'bold' }}>Fee Category</TableCell>
-                            <TableCell sx={{ fontWeight: 'bold' }}>Fee Name</TableCell>
-                            <TableCell sx={{ fontWeight: 'bold' }}>Amount</TableCell>
-                            <TableCell sx={{ fontWeight: 'bold' }}>Concession</TableCell>
-                            <TableCell sx={{ fontWeight: 'bold' }}>Net Amount</TableCell>
-                            <TableCell sx={{ fontWeight: 'bold' }}>Status</TableCell>
-                            <TableCell sx={{ fontWeight: 'bold' }}>Created At</TableCell>
+                            <TableCell sx={{ fontWeight: 'bold' }}>Fees To Be Paid</TableCell>
+                            <TableCell sx={{ fontWeight: 'bold' }}>Fees Paid</TableCell>
+                            <TableCell sx={{ fontWeight: 'bold' }}>Payment Due Date</TableCell>
+                            <TableCell sx={{ fontWeight: 'bold' }}>Paid Date</TableCell>
+                            <TableCell sx={{ fontWeight: 'bold' }}>Payment Status</TableCell>
+                            <TableCell sx={{ fontWeight: 'bold' }}>Pending Amount</TableCell>
                           </TableRow>
                         </TableHead>
                         <TableBody>
-                          {fixedFees.map(fee => (
-                            <TableRow key={fee.id} hover>
-                              <TableCell>{fee.fee_category?.category_name || 'N/A'}</TableCell>
-                              <TableCell>{fee.fee?.description || 'N/A'}</TableCell>
-                              <TableCell>₹{parseFloat(fee.amount || 0).toLocaleString()}</TableCell>
-                              <TableCell>₹{parseFloat(fee.concession_amount || 0).toLocaleString()}</TableCell>
-                              <TableCell>₹{parseFloat((fee.amount || 0) - (fee.concession_amount || 0)).toLocaleString()}</TableCell>
+                          {studentPaymentStatus.map((row, idx) => (
+                            <TableRow key={idx} hover>
+                              <TableCell>{row.fee_category_name}</TableCell>
+                              <TableCell>₹{parseFloat(row.fees_to_be_paid || 0).toLocaleString()}</TableCell>
+                              <TableCell>₹{parseFloat(row.fees_paid || 0).toLocaleString()}</TableCell>
+                              <TableCell>{row.payment_due_date ? formatCustomDate(row.payment_due_date) : 'N/A'}</TableCell>
+                              <TableCell>{row.paid_date ? formatCustomDate(row.paid_date) : 'N/A'}</TableCell>
+
                               <TableCell>
                                 <Chip
-                                  label={fee.status || 'ACTIVE'}
-                                  color={fee.status === 'ACTIVE' ? 'success' : 'warning'}
+                                  label={row.payment_status}
+                                  color={row.payment_status === 'PAID' ? 'success' : row.payment_status === 'PENDING' ? 'warning' : 'default'}
                                   size="small"
                                 />
                               </TableCell>
-                              <TableCell>{fee.created_at ? new Date(fee.created_at).toLocaleDateString() : 'N/A'}</TableCell>
+                              <TableCell>₹{parseFloat(row.pending_amount || 0).toLocaleString()}</TableCell>
                             </TableRow>
                           ))}
                         </TableBody>
