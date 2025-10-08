@@ -909,17 +909,17 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                   ) : studentPaymentStatus.length === 0 ? (
                     <Typography color="text.secondary">No payment status data found.</Typography>
                   ) : (
-                    <TableContainer component={Paper} sx={{ mt: 2, boxShadow: 2, borderRadius: 2 }}>
-                      <Table>
+                    <TableContainer component={Paper} sx={{ mt: 2, boxShadow: 2, borderRadius: 2, maxHeight: 400, overflowY: 'auto' }}>
+                      <Table stickyHeader>
                         <TableHead sx={{ backgroundColor: 'primary.light' }}>
                           <TableRow>
-                            <TableCell sx={{ fontWeight: 'bold' }}>Fee Category</TableCell>
-                            <TableCell sx={{ fontWeight: 'bold' }}>Fees To Be Paid</TableCell>
-                            <TableCell sx={{ fontWeight: 'bold' }}>Fees Paid</TableCell>
-                            <TableCell sx={{ fontWeight: 'bold' }}>Payment Due Date</TableCell>
-                            <TableCell sx={{ fontWeight: 'bold' }}>Paid Date</TableCell>
-                            <TableCell sx={{ fontWeight: 'bold' }}>Payment Status</TableCell>
-                            <TableCell sx={{ fontWeight: 'bold' }}>Pending Amount</TableCell>
+                            <TableCell sx={{ fontWeight: 'bold', backgroundColor: 'primary.light', top: 0, zIndex: 1 }}>Fee Category</TableCell>
+                            <TableCell sx={{ fontWeight: 'bold', backgroundColor: 'primary.light', top: 0, zIndex: 1 }}>Fees To Be Paid</TableCell>
+                            <TableCell sx={{ fontWeight: 'bold', backgroundColor: 'primary.light', top: 0, zIndex: 1 }}>Fees Paid</TableCell>
+                            <TableCell sx={{ fontWeight: 'bold', backgroundColor: 'primary.light', top: 0, zIndex: 1 }}>Payment Due Date</TableCell>
+                            <TableCell sx={{ fontWeight: 'bold', backgroundColor: 'primary.light', top: 0, zIndex: 1 }}>Paid Date</TableCell>
+                            <TableCell sx={{ fontWeight: 'bold', backgroundColor: 'primary.light', top: 0, zIndex: 1 }}>Payment Status</TableCell>
+                            <TableCell sx={{ fontWeight: 'bold', backgroundColor: 'primary.light', top: 0, zIndex: 1 }}>Pending Amount</TableCell>
                           </TableRow>
                         </TableHead>
                         <TableBody>
