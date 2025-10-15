@@ -26,9 +26,9 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
   const handleDeleteFacility = async (studentId, facilityMappingId) => {
     if (!window.confirm('Are you sure you want to delete this facility?')) return;
     try {
-      await axiosInstance.delete(`${appConfig.API_PREFIX_V1}/academic/students-facility/${studentId}/facilities/${facilityMappingId}`);
+      await axiosInstance.delete(`${appConfig.API_PREFIX_V1}/academic/facilities/${studentId}/facilities/${facilityMappingId}`);
       // Refetch fees after delete (no need to refetch facilities)
-      const feesRes = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/academic/${studentId}/fees`);
+      const feesRes = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/academic/students/${studentId}/fees`);
       setFixedFees(Array.isArray(feesRes.data.fixed_fees) ? feesRes.data.fixed_fees : []);
       setAlert({ open: true, message: 'Facility deleted successfully!', severity: 'success' });
     } catch (error) {
@@ -75,7 +75,7 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
       setAddParentModalOpen(false);
       setNewParentForm({ name: '', email: '', phone_number: '', address: '', gender: '', occupation: '', relationship: '' });
       // Refetch parent details
-      const studentRes = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/academic/student-with-parent-details/${student.id}`);
+      const studentRes = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/academic/students/student-with-parent-details/${student.id}`);
       setParentDetails(Array.isArray(studentRes.data.parent_details) ? studentRes.data.parent_details : []);
     } catch (err) {
       setAddParentError('Failed to add parent.');
@@ -118,7 +118,7 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
       );
       console.log('PUT response:', response);
       // Refetch parent details
-      const studentRes = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/academic/student-with-parent-details/${student.id}`);
+      const studentRes = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/academic/students/student-with-parent-details/${student.id}`);
       setParentDetails(Array.isArray(studentRes.data.parent_details) ? studentRes.data.parent_details : []);
       setEditParentModalOpen(false);
     } catch (err) {
@@ -179,7 +179,7 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
     try {
       setLoadingDocuments(true);
       console.log('Fetching documents for student:', studentId);
-      const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/user-file/owner/STUDENT/${studentId}`);
+      const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/administrative/user-file/owner/STUDENT/${studentId}`);
       console.log('Student documents API response:', response.data);
       setStudentDocuments(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
@@ -224,7 +224,7 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
       formData.append('owner_id_uuid', student.id);
       formData.append('file', file);
 
-      const response = await axiosInstance.post(`${appConfig.API_PREFIX_V1}/user-file/`, formData, {
+      const response = await axiosInstance.post(`${appConfig.API_PREFIX_V1}/administrative/user-file/`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -245,7 +245,7 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
   const fetchDocumentUrl = async (documentId) => {
     try {
       console.log('Fetching document URL for ID:', documentId);
-      const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/user-file/${documentId}/url`);
+      const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/administrative/user-file/${documentId}/url`);
       console.log('Document URL API response:', response.data);
 
       if (response.data && response.data.file_url) {
@@ -305,7 +305,7 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
 
     try {
       console.log('Deleting document:', documentId);
-      const response = await axiosInstance.delete(`${appConfig.API_PREFIX_V1}/user-file/${documentId}`);
+      const response = await axiosInstance.delete(`${appConfig.API_PREFIX_V1}/administrative/user-file/${documentId}`);
       console.log('Delete response:', response.data);
       
       // Refresh documents list and wait for completion so UI updates immediately
@@ -324,7 +324,7 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
     
     // Fetch student with parent details
     axiosInstance
-      .get(`${appConfig.API_PREFIX_V1}/academic/student-with-parent-details/${student.id}`)
+      .get(`${appConfig.API_PREFIX_V1}/academic/students/student-with-parent-details/${student.id}`)
       .then((studentRes) => {
         setParentDetails(Array.isArray(studentRes.data.parent_details) ? studentRes.data.parent_details : []);
       })
@@ -334,7 +334,7 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
 
     // Fetch profile photo URL
     axiosInstance
-      .get(`${appConfig.API_PREFIX_V1}/academic/${student.id}/profile-photo`)
+      .get(`${appConfig.API_PREFIX_V1}/academic/students/${student.id}/profile-photo`)
       .then((photoRes) => {
         setProfileImage(photoRes.data.profile_photo_url || '');
       })
@@ -344,7 +344,7 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
 
     // Fetch fixed fees
     axiosInstance
-      .get(`${appConfig.API_PREFIX_V1}/academic/${student.id}/fees`)
+      .get(`${appConfig.API_PREFIX_V1}/academic/students/${student.id}/fees`)
       .then((feesRes) => {
         setFixedFees(Array.isArray(feesRes.data.fixed_fees) ? feesRes.data.fixed_fees : []);
       })
@@ -356,7 +356,7 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
     // Fetch new payment status for Payment tab
     setLoadingPaymentStatus(true);
     axiosInstance
-      .get(`/api/v1/fees-payments/student_payment_status/${student.id}`)
+      .get(`/api/v1/finance/fee-structure/by-class/${student.id}`)
       .then((res) => {
         setStudentPaymentStatus(Array.isArray(res.data) ? res.data : []);
       })
@@ -367,7 +367,7 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
 
     // Fetch facilities
     axiosInstance
-      .get(`${appConfig.API_PREFIX_V1}/academic/students-facility/${student.id}/facilities`)
+      .get(`${appConfig.API_PREFIX_V1}/academic/facilities/${student.id}/facilities`)
       .then((facilitiesRes) => {
         setFacilities(Array.isArray(facilitiesRes.data) ? facilitiesRes.data : []);
       })
@@ -411,7 +411,7 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
     // Fetch optional fees by class
     if (student.class_id) {
       axiosInstance
-        .get(`${appConfig.API_PREFIX_V1}/fees/by-class/${student.class_id}`)
+        .get(`${appConfig.API_PREFIX_V1}/finance/fee-structure/by-class/${student.class_id}`)
         .then((feesRes) => {
           setOptionalFees(feesRes.data.filter(fee => fee.is_optional));
         })
@@ -437,14 +437,14 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
       formData.append('file', file);
 
       // Upload the file
-      await axiosInstance.post(`${appConfig.API_PREFIX_V1}/academic/${student.id}/profile-photo`, formData, {
+      await axiosInstance.post(`${appConfig.API_PREFIX_V1}/academic/students/${student.id}/profile-photo`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
 
       // Fetch the updated profile photo URL
-      const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/academic/${student.id}/profile-photo`);
+      const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/academic/students/${student.id}/profile-photo`);
       setProfileImage(response.data.profile_photo_url || '');
     } catch (error) {
       console.error('Error uploading profile image:', error);
@@ -524,13 +524,13 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
           }
         };
         await axiosInstance.post(
-          `${appConfig.API_PREFIX_V1}/academic/students-facility/${student.id}/transport-assignment`,
+          `${appConfig.API_PREFIX_V1}/academic/facilities/${student.id}/transport-assignment`,
           transportPayload
         );
       } else {
         // Generic facility
         await axiosInstance.post(
-          `${appConfig.API_PREFIX_V1}/academic/students-facility/${student.id}/facilities`,
+          `${appConfig.API_PREFIX_V1}/academic/facilities/${student.id}/facilities`,
           {
             student_id: student.id,
             fee_categories_with_concession: [{
@@ -547,12 +547,12 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
       setAddFacilityOpen(false);
       // Refresh data
       axiosInstance
-        .get(`${appConfig.API_PREFIX_V1}/academic/students-facility/${student.id}/facilities`)
+        .get(`${appConfig.API_PREFIX_V1}/academic/facilities/${student.id}/facilities`)
         .then((facilitiesRes) => {
           setFacilities(Array.isArray(facilitiesRes.data) ? facilitiesRes.data : []);
         });
       axiosInstance
-        .get(`${appConfig.API_PREFIX_V1}/academic/${student.id}/fees`)
+        .get(`${appConfig.API_PREFIX_V1}/academic/students/${student.id}/fees`)
         .then((feesRes) => {
           setFixedFees(Array.isArray(feesRes.data.fixed_fees) ? feesRes.data.fixed_fees : []);
         });
@@ -1095,7 +1095,7 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                 // Optionally show a success alert
                 // Refresh payment status
                 setLoadingPaymentStatus(true);
-                const res = await axiosInstance.get(`/api/v1/fees-payments/student_payment_status/${student.id}`);
+                const res = await axiosInstance.get(`/api/v1/finance/fee-structure/by-class/${student.id}`);
                 setStudentPaymentStatus(Array.isArray(res.data) ? res.data : []);
                 setLoadingPaymentStatus(false);
               } catch (err) {

@@ -351,7 +351,7 @@ const StaffDetails = () => {
     try {
       setLoadingDocuments(true);
       console.log('Fetching documents for staff:', staffId);
-      const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/user-file/owner/STAFF/${staffId}`);
+      const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/administrative/user-file/owner/STAFF/${staffId}`);
       console.log('Staff documents API response:', response.data);
       setStaffDocuments(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
@@ -372,7 +372,7 @@ const StaffDetails = () => {
       formData.append('owner_id_uuid', staff.id);
       formData.append('file', file);
 
-      const response = await axiosInstance.post(`${appConfig.API_PREFIX_V1}/user-file/`, formData, {
+      const response = await axiosInstance.post(`${appConfig.API_PREFIX_V1}/administrative/user-file/`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -394,7 +394,7 @@ const StaffDetails = () => {
   const fetchDocumentUrl = async (documentId) => {
     try {
       console.log('Fetching document URL for ID:', documentId);
-      const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/user-file/${documentId}/url`);
+      const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/administrative/user-file/${documentId}/url`);
       console.log('Document URL API response:', response.data);
 
       if (response.data && response.data.file_url) {
@@ -456,7 +456,7 @@ const StaffDetails = () => {
 
     try {
       console.log('Deleting document:', documentId);
-      const response = await axiosInstance.delete(`${appConfig.API_PREFIX_V1}/user-file/${documentId}`);
+      const response = await axiosInstance.delete(`${appConfig.API_PREFIX_V1}/administrative/user-file/${documentId}`);
       console.log('Delete response:', response.data);
       
       alert('Document deleted successfully!');

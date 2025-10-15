@@ -222,7 +222,7 @@ const StudentManager = (props) => {
 	const fetchStudentFacilities = async (studentId) => {
 		try {
 			setLoading(true); 
-			const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/academic/students-facility/${studentId}/facilities`);
+			const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/academic/facilities/${studentId}/facilities`);
 			setStudentFacilities(response.data);
 		} catch (error) {
 			handleApiError(error, setAlert);
@@ -248,7 +248,7 @@ const StudentManager = (props) => {
 
 	const fetchOptionalFeesByClass = async (classId) => {
 		try {
-			const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/fees/by-class/${classId}`);
+			const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/finance/fee-structure/by-class/${classId}`);
 			setOptionalFeesForSelectedClass(response.data.filter(fee => fee.is_optional));
 		} catch (error) {
 			handleApiError(error, setAlert);
@@ -263,7 +263,7 @@ const StudentManager = (props) => {
 
 	const fetchClassFees = async (classId) => {
 		try {
-			const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/fees/by-class/${classId}`);
+			const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/finance/fee-structure/by-class/${classId}`);
 			const nonOptionalFees = response.data.filter(fee => !fee.is_optional);
 			setClassFees(nonOptionalFees.map(fee => ({
 				...fee,
@@ -614,7 +614,7 @@ const StudentManager = (props) => {
 						concession_amount: parseFloat(newFacilityForm.concession_amount) || 0
 					}
 				};
-				await axiosInstance.post(`${appConfig.API_PREFIX_V1}/academic/students-facility/${selectedStudent.id}/transport-assignment`, transportAssignmentData);
+				await axiosInstance.post(`${appConfig.API_PREFIX_V1}/academic/facilities/${selectedStudent.id}/transport-assignment`, transportAssignmentData);
 			} else {
 				const facilityData = {
 					student_id: selectedStudent.id, // Use viewedStudent.id
@@ -626,7 +626,7 @@ const StudentManager = (props) => {
 						concession_amount: parseFloat(newFacilityForm.concession_amount) || 0
 					}]
 				};
-				await axiosInstance.post(`${appConfig.API_PREFIX_V1}/academic/students-facility/${selectedStudent.id}/facilities`, facilityData);
+				await axiosInstance.post(`${appConfig.API_PREFIX_V1}/academic/facilities/${selectedStudent.id}/facilities`, facilityData);
 			}
 
 			setAlert({ open: true, message: 'Facility added successfully!', severity: 'success' });
@@ -645,7 +645,7 @@ const StudentManager = (props) => {
 
 		if (window.confirm('Are you sure you want to remove this facility?')) {
 			try {
-				await axiosInstance.delete(`${appConfig.API_PREFIX_V1}/academic/students-facility/${selectedStudent.id}/facilities/${facilityId}`);
+				await axiosInstance.delete(`${appConfig.API_PREFIX_V1}/academic/facilities/${selectedStudent.id}/facilities/${facilityId}`);
 				setAlert({ open: true, message: 'Facility removed successfully!', severity: 'success' });
 				fetchStudentFacilities(selectedStudent.id); // Refresh facilities list
 				fetchStudentFixedFees(selectedStudent.id); // Refresh fixed fees list

@@ -253,7 +253,7 @@ const RouteManager = () => {
         };
 
         try {
-          await axiosInstance.post(`${appConfig.API_PREFIX_V1}/academic/students-facility/${student.id}/transport-assignment`, assignmentData);
+          await axiosInstance.post(`${appConfig.API_PREFIX_V1}/academic/facilities/${student.id}/transport-assignment`, assignmentData);
           successfulAssignments.push(student.name);
         } catch (error) {
           console.error(`Failed to assign ${student.name} to route:`, error);
@@ -283,7 +283,7 @@ const RouteManager = () => {
   const handleRemoveStudentFromRoute = async (studentId, facilityMappingId) => {
     if (window.confirm('Are you sure you want to remove this student from the route?')) {
       try {
-        await axiosInstance.delete(`${appConfig.API_PREFIX_V1}/academic/students-facility/${studentId}/facilities/${facilityMappingId}`);
+        await axiosInstance.delete(`${appConfig.API_PREFIX_V1}/academic/facilities/${studentId}/facilities/${facilityMappingId}`);
         setAlert({ open: true, message: 'Student removed from route successfully!', severity: 'success' });
         // Refresh the assigned students list
         if (selectedRouteForStudents) {
