@@ -87,7 +87,7 @@ const StaffDetails = () => {
       }
     }
     try {
-      await axiosInstance.post(`${appConfig.API_PREFIX_V1}/administrative/staff/ctc-structure/${componentCtcId}/components/bulk`, {
+      await axiosInstance.post(`${appConfig.API_PREFIX_V1}/administrative/staff-ctc/ctc-structure/${componentCtcId}/components/bulk`, {
         components: componentsForm.map(c => ({
           name: c.name,
           amount: Number(c.amount),
@@ -97,11 +97,11 @@ const StaffDetails = () => {
       setOpenComponentDialog(false);
       setComponentsForm([{ name: '', amount: '', component_type: '' }]);
       // Refresh CTC history
-      const ctcHistoryRes = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/administrative/staff/${staff.id}/ctc-structures`);
+      const ctcHistoryRes = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/administrative/staff-ctc/${staff.id}/ctc-structures`);
       setCtcHistory(ctcHistoryRes.data);
       // Refresh active CTC to reflect component updates in Overview tab
       try {
-        const activeCtcRes = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/administrative/staff/${staff.id}/ctc-structure/active`);
+        const activeCtcRes = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/administrative/staff-ctc/${staff.id}/ctc-structure/active`);
         setActiveCTC(activeCtcRes.data);
       } catch (ctcErr) {
         setActiveCTC(null);
@@ -187,7 +187,7 @@ const StaffDetails = () => {
         }
         // Active CTC
         try {
-          const activeCtcRes = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/administrative/staff/${id}/ctc-structure/active`);
+          const activeCtcRes = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/administrative/staff-ctc/${id}/ctc-structure/active`);
           setActiveCTC(activeCtcRes.data);
         } catch (ctcErr) {
           if (ctcErr?.response?.status === 404) {
@@ -198,7 +198,7 @@ const StaffDetails = () => {
           }
         }
         // CTC history
-        const ctcHistoryRes = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/administrative/staff/${id}/ctc-structures`);
+        const ctcHistoryRes = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/administrative/staff-ctc/${id}/ctc-structures`);
         setCtcHistory(ctcHistoryRes.data);
         
         // Salary payment records
@@ -724,15 +724,15 @@ const StaffDetails = () => {
                         color="error"
                         onClick={async () => {
                           try {
-                            await axiosInstance.post(`${appConfig.API_PREFIX_V1}/administrative/staff/${staff.id}/ctc-structure/terminate`);
+                            await axiosInstance.post(`${appConfig.API_PREFIX_V1}/administrative/staff-ctc/${staff.id}/ctc-structure/terminate`);
                             // Refresh active CTC and history
                             try {
-                              const activeCtcRes = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/administrative/staff/${staff.id}/ctc-structure/active`);
+                              const activeCtcRes = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/administrative/staff-ctc/${staff.id}/ctc-structure/active`);
                               setActiveCTC(activeCtcRes.data);
                             } catch (ctcErr) {
                               setActiveCTC(null);
                             }
-                            const ctcHistoryRes = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/administrative/staff/${staff.id}/ctc-structures`);
+                            const ctcHistoryRes = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/administrative/staff-ctc/${staff.id}/ctc-structures`);
                             setCtcHistory(ctcHistoryRes.data);
                           } catch (err) {
                             // Optionally show error
@@ -833,7 +833,7 @@ const StaffDetails = () => {
                     <Button onClick={() => setOpenCtcDialog(false)} color="secondary">Cancel</Button>
                     <Button variant="contained" onClick={async () => {
                       try {
-                        await axiosInstance.post(`${appConfig.API_PREFIX_V1}/administrative/staff/ctc-structure/`, {
+                        await axiosInstance.post(`${appConfig.API_PREFIX_V1}/administrative/staff-ctc/ctc-structure/`, {
                           staff_id: staff.id,
                           total_ctc: parseFloat(ctcForm.total_ctc),
                           effective_from: ctcForm.effective_from,
@@ -841,11 +841,11 @@ const StaffDetails = () => {
                         setOpenCtcDialog(false);
                         setCtcForm({ total_ctc: '', effective_from: '' });
                         // Refresh CTC history
-                        const ctcHistoryRes = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/administrative/staff/${staff.id}/ctc-structures`);
+                        const ctcHistoryRes = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/administrative/staff-ctc/${staff.id}/ctc-structures`);
                         setCtcHistory(ctcHistoryRes.data);
                         // Refresh active CTC
                         try {
-                          const activeCtcRes = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/administrative/staff/${staff.id}/ctc-structure/active`);
+                          const activeCtcRes = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/administrative/staff-ctc/${staff.id}/ctc-structure/active`);
                           setActiveCTC(activeCtcRes.data);
                         } catch (ctcErr) {
                           setActiveCTC(null);
