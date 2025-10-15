@@ -208,7 +208,7 @@ const StudentAttendance = ({ studentId, onClose }) => {
     setLoading(true);
     try {
       const response = await axiosInstance.get(
-        `${appConfig.API_PREFIX_V1}/students-managements/students-attendance/student/${studentId}/monthly`,
+        `${appConfig.API_PREFIX_V1}/students/students-attendance/student/${studentId}/monthly`,
         {
           params: {
             year: currentYear,

@@ -179,7 +179,7 @@ const StudentManager = (props) => {
 	const fetchStudents = async (status, academicYearId) => {
 		try {
 			setLoading(true);
-			let url = `${appConfig.API_PREFIX_V1}/students-managements/students/?status=${status}`;
+			let url = `${appConfig.API_PREFIX_V1}/students/?status=${status}`;
 			if (academicYearId) {
 				url += `&academic_year_id=${academicYearId}`;
 			}
@@ -195,7 +195,7 @@ const StudentManager = (props) => {
 	const fetchStudentsByFeeCategory = async (feeCategoryId, routeId = '', driverId = '') => {
 		try {
 			setLoading(true);
-			let url = `${appConfig.API_PREFIX_V1}/students-managements/students/by-fee-category/${feeCategoryId}`;
+			let url = `${appConfig.API_PREFIX_V1}/students/by-fee-category/${feeCategoryId}`;
 
 			// Check if the selected category is TRANSPORT before adding route/driver filters
 			const selectedCategoryDetails = feeCategories.find(cat => cat.id === feeCategoryId);
@@ -222,7 +222,7 @@ const StudentManager = (props) => {
 	const fetchStudentFacilities = async (studentId) => {
 		try {
 			setLoading(true); 
-			const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/students-managements/students-facility/${studentId}/facilities`);
+			const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/students/students-facility/${studentId}/facilities`);
 			setStudentFacilities(response.data);
 		} catch (error) {
 			handleApiError(error, setAlert);
@@ -236,7 +236,7 @@ const StudentManager = (props) => {
 	const fetchStudentFixedFees = async (studentId) => {
 		try {
 			setLoading(true);
-			const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/students-managements/students/${studentId}/fees`);
+			const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/students/${studentId}/fees`);
 			setStudentFixedFees(response.data.fixed_fees);
 		} catch (error) {
 			handleApiError(error, setAlert);
@@ -511,17 +511,17 @@ const StudentManager = (props) => {
 			   };
 
 			   if (isEditMode && selectedStudent && selectedStudent.id) {
-				   await axiosInstance.put(`${appConfig.API_PREFIX_V1}/students-managements/students/${selectedStudent.id}`, studentData);
+				   await axiosInstance.put(`${appConfig.API_PREFIX_V1}/students/${selectedStudent.id}`, studentData);
 				   setAlert({ open: true, message: 'Student updated successfully!', severity: 'success' });
 			   } else {
-				   await axiosInstance.post(`${appConfig.API_PREFIX_V1}/students-managements/students/`, studentData);
+				   await axiosInstance.post(`${appConfig.API_PREFIX_V1}/students/`, studentData);
 				   setAlert({ open: true, message: 'Student added successfully!', severity: 'success' });
 			   }
 
 			// Only close the modal, do not switch to list page
 						// Refetch latest student details and update details view
 						if (selectedStudent && selectedStudent.id) {
-								axiosInstance.get(`${appConfig.API_PREFIX_V1}/students-managements/students/${selectedStudent.id}`)
+								axiosInstance.get(`${appConfig.API_PREFIX_V1}/students/${selectedStudent.id}`)
 									.then(res => {
 										handleViewStudentDetails(res.data);
 									})
@@ -578,7 +578,7 @@ const StudentManager = (props) => {
 				}))
 			};
 
-			await axiosInstance.post(`${appConfig.API_PREFIX_V1}/students-managements/students/admit`, admitData);
+			await axiosInstance.post(`${appConfig.API_PREFIX_V1}/students/admit`, admitData);
 			setAlert({ open: true, message: 'Student admitted successfully!', severity: 'success' });
 
 			handleAdmitModalClose();
@@ -614,7 +614,7 @@ const StudentManager = (props) => {
 						concession_amount: parseFloat(newFacilityForm.concession_amount) || 0
 					}
 				};
-				await axiosInstance.post(`${appConfig.API_PREFIX_V1}/students-managements/students-facility/${selectedStudent.id}/transport-assignment`, transportAssignmentData);
+				await axiosInstance.post(`${appConfig.API_PREFIX_V1}/students/students-facility/${selectedStudent.id}/transport-assignment`, transportAssignmentData);
 			} else {
 				const facilityData = {
 					student_id: selectedStudent.id, // Use viewedStudent.id
@@ -626,7 +626,7 @@ const StudentManager = (props) => {
 						concession_amount: parseFloat(newFacilityForm.concession_amount) || 0
 					}]
 				};
-				await axiosInstance.post(`${appConfig.API_PREFIX_V1}/students-managements/students-facility/${selectedStudent.id}/facilities`, facilityData);
+				await axiosInstance.post(`${appConfig.API_PREFIX_V1}/students/students-facility/${selectedStudent.id}/facilities`, facilityData);
 			}
 
 			setAlert({ open: true, message: 'Facility added successfully!', severity: 'success' });
@@ -645,7 +645,7 @@ const StudentManager = (props) => {
 
 		if (window.confirm('Are you sure you want to remove this facility?')) {
 			try {
-				await axiosInstance.delete(`${appConfig.API_PREFIX_V1}/students-managements/students-facility/${selectedStudent.id}/facilities/${facilityId}`);
+				await axiosInstance.delete(`${appConfig.API_PREFIX_V1}/students/students-facility/${selectedStudent.id}/facilities/${facilityId}`);
 				setAlert({ open: true, message: 'Facility removed successfully!', severity: 'success' });
 				fetchStudentFacilities(selectedStudent.id); // Refresh facilities list
 				fetchStudentFixedFees(selectedStudent.id); // Refresh fixed fees list
@@ -658,7 +658,7 @@ const StudentManager = (props) => {
 	const handleDelete = async (id) => {
 		if (window.confirm('Are you sure you want to delete this student?')) {
 			try {
-				await axiosInstance.delete(`${appConfig.API_PREFIX_V1}/students-managements/students/${id}`);
+				await axiosInstance.delete(`${appConfig.API_PREFIX_V1}/students/${id}`);
 				setAlert({ open: true, message: 'Student deleted successfully!', severity: 'success' });
 				fetchStudents(filterStatus, filterAcademicYear);
 			}
@@ -672,7 +672,7 @@ const StudentManager = (props) => {
 		const newStatus = currentStatus === 'ACTIVE' ? 'DROPPED_OUT' : 'ACTIVE';
 		const action = currentStatus === 'ACTIVE' ? 'dropped out' : 'activated';
 		try {
-			await axiosInstance.put(`${appConfig.API_PREFIX_V1}/students-managements/students/${id}`, { status: newStatus });
+			await axiosInstance.put(`${appConfig.API_PREFIX_V1}/students/${id}`, { status: newStatus });
 			setAlert({ open: true, message: `Student ${action} successfully!`, severity: 'success' });
 			fetchStudents(filterStatus, filterAcademicYear);
 		} catch (error) {
@@ -990,7 +990,7 @@ const StudentManager = (props) => {
 		try {
 			setLoading(true);
 			const response = await axiosInstance.get(
-				`${appConfig.API_PREFIX_V1}/students-managements/students/all-student-parent-fee-list`
+				`${appConfig.API_PREFIX_V1}/students/all-student-parent-fee-list`
 			);
 			// Always default to empty array if undefined
 			let students = Array.isArray(response.data.students) ? response.data.students : [];
@@ -1077,7 +1077,7 @@ const StudentManager = (props) => {
 
 			// Send file directly to backend API
 			await axiosInstance.post(
-				`${appConfig.API_PREFIX_V1}/students-managements/students/bulk-admit-int-id-file`,
+				`${appConfig.API_PREFIX_V1}/students/bulk-admit-int-id-file`,
 				formData,
 				{
 					headers: {

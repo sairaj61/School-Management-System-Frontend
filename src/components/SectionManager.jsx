@@ -44,7 +44,7 @@ const SectionManager = () => {
 
   const fetchStudents = async () => {
     try {
-      const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/students-managements/students/`);
+      const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/students/`);
       setStudents(response.data);
     } catch (error) {
       handleApiError(error, setAlert);

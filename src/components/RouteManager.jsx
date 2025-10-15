@@ -97,12 +97,12 @@ const RouteManager = () => {
   const fetchAssignedAndAvailableStudents = async (routeId) => {
     try {
       // Updated API call as per user request
-      const assignedResponse = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/students-managements/transport/route/${routeId}`);
+      const assignedResponse = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/students/transport/route/${routeId}`);
       
       // The response for assigned students now contains nested student objects
       setAssignedStudents(assignedResponse.data);
 
-      const allStudentsResponse = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/students-managements/students/?status=ACTIVE`);
+      const allStudentsResponse = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/students/?status=ACTIVE`);
 
       // Extract student IDs from the new assignedResponse structure
       const assignedStudentIds = new Set(assignedResponse.data.map(item => item.student.id));
@@ -253,7 +253,7 @@ const RouteManager = () => {
         };
 
         try {
-          await axiosInstance.post(`${appConfig.API_PREFIX_V1}/students-managements/students-facility/${student.id}/transport-assignment`, assignmentData);
+          await axiosInstance.post(`${appConfig.API_PREFIX_V1}/students/students-facility/${student.id}/transport-assignment`, assignmentData);
           successfulAssignments.push(student.name);
         } catch (error) {
           console.error(`Failed to assign ${student.name} to route:`, error);
@@ -283,7 +283,7 @@ const RouteManager = () => {
   const handleRemoveStudentFromRoute = async (studentId, facilityMappingId) => {
     if (window.confirm('Are you sure you want to remove this student from the route?')) {
       try {
-        await axiosInstance.delete(`${appConfig.API_PREFIX_V1}/students-managements/students-facility/${studentId}/facilities/${facilityMappingId}`);
+        await axiosInstance.delete(`${appConfig.API_PREFIX_V1}/students/students-facility/${studentId}/facilities/${facilityMappingId}`);
         setAlert({ open: true, message: 'Student removed from route successfully!', severity: 'success' });
         // Refresh the assigned students list
         if (selectedRouteForStudents) {

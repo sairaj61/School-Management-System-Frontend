@@ -71,7 +71,7 @@ const DriverManager = () => {
   const fetchDrivers = async () => {
     try {
       setLoading(true);
-      const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/students-managements/transport`);
+      const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/students/transport`);
       setDrivers(response.data);
     } catch (error) {
       handleApiError(error, setAlert);
@@ -83,7 +83,7 @@ const DriverManager = () => {
   const fetchStudentsByDriver = async (driverId) => {
     setFetchingAssignedStudents(true);
     try {
-      const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/students-managements/transport/${driverId}/students`);
+      const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/students/transport/${driverId}/students`);
       setAssignedStudents(response.data);
     } catch (error) {
       handleApiError(error, setAlert);
@@ -158,10 +158,10 @@ const DriverManager = () => {
       };
 
       if (selectedDriver) {
-        await axiosInstance.put(`${appConfig.API_PREFIX_V1}/students-managements/transport/${selectedDriver.id}`, driverData);
+        await axiosInstance.put(`${appConfig.API_PREFIX_V1}/students/transport/${selectedDriver.id}`, driverData);
         setAlert({ open: true, message: 'Driver updated successfully!', severity: 'success' });
       } else {
-        await axiosInstance.post(`${appConfig.API_PREFIX_V1}/students-managements/transport/`, driverData);
+        await axiosInstance.post(`${appConfig.API_PREFIX_V1}/students/transport/`, driverData);
         setAlert({ open: true, message: 'Driver added successfully!', severity: 'success' });
       }
 
@@ -175,7 +175,7 @@ const DriverManager = () => {
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this driver?')) {
       try {
-        await axiosInstance.delete(`${appConfig.API_PREFIX_V1}/students-managements/transport/${id}`);
+        await axiosInstance.delete(`${appConfig.API_PREFIX_V1}/students/transport/${id}`);
         setAlert({ open: true, message: 'Driver deleted successfully!', severity: 'success' });
         fetchDrivers();
       } catch (error) {
