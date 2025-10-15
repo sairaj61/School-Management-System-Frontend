@@ -275,7 +275,7 @@ const StaffDetails = () => {
     try {
       setLoadingSalaryHistory(true);
       console.log('Fetching salary history for staff:', staffId);
-      const apiUrl = `${appConfig.API_PREFIX_V1}/administrative/staff/payment/records/${staffId}`;
+      const apiUrl = `${appConfig.API_PREFIX_V1}/administrative/staff-payment/records/${staffId}`;
       console.log('API URL:', apiUrl);
 
       const response = await axiosInstance.get(apiUrl);
@@ -298,7 +298,7 @@ const StaffDetails = () => {
   const fetchDailyAttendance = async (staffId) => {
     try {
       console.log('Fetching daily attendance for staff:', staffId);
-      const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/administrative/staff/attendance/staff/${staffId}`);
+      const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/administrative/staff-attendance/staff/${staffId}`);
       console.log('Daily attendance API response:', response.data);
       setAttendanceRecords(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
@@ -312,7 +312,7 @@ const StaffDetails = () => {
     try {
       setLoadingAttendance(true);
       console.log('Fetching monthly attendance for staff:', staffId, 'Year:', year, 'Month:', month);
-      const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/administrative/staff/attendance/staff/${staffId}/month/${year}/${month}`);
+      const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/administrative/staff-attendance/staff/${staffId}/month/${year}/${month}`);
       console.log('Monthly attendance API response:', response.data);
       const data = Array.isArray(response.data) ? response.data : [];
       setMonthlyAttendance(data);
@@ -329,7 +329,7 @@ const StaffDetails = () => {
     try {
       setLoadingSelfie(true);
       console.log('Fetching selfie URL for attendance ID:', attendanceId);
-      const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/administrative/staff/attendance/${attendanceId}/selfie`);
+      const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/administrative/staff-attendance/${attendanceId}/selfie`);
       console.log('Selfie URL API response:', response.data);
 
       if (response.data && response.data.selfie_url) {
@@ -529,7 +529,7 @@ const StaffDetails = () => {
 
       console.log('Final salary payment payload:', payload);
 
-      await axiosInstance.post(`${appConfig.API_PREFIX_V1}/administrative/staff/payment/record/`, payload);
+      await axiosInstance.post(`${appConfig.API_PREFIX_V1}/administrative/staff-payment/record/`, payload);
       
       setOpenSalaryDialog(false);
       setSalaryForm({
