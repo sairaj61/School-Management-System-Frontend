@@ -102,7 +102,7 @@ const RouteManager = () => {
       // The response for assigned students now contains nested student objects
       setAssignedStudents(assignedResponse.data);
 
-      const allStudentsResponse = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/academic/?status=ACTIVE`);
+      const allStudentsResponse = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/academic/students?status=ACTIVE`);
 
       // Extract student IDs from the new assignedResponse structure
       const assignedStudentIds = new Set(assignedResponse.data.map(item => item.student.id));

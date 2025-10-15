@@ -179,7 +179,7 @@ const StudentManager = (props) => {
 	const fetchStudents = async (status, academicYearId) => {
 		try {
 			setLoading(true);
-			let url = `${appConfig.API_PREFIX_V1}/academic/?status=${status}`;
+			let url = `${appConfig.API_PREFIX_V1}/academic/students?status=${status}`;
 			if (academicYearId) {
 				url += `&academic_year_id=${academicYearId}`;
 			}
