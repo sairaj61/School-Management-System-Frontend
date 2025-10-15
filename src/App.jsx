@@ -100,7 +100,7 @@ const AuthenticatedApp = ({ onLogout }) => {
         <Route path="/sections" element={<SectionManager />} />
         <Route path="/fees" element={<FeeManager />} />
         <Route path="/fee-categories" element={<FeeCategoryManager />} />
-        <Route path="/concession-types" element={<ConcessionTypeManager />} />
+        <Route path="/finance/concessions" element={<ConcessionTypeManager />} />
         <Route path="/fee-structure" element={<ClassFeeManager />} />
         <Route path="/routes" element={<RouteManager />} />
         <Route path="/drivers" element={<DriverManager />} />

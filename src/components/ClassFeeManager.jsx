@@ -67,7 +67,7 @@ const ClassFeeManager = () => {
         driversResponse
       ] = await Promise.all([
         axiosInstance.get(`${appConfig.API_PREFIX_V1}/fees/student-fees/`),
-        axiosInstance.get(`${appConfig.API_PREFIX_V1}/fees/fees-management/fee-categories/`),
+        axiosInstance.get(`${appConfig.API_PREFIX_V1}/finance/fee-categories/`),
         axiosInstance.get(`${appConfig.API_PREFIX_V1}/academic/classes/`),
         axiosInstance.get(`${appConfig.API_PREFIX_V1}/timetable/academic-years/`),
         axiosInstance.get(`${appConfig.API_PREFIX_V1}/academic/transport/routes`),

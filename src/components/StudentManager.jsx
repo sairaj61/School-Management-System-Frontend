@@ -150,8 +150,8 @@ const StudentManager = (props) => {
 				axiosInstance.get(`${appConfig.API_PREFIX_V1}/academic/classes/`),
 				axiosInstance.get(`${appConfig.API_PREFIX_V1}/timetable/academic-years/`),
 				axiosInstance.get(`${appConfig.API_PREFIX_V1}/academic/sections/`),
-				axiosInstance.get(`${appConfig.API_PREFIX_V1}/fees/fees-management/fee-categories/`),
-				axiosInstance.get(`${appConfig.API_PREFIX_V1}/fees/concessions-management/concession-types/`),
+				axiosInstance.get(`${appConfig.API_PREFIX_V1}/finance/fee-categories/`),
+				axiosInstance.get(`${appConfig.API_PREFIX_V1}/finance/concessions/`),
 				axiosInstance.get(`${appConfig.API_PREFIX_V1}/academic/transport/routes`),
 				axiosInstance.get(`${appConfig.API_PREFIX_V1}/academic/transport/drivers/`)
 			]);

@@ -380,7 +380,7 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
 
     // Fetch concession types
     axiosInstance
-      .get(`${appConfig.API_PREFIX_V1}/fees/concessions-management/concession-types/`)
+      .get(`${appConfig.API_PREFIX_V1}/finance/concessions/`)
       .then((concessionRes) => {
         setConcessionTypes(Array.isArray(concessionRes.data) ? concessionRes.data : []);
       })
