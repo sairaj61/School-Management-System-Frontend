@@ -157,7 +157,7 @@ const FeeManager = () => {
   const fetchCumulativePayments = async (academicYearId) => {
     try {
       setLoading(true);
-      const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/fees-payments/cumulative_details?current_year_id=${academicYearId}`);
+      const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/fees/fees-payments/cumulative_details?current_year_id=${academicYearId}`);
       const transformedPayments = response.data.map(payment => ({
         ...payment,
         id: payment.student_id,
@@ -182,7 +182,7 @@ const FeeManager = () => {
       const date = new Date(year, month - 1, 1);
       const formattedDate = date.toISOString().split('T')[0];
       try {
-        const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/fees-payments/category_summary?target_date=${formattedDate}&academic_year_id=${academicYearId}`);
+        const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/fees/fees-payments/category_summary?target_date=${formattedDate}&academic_year_id=${academicYearId}`);
         allMonthsData.push({
           id: `${year}-${month}`,
           month_label: MONTHS_MAP.find(m => m.value === month).label,
