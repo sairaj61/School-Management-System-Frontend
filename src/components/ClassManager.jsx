@@ -75,7 +75,7 @@ const ClassManager = () => {
 
   const fetchStudents = async () => {
     try {
-      const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/academic/`);
+      const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/academic/students/`);
       setStudents(response.data);
     } catch (error) {
       handleApiError(error, setAlert);
