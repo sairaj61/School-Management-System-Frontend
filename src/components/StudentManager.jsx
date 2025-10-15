@@ -236,7 +236,7 @@ const StudentManager = (props) => {
 	const fetchStudentFixedFees = async (studentId) => {
 		try {
 			setLoading(true);
-			const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/academic/${studentId}/fees`);
+			const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/academic/students/${studentId}/fees`);
 			setStudentFixedFees(response.data.fixed_fees);
 		} catch (error) {
 			handleApiError(error, setAlert);
