@@ -27,7 +27,7 @@ const ExpenditureCategoryManager = () => {
   const fetchCategories = async () => {
     try {
       setLoading(true);
-      const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/expenditure-management/expenditures/categories/`);
+      const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/administrative/expenditure-management/expenditures/categories/`);
       setCategories(response.data);
       toast.success('Expenditure categories loaded successfully!');
     } catch (error) {
@@ -55,11 +55,11 @@ const ExpenditureCategoryManager = () => {
     try {
       if (editingCategory) {
         // Update existing category
-        await axiosInstance.put(`${appConfig.API_PREFIX_V1}/expenditure-management/expenditures/categories/${editingCategory.id}`, values);
+        await axiosInstance.put(`${appConfig.API_PREFIX_V1}/administrative/expenditure-management/expenditures/categories/${editingCategory.id}`, values);
         toast.success('Category updated successfully!');
       } else {
         // Create new category
-        await axiosInstance.post(`${appConfig.API_PREFIX_V1}/expenditure-management/expenditures/categories/`, values);
+        await axiosInstance.post(`${appConfig.API_PREFIX_V1}/administrative/expenditure-management/expenditures/categories/`, values);
         toast.success('Category added successfully!');
       }
       handleCloseDialog();
@@ -75,7 +75,7 @@ const ExpenditureCategoryManager = () => {
   const handleDelete = async (categoryId) => {
     if (window.confirm('Are you sure you want to delete this expenditure category?')) {
       try {
-        await axiosInstance.delete(`${appConfig.API_PREFIX_V1}/expenditure-management/expenditures/categories/${categoryId}`);
+        await axiosInstance.delete(`${appConfig.API_PREFIX_V1}/administrative/expenditure-management/expenditures/categories/${categoryId}`);
         toast.success('Category deleted successfully!');
         fetchCategories(); // Refresh the list
       } catch (error) {
