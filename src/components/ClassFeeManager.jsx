@@ -66,7 +66,7 @@ const ClassFeeManager = () => {
         routesResponse,
         driversResponse
       ] = await Promise.all([
-        axiosInstance.get(`${appConfig.API_PREFIX_V1}/fees/`),
+        axiosInstance.get(`${appConfig.API_PREFIX_V1}/fees/student-fees/`),
         axiosInstance.get(`${appConfig.API_PREFIX_V1}/fees/fees-management/fee-categories/`),
         axiosInstance.get(`${appConfig.API_PREFIX_V1}/students/classes/`),
         axiosInstance.get(`${appConfig.API_PREFIX_V1}/timetable/academic-years/`),
@@ -171,10 +171,10 @@ const ClassFeeManager = () => {
       };
 
       if (selectedFee) {
-        await axiosInstance.put(`${appConfig.API_PREFIX_V1}/fees/${selectedFee.id}`, feeData);
+        await axiosInstance.put(`${appConfig.API_PREFIX_V1}/fees/student-fees/${selectedFee.id}`, feeData);
         setAlert({ open: true, message: 'Fee updated successfully!', severity: 'success' });
       } else {
-        await axiosInstance.post(`${appConfig.API_PREFIX_V1}/fees/`, feeData);
+        await axiosInstance.post(`${appConfig.API_PREFIX_V1}/fees/student-fees/`, feeData);
         setAlert({ open: true, message: 'Fee added successfully!', severity: 'success' });
       }
 
@@ -188,7 +188,7 @@ const ClassFeeManager = () => {
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this fee entry?')) {
       try {
-        await axiosInstance.delete(`${appConfig.API_PREFIX_V1}/fees/${id}`);
+        await axiosInstance.delete(`${appConfig.API_PREFIX_V1}/fees/student-fees/${id}`);
         setAlert({ open: true, message: 'Fee deleted successfully!', severity: 'success' });
         fetchInitialData();
       } catch (error) {
@@ -384,7 +384,7 @@ const ClassFeeManager = () => {
 
     try {
       await axiosInstance.post(
-        `${appConfig.API_PREFIX_V1}/fees/bulk-csv`,
+        `${appConfig.API_PREFIX_V1}/fees/student-fees/bulk-csv`,
         formData,
         {
           headers: {
