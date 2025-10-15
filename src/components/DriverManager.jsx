@@ -52,9 +52,9 @@ const DriverManager = () => {
     try {
       setLoading(true);
       const [driversResponse, classesResponse, sectionsResponse, academicYearsResponse] = await Promise.all([
-        axiosInstance.get(`${appConfig.API_PREFIX_V1}/students-managements/transport/drivers/`),
-        axiosInstance.get(`${appConfig.API_PREFIX_V1}/students-managements/classes/`),
-        axiosInstance.get(`${appConfig.API_PREFIX_V1}/students-managements/sections/`),
+        axiosInstance.get(`${appConfig.API_PREFIX_V1}/students/transport/drivers/`),
+        axiosInstance.get(`${appConfig.API_PREFIX_V1}/students/classes/`),
+        axiosInstance.get(`${appConfig.API_PREFIX_V1}/students/sections/`),
         axiosInstance.get(`${appConfig.API_PREFIX_V1}/timetable/academic-years/`)
       ]);
       setDrivers(driversResponse.data);

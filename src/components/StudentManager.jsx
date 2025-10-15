@@ -147,13 +147,13 @@ const StudentManager = (props) => {
 				routesResponse,
 				driversResponse
 			] = await Promise.all([
-				axiosInstance.get(`${appConfig.API_PREFIX_V1}/students-managements/classes/`),
+				axiosInstance.get(`${appConfig.API_PREFIX_V1}/students/classes/`),
 				axiosInstance.get(`${appConfig.API_PREFIX_V1}/timetable/academic-years/`),
-				axiosInstance.get(`${appConfig.API_PREFIX_V1}/students-managements/sections/`),
-				axiosInstance.get(`${appConfig.API_PREFIX_V1}/fees-management/fee-categories/`),
-				axiosInstance.get(`${appConfig.API_PREFIX_V1}/concessions-management/concession-types/`),
-				axiosInstance.get(`${appConfig.API_PREFIX_V1}/students-managements/transport/routes`),
-				axiosInstance.get(`${appConfig.API_PREFIX_V1}/students-managements/transport/drivers/`)
+				axiosInstance.get(`${appConfig.API_PREFIX_V1}/students/sections/`),
+				axiosInstance.get(`${appConfig.API_PREFIX_V1}/fees/fees-management/fee-categories/`),
+				axiosInstance.get(`${appConfig.API_PREFIX_V1}/fees/concessions-management/concession-types/`),
+				axiosInstance.get(`${appConfig.API_PREFIX_V1}/students/transport/routes`),
+				axiosInstance.get(`${appConfig.API_PREFIX_V1}/students/transport/drivers/`)
 			]);
 			setClasses(classesResponse.data);
 			setAcademicYears(academicYearsResponse.data);

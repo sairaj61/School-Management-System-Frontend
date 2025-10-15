@@ -380,7 +380,7 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
 
     // Fetch concession types
     axiosInstance
-      .get(`${appConfig.API_PREFIX_V1}/concessions-management/concession-types/`)
+      .get(`${appConfig.API_PREFIX_V1}/fees/concessions-management/concession-types/`)
       .then((concessionRes) => {
         setConcessionTypes(Array.isArray(concessionRes.data) ? concessionRes.data : []);
       })
@@ -390,7 +390,7 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
 
     // Fetch routes
     axiosInstance
-      .get(`${appConfig.API_PREFIX_V1}/students-managements/transport/routes`)
+      .get(`${appConfig.API_PREFIX_V1}/students/transport/routes`)
       .then((routesRes) => {
         setRoutes(Array.isArray(routesRes.data) ? routesRes.data : []);
       })
@@ -400,7 +400,7 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
 
     // Fetch drivers
     axiosInstance
-      .get(`${appConfig.API_PREFIX_V1}/students-managements/transport/drivers/`)
+      .get(`${appConfig.API_PREFIX_V1}/students/transport/drivers/`)
       .then((driversRes) => {
         setDrivers(Array.isArray(driversRes.data) ? driversRes.data : []);
       })

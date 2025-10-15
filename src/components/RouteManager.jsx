@@ -74,12 +74,12 @@ const RouteManager = () => {
         academicYearsResponse,
         feeCategoriesResponse
       ] = await Promise.all([
-        axiosInstance.get(`${appConfig.API_PREFIX_V1}/students-managements/transport/routes`),
-        axiosInstance.get(`${appConfig.API_PREFIX_V1}/students-managements/transport/drivers/`),
-        axiosInstance.get(`${appConfig.API_PREFIX_V1}/students-managements/classes/`),
-        axiosInstance.get(`${appConfig.API_PREFIX_V1}/students-managements/sections/`),
+        axiosInstance.get(`${appConfig.API_PREFIX_V1}/students/transport/routes`),
+        axiosInstance.get(`${appConfig.API_PREFIX_V1}/students/transport/drivers/`),
+        axiosInstance.get(`${appConfig.API_PREFIX_V1}/students/classes/`),
+        axiosInstance.get(`${appConfig.API_PREFIX_V1}/students/sections/`),
         axiosInstance.get(`${appConfig.API_PREFIX_V1}/timetable/academic-years/`),
-        axiosInstance.get(`${appConfig.API_PREFIX_V1}/fees-management/fee-categories/`)
+        axiosInstance.get(`${appConfig.API_PREFIX_V1}/fees/fees-management/fee-categories/`)
       ]);
       setRoutes(routesResponse.data);
       setDrivers(driversResponse.data);
@@ -191,10 +191,10 @@ const RouteManager = () => {
       };
 
       if (selectedRoute) {
-        await axiosInstance.put(`${appConfig.API_PREFIX_V1}/students-managements/transport/routes/${selectedRoute.id}`, routeData);
+        await axiosInstance.put(`${appConfig.API_PREFIX_V1}/students/transport/routes/${selectedRoute.id}`, routeData);
         setAlert({ open: true, message: 'Route updated successfully!', severity: 'success' });
       } else {
-        await axiosInstance.post(`${appConfig.API_PREFIX_V1}/students-managements/transport/routes`, routeData);
+        await axiosInstance.post(`${appConfig.API_PREFIX_V1}/students/transport/routes`, routeData);
         setAlert({ open: true, message: 'Route added successfully!', severity: 'success' });
       }
 
@@ -208,7 +208,7 @@ const RouteManager = () => {
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this route?')) {
       try {
-        await axiosInstance.delete(`${appConfig.API_PREFIX_V1}/students-managements/transport/routes/${id}`);
+        await axiosInstance.delete(`${appConfig.API_PREFIX_V1}/students/transport/routes/${id}`);
         setAlert({ open: true, message: 'Route deleted successfully!', severity: 'success' });
         fetchInitialData();
       } catch (error) {
