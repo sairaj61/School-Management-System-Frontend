@@ -95,7 +95,7 @@ const AuthenticatedApp = ({ onLogout }) => {
       <Routes>
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/students" element={<StudentManager />} />
-        <Route path="/students/:id" element={<StudentDetails />} />
+        <Route path="/academic/:id" element={<StudentDetails />} />
         <Route path="/classes" element={<ClassManager />} />
         <Route path="/sections" element={<SectionManager />} />
         <Route path="/fees" element={<FeeManager />} />

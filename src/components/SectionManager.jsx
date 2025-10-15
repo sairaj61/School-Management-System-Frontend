@@ -44,7 +44,7 @@ const SectionManager = () => {
 
   const fetchStudents = async () => {
     try {
-      const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/students/`);
+      const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/academic/`);
       setStudents(response.data);
     } catch (error) {
       handleApiError(error, setAlert);
@@ -54,7 +54,7 @@ const SectionManager = () => {
   const fetchSections = async () => {
     try {
       setLoading(true);
-      const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/students/sections/`);
+      const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/academic/sections/`);
       setSections(response.data);
     } catch (error) {
       handleApiError(error, setAlert);
@@ -66,7 +66,7 @@ const SectionManager = () => {
   const fetchClasses = async () => {
     try {
       // Assuming this endpoint returns objects with 'class_name' as previously discussed
-      const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/students/classes/`);
+      const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/academic/classes/`);
       setClasses(response.data);
     } catch (error) {
       handleApiError(error, setAlert);
@@ -127,11 +127,11 @@ const SectionManager = () => {
 
       if (selectedSection) {
         // API for PUT request uses 'name' and 'class_id'
-        await axiosInstance.put(`${appConfig.API_PREFIX_V1}/students/sections/${selectedSection.id}`, sectionData);
+        await axiosInstance.put(`${appConfig.API_PREFIX_V1}/academic/sections/${selectedSection.id}`, sectionData);
         setAlert({ open: true, message: 'Section updated successfully!', severity: 'success' });
       } else {
         // API for POST request uses 'name' and 'class_id'
-        await axiosInstance.post(`${appConfig.API_PREFIX_V1}/students/sections/`, sectionData);
+        await axiosInstance.post(`${appConfig.API_PREFIX_V1}/academic/sections/`, sectionData);
         setAlert({ open: true, message: 'Section added successfully!', severity: 'success' });
       }
 
@@ -145,7 +145,7 @@ const SectionManager = () => {
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this section?')) {
       try {
-        await axiosInstance.delete(`${appConfig.API_PREFIX_V1}/students/sections/${id}`);
+        await axiosInstance.delete(`${appConfig.API_PREFIX_V1}/academic/sections/${id}`);
         setAlert({ open: true, message: 'Section deleted successfully!', severity: 'success' });
         fetchSections();
       } catch (error) {
@@ -193,7 +193,7 @@ const SectionManager = () => {
 
     try {
       await axiosInstance.post(
-        `${appConfig.API_PREFIX_V1}/students/sections/bulk-csv`,
+        `${appConfig.API_PREFIX_V1}/academic/sections/bulk-csv`,
         formData,
         {
           headers: {

@@ -68,10 +68,10 @@ const ClassFeeManager = () => {
       ] = await Promise.all([
         axiosInstance.get(`${appConfig.API_PREFIX_V1}/fees/student-fees/`),
         axiosInstance.get(`${appConfig.API_PREFIX_V1}/fees/fees-management/fee-categories/`),
-        axiosInstance.get(`${appConfig.API_PREFIX_V1}/students/classes/`),
+        axiosInstance.get(`${appConfig.API_PREFIX_V1}/academic/classes/`),
         axiosInstance.get(`${appConfig.API_PREFIX_V1}/timetable/academic-years/`),
-        axiosInstance.get(`${appConfig.API_PREFIX_V1}/students/transport/routes`),
-        axiosInstance.get(`${appConfig.API_PREFIX_V1}/students/transport/drivers/`)
+        axiosInstance.get(`${appConfig.API_PREFIX_V1}/academic/transport/routes`),
+        axiosInstance.get(`${appConfig.API_PREFIX_V1}/academic/transport/drivers/`)
       ]);
 
       setFees(feesResponse.data);

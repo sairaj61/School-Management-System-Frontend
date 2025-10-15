@@ -74,10 +74,10 @@ const RouteManager = () => {
         academicYearsResponse,
         feeCategoriesResponse
       ] = await Promise.all([
-        axiosInstance.get(`${appConfig.API_PREFIX_V1}/students/transport/routes`),
-        axiosInstance.get(`${appConfig.API_PREFIX_V1}/students/transport/drivers/`),
-        axiosInstance.get(`${appConfig.API_PREFIX_V1}/students/classes/`),
-        axiosInstance.get(`${appConfig.API_PREFIX_V1}/students/sections/`),
+        axiosInstance.get(`${appConfig.API_PREFIX_V1}/academic/transport/routes`),
+        axiosInstance.get(`${appConfig.API_PREFIX_V1}/academic/transport/drivers/`),
+        axiosInstance.get(`${appConfig.API_PREFIX_V1}/academic/classes/`),
+        axiosInstance.get(`${appConfig.API_PREFIX_V1}/academic/sections/`),
         axiosInstance.get(`${appConfig.API_PREFIX_V1}/timetable/academic-years/`),
         axiosInstance.get(`${appConfig.API_PREFIX_V1}/fees/fees-management/fee-categories/`)
       ]);
@@ -97,12 +97,12 @@ const RouteManager = () => {
   const fetchAssignedAndAvailableStudents = async (routeId) => {
     try {
       // Updated API call as per user request
-      const assignedResponse = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/students/transport/route/${routeId}`);
+      const assignedResponse = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/academic/transport/route/${routeId}`);
       
       // The response for assigned students now contains nested student objects
       setAssignedStudents(assignedResponse.data);
 
-      const allStudentsResponse = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/students/?status=ACTIVE`);
+      const allStudentsResponse = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/academic/?status=ACTIVE`);
 
       // Extract student IDs from the new assignedResponse structure
       const assignedStudentIds = new Set(assignedResponse.data.map(item => item.student.id));
@@ -191,10 +191,10 @@ const RouteManager = () => {
       };
 
       if (selectedRoute) {
-        await axiosInstance.put(`${appConfig.API_PREFIX_V1}/students/transport/routes/${selectedRoute.id}`, routeData);
+        await axiosInstance.put(`${appConfig.API_PREFIX_V1}/academic/transport/routes/${selectedRoute.id}`, routeData);
         setAlert({ open: true, message: 'Route updated successfully!', severity: 'success' });
       } else {
-        await axiosInstance.post(`${appConfig.API_PREFIX_V1}/students/transport/routes`, routeData);
+        await axiosInstance.post(`${appConfig.API_PREFIX_V1}/academic/transport/routes`, routeData);
         setAlert({ open: true, message: 'Route added successfully!', severity: 'success' });
       }
 
@@ -208,7 +208,7 @@ const RouteManager = () => {
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this route?')) {
       try {
-        await axiosInstance.delete(`${appConfig.API_PREFIX_V1}/students/transport/routes/${id}`);
+        await axiosInstance.delete(`${appConfig.API_PREFIX_V1}/academic/transport/routes/${id}`);
         setAlert({ open: true, message: 'Route deleted successfully!', severity: 'success' });
         fetchInitialData();
       } catch (error) {
@@ -253,7 +253,7 @@ const RouteManager = () => {
         };
 
         try {
-          await axiosInstance.post(`${appConfig.API_PREFIX_V1}/students/students-facility/${student.id}/transport-assignment`, assignmentData);
+          await axiosInstance.post(`${appConfig.API_PREFIX_V1}/academic/students-facility/${student.id}/transport-assignment`, assignmentData);
           successfulAssignments.push(student.name);
         } catch (error) {
           console.error(`Failed to assign ${student.name} to route:`, error);
@@ -283,7 +283,7 @@ const RouteManager = () => {
   const handleRemoveStudentFromRoute = async (studentId, facilityMappingId) => {
     if (window.confirm('Are you sure you want to remove this student from the route?')) {
       try {
-        await axiosInstance.delete(`${appConfig.API_PREFIX_V1}/students/students-facility/${studentId}/facilities/${facilityMappingId}`);
+        await axiosInstance.delete(`${appConfig.API_PREFIX_V1}/academic/students-facility/${studentId}/facilities/${facilityMappingId}`);
         setAlert({ open: true, message: 'Student removed from route successfully!', severity: 'success' });
         // Refresh the assigned students list
         if (selectedRouteForStudents) {
