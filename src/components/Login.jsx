@@ -29,7 +29,7 @@ const Login = ({ onLogin }) => {
     setLoading(true);
     try {
       const response = await axiosInstance.post(
-        `${appConfig.API_PREFIX_V1}/auth/token`,
+        `${appConfig.API_PREFIX_V1}/auth-user/authentication/token`,
         new URLSearchParams({
           grant_type: 'password',
           username: formData.username,
