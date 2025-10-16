@@ -207,7 +207,7 @@ const FeeManager = () => {
   const fetchStudentPaymentDetails = async (studentId) => {
     try {
       setLoading(true);
-      const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/finance/fee-structure/by-class/${studentId}`);
+      const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/finance/fees-payments/student_payment_status/${studentId}`);
       const transformedDetails = response.data.map(detail => ({
         ...detail,
         id: detail.student_fixed_fee_payment_schedule_mapping_id,
@@ -255,7 +255,7 @@ const FeeManager = () => {
 
   const fetchStudentPaymentDetailsForAddPayment = async (studentId) => {
     try {
-      const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/finance/fee-structure/by-class/${studentId}`);
+      const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/finance/fees-payments/student_payment_status/${studentId}`);
       const now = new Date();
       now.setHours(0, 0, 0, 0); // Normalize to start of today for comparison
 
@@ -443,7 +443,7 @@ const FeeManager = () => {
         payment_details: filteredPaymentDetails
       };
 
-      await axiosInstance.post(`${appConfig.API_PREFIX_V1}/fees-payments/process_payment`, requestData);
+      await axiosInstance.post(`${appConfig.API_PREFIX_V1}/finance/fees-payments/process_payment`, requestData);
       setAlert({
         open: true,
         message: 'Payment processed successfully!',
