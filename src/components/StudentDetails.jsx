@@ -356,7 +356,7 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
     // Fetch new payment status for Payment tab
     setLoadingPaymentStatus(true);
     axiosInstance
-      .get(`/api/v1/finance/fee-structure/by-class/${student.id}`)
+      .get(`/api/v1/finance/fee-structure/by-class/${student.class_id}`)
       .then((res) => {
         setStudentPaymentStatus(Array.isArray(res.data) ? res.data : []);
       })
@@ -1095,7 +1095,7 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                 // Optionally show a success alert
                 // Refresh payment status
                 setLoadingPaymentStatus(true);
-                const res = await axiosInstance.get(`/api/v1/finance/fee-structure/by-class/${student.id}`);
+                const res = await axiosInstance.get(`/api/v1/finance/fee-structure/by-class/${student.class_id}`);
                 setStudentPaymentStatus(Array.isArray(res.data) ? res.data : []);
                 setLoadingPaymentStatus(false);
               } catch (err) {
