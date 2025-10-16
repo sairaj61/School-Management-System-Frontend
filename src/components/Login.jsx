@@ -28,6 +28,7 @@ const Login = ({ onLogin }) => {
     e.preventDefault();
     setLoading(true);
     try {
+      // Step 1: Get token
       const response = await axiosInstance.post(
         `${appConfig.API_PREFIX_V1}/auth-user/authentication/token`,
         new URLSearchParams({
@@ -44,8 +45,19 @@ const Login = ({ onLogin }) => {
       );
       const token = response.data.access_token;
       localStorage.setItem('token', token);
-      setAlert({ open: true, message: 'Login successful!', severity: 'success' });
-      onLogin(token);
+
+      // Step 2: Fetch user info from /authentication/me
+      const meRes = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/auth-user/authentication/me`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+  const { username, tenant } = meRes.data;
+  localStorage.setItem('username', username || '');
+  localStorage.setItem('tenant_name', (tenant && tenant.name) ? tenant.name : '');
+
+  setAlert({ open: true, message: 'Login successful!', severity: 'success' });
+  // Notify other tabs/components (like Navbar) to update user info
+  window.dispatchEvent(new Event('user-info-updated'));
+  onLogin(token);
     } catch (error) {
       setAlert({
         open: true,

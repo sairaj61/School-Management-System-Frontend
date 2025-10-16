@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { NavLink, useNavigate, Link } from 'react-router-dom';
 import {
   AppBar,
@@ -52,7 +52,27 @@ const Navbar = () => {
   const [transportAnchorEl, setTransportAnchorEl] = useState(null);
   const [adminAnchorEl, setAdminAnchorEl] = useState(null); // New state for Administrative menu
   const [userMenuAnchorEl, setUserMenuAnchorEl] = useState(null);
-  const username = localStorage.getItem('username') || ''; // Superuser logic removed
+  const [userInfo, setUserInfo] = useState({
+    username: localStorage.getItem('username') || '',
+    tenantName: localStorage.getItem('tenant_name') || '',
+  });
+
+  // Listen for storage changes (e.g., after login) and update state
+  useEffect(() => {
+    const syncUserInfo = () => {
+      setUserInfo({
+        username: localStorage.getItem('username') || '',
+        tenantName: localStorage.getItem('tenant_name') || '',
+      });
+    };
+    window.addEventListener('storage', syncUserInfo);
+    window.addEventListener('user-info-updated', syncUserInfo);
+    syncUserInfo();
+    return () => {
+      window.removeEventListener('storage', syncUserInfo);
+      window.removeEventListener('user-info-updated', syncUserInfo);
+    };
+  }, []);
   // const isSuperuser = (localStorage.getItem('role') || 'superuser') === 'superuser'; // Superuser logic removed
 
   const handleAcademicMenuOpen = (event) => {
@@ -142,17 +162,19 @@ const Navbar = () => {
                   alt="Logo"
                   style={{ height: '40px', width: '40px' }}
                 />
-                <Typography
-                  variant="h6"
-                  sx={{
-                    fontWeight: 700,
-                    letterSpacing: 1,
-                    color: 'white',
-                    textShadow: '1px 1px 2px rgba(0,0,0,0.1)',
-                  }}
-                >
-                  {appConfig.appName}
-                </Typography>
+                <Box sx={{ display: 'flex', flexDirection: 'column', ml: 1 }}>
+                  <Typography
+                    variant="h6"
+                    sx={{
+                      fontWeight: 700,
+                      letterSpacing: 1,
+                      color: 'white',
+                      textShadow: '1px 1px 2px rgba(0,0,0,0.1)',
+                    }}
+                  >
+                    {userInfo.tenantName}
+                  </Typography>
+                </Box>
               </Box>
             </Fade>
 
@@ -372,8 +394,9 @@ const Navbar = () => {
                       disabled
                       sx={{ fontWeight: 'bold', opacity: 1, fontSize: 16 }}
                     >
-                      {username}
+                      {userInfo.username || 'User'}
                     </MenuItem>
+                    <MenuItem onClick={() => navigate('/change-password')}>Change Password</MenuItem>
                     <MenuItem onClick={handleLogout}>Logout</MenuItem>
                   </Menu>
                 </Box>
