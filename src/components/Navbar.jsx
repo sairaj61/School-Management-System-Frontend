@@ -255,7 +255,7 @@ const Navbar = () => {
                     <MenuItem
                       onClick={() => {
                         handleFinanceMenuClose();
-                        navigate('/concession-types');
+                        navigate('/finance/concessions');
                       }}
                     >
                       <LocalOfferIcon sx={{ mr: 1 }} />

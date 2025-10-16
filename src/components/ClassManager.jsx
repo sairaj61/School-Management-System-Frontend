@@ -55,7 +55,7 @@ const ClassManager = () => {
   const fetchClasses = async () => {
     try {
       setLoading(true);
-      const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/students-managements/classes/`);
+      const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/academic/classes/`);
       setClasses(response.data);
     } catch (error) {
       handleApiError(error, setAlert);
@@ -75,7 +75,7 @@ const ClassManager = () => {
 
   const fetchStudents = async () => {
     try {
-      const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/students-managements/students/`);
+      const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/academic/students/`);
       setStudents(response.data);
     } catch (error) {
       handleApiError(error, setAlert);
@@ -125,10 +125,10 @@ const ClassManager = () => {
       };
 
       if (selectedClass) {
-        await axiosInstance.put(`${appConfig.API_PREFIX_V1}/students-managements/classes/${selectedClass.id}`, classData);
+        await axiosInstance.put(`${appConfig.API_PREFIX_V1}/academic/classes/${selectedClass.id}`, classData);
         setAlert({ open: true, message: 'Class updated successfully!', severity: 'success' });
       } else {
-        await axiosInstance.post(`${appConfig.API_PREFIX_V1}/students-managements/classes/`, classData);
+        await axiosInstance.post(`${appConfig.API_PREFIX_V1}/academic/classes/`, classData);
         setAlert({ open: true, message: 'Class added successfully!', severity: 'success' });
       }
 
@@ -142,7 +142,7 @@ const ClassManager = () => {
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this class?')) {
       try {
-        await axiosInstance.delete(`${appConfig.API_PREFIX_V1}/students-managements/classes/${id}`);
+        await axiosInstance.delete(`${appConfig.API_PREFIX_V1}/academic/classes/${id}`);
         setAlert({ open: true, message: 'Class deleted successfully!', severity: 'success' });
         fetchClasses();
       } catch (error) {
@@ -272,7 +272,7 @@ const ClassManager = () => {
 
     try {
       await axiosInstance.post(
-        `${appConfig.API_PREFIX_V1}/students-managements/classes/bulk_upload_csv/`,
+        `${appConfig.API_PREFIX_V1}/academic/classes/bulk_upload_csv/`,
         formData,
         {
           headers: {

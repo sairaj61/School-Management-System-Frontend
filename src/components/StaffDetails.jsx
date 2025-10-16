@@ -87,7 +87,7 @@ const StaffDetails = () => {
       }
     }
     try {
-      await axiosInstance.post(`${appConfig.API_PREFIX_V1}/staff/ctc-structure/${componentCtcId}/components/bulk`, {
+      await axiosInstance.post(`${appConfig.API_PREFIX_V1}/administrative/staff-ctc/ctc-structure/${componentCtcId}/components/bulk`, {
         components: componentsForm.map(c => ({
           name: c.name,
           amount: Number(c.amount),
@@ -97,11 +97,11 @@ const StaffDetails = () => {
       setOpenComponentDialog(false);
       setComponentsForm([{ name: '', amount: '', component_type: '' }]);
       // Refresh CTC history
-      const ctcHistoryRes = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/staff/${staff.id}/ctc-structures`);
+      const ctcHistoryRes = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/administrative/staff-ctc/${staff.id}/ctc-structures`);
       setCtcHistory(ctcHistoryRes.data);
       // Refresh active CTC to reflect component updates in Overview tab
       try {
-        const activeCtcRes = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/staff/${staff.id}/ctc-structure/active`);
+        const activeCtcRes = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/administrative/staff-ctc/${staff.id}/ctc-structure/active`);
         setActiveCTC(activeCtcRes.data);
       } catch (ctcErr) {
         setActiveCTC(null);
@@ -175,11 +175,11 @@ const StaffDetails = () => {
         }, 10000); // 10 seconds
 
         // Staff details
-        const staffRes = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/staff/${id}`);
+        const staffRes = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/administrative/staff/${id}`);
         setStaff(staffRes.data);
         // Fetch profile photo URL
         try {
-          const photoRes = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/staff/${id}/profile-photo`);
+          const photoRes = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/administrative/staff/${id}/profile-photo`);
           setProfileImage(photoRes.data.profile_photo_url || '');
         } catch (photoErr) {
           console.error('Error fetching profile photo:', photoErr);
@@ -187,7 +187,7 @@ const StaffDetails = () => {
         }
         // Active CTC
         try {
-          const activeCtcRes = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/staff/${id}/ctc-structure/active`);
+          const activeCtcRes = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/administrative/staff-ctc/${id}/ctc-structure/active`);
           setActiveCTC(activeCtcRes.data);
         } catch (ctcErr) {
           if (ctcErr?.response?.status === 404) {
@@ -198,7 +198,7 @@ const StaffDetails = () => {
           }
         }
         // CTC history
-        const ctcHistoryRes = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/staff/${id}/ctc-structures`);
+        const ctcHistoryRes = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/administrative/staff-ctc/${id}/ctc-structures`);
         setCtcHistory(ctcHistoryRes.data);
         
         // Salary payment records
@@ -248,14 +248,14 @@ const StaffDetails = () => {
       formData.append('file', file);
 
       // Upload the file
-      await axiosInstance.post(`${appConfig.API_PREFIX_V1}/staff/${staff.id}/profile-photo`, formData, {
+      await axiosInstance.post(`${appConfig.API_PREFIX_V1}/administrative/staff/${staff.id}/profile-photo`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
 
       // Fetch the updated profile photo URL
-      const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/staff/${staff.id}/profile-photo`);
+      const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/administrative/staff/${staff.id}/profile-photo`);
       setProfileImage(response.data.profile_photo_url || '');
     } catch (error) {
       console.error('Error uploading profile image:', error);
@@ -275,7 +275,7 @@ const StaffDetails = () => {
     try {
       setLoadingSalaryHistory(true);
       console.log('Fetching salary history for staff:', staffId);
-      const apiUrl = `${appConfig.API_PREFIX_V1}/staff/payment/records/${staffId}`;
+      const apiUrl = `${appConfig.API_PREFIX_V1}/administrative/staff-payment/records/${staffId}`;
       console.log('API URL:', apiUrl);
 
       const response = await axiosInstance.get(apiUrl);
@@ -298,7 +298,7 @@ const StaffDetails = () => {
   const fetchDailyAttendance = async (staffId) => {
     try {
       console.log('Fetching daily attendance for staff:', staffId);
-      const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/staff/attendance/staff/${staffId}`);
+      const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/administrative/staff-attendance/staff/${staffId}`);
       console.log('Daily attendance API response:', response.data);
       setAttendanceRecords(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
@@ -312,7 +312,7 @@ const StaffDetails = () => {
     try {
       setLoadingAttendance(true);
       console.log('Fetching monthly attendance for staff:', staffId, 'Year:', year, 'Month:', month);
-      const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/staff/attendance/staff/${staffId}/month/${year}/${month}`);
+      const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/administrative/staff-attendance/staff/${staffId}/month/${year}/${month}`);
       console.log('Monthly attendance API response:', response.data);
       const data = Array.isArray(response.data) ? response.data : [];
       setMonthlyAttendance(data);
@@ -329,7 +329,7 @@ const StaffDetails = () => {
     try {
       setLoadingSelfie(true);
       console.log('Fetching selfie URL for attendance ID:', attendanceId);
-      const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/staff/attendance/${attendanceId}/selfie`);
+      const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/administrative/staff-attendance/${attendanceId}/selfie`);
       console.log('Selfie URL API response:', response.data);
 
       if (response.data && response.data.selfie_url) {
@@ -351,7 +351,7 @@ const StaffDetails = () => {
     try {
       setLoadingDocuments(true);
       console.log('Fetching documents for staff:', staffId);
-      const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/user-file/owner/STAFF/${staffId}`);
+      const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/administrative/user-file/owner/STAFF/${staffId}`);
       console.log('Staff documents API response:', response.data);
       setStaffDocuments(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
@@ -372,7 +372,7 @@ const StaffDetails = () => {
       formData.append('owner_id_uuid', staff.id);
       formData.append('file', file);
 
-      const response = await axiosInstance.post(`${appConfig.API_PREFIX_V1}/user-file/`, formData, {
+      const response = await axiosInstance.post(`${appConfig.API_PREFIX_V1}/administrative/user-file/`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -394,7 +394,7 @@ const StaffDetails = () => {
   const fetchDocumentUrl = async (documentId) => {
     try {
       console.log('Fetching document URL for ID:', documentId);
-      const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/user-file/${documentId}/url`);
+      const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/administrative/user-file/${documentId}/url`);
       console.log('Document URL API response:', response.data);
 
       if (response.data && response.data.file_url) {
@@ -456,7 +456,7 @@ const StaffDetails = () => {
 
     try {
       console.log('Deleting document:', documentId);
-      const response = await axiosInstance.delete(`${appConfig.API_PREFIX_V1}/user-file/${documentId}`);
+      const response = await axiosInstance.delete(`${appConfig.API_PREFIX_V1}/administrative/user-file/${documentId}`);
       console.log('Delete response:', response.data);
       
       alert('Document deleted successfully!');
@@ -529,7 +529,7 @@ const StaffDetails = () => {
 
       console.log('Final salary payment payload:', payload);
 
-      await axiosInstance.post(`${appConfig.API_PREFIX_V1}/staff/payment/record/`, payload);
+      await axiosInstance.post(`${appConfig.API_PREFIX_V1}/administrative/staff-payment/record/`, payload);
       
       setOpenSalaryDialog(false);
       setSalaryForm({
@@ -724,15 +724,15 @@ const StaffDetails = () => {
                         color="error"
                         onClick={async () => {
                           try {
-                            await axiosInstance.post(`${appConfig.API_PREFIX_V1}/staff/${staff.id}/ctc-structure/terminate`);
+                            await axiosInstance.post(`${appConfig.API_PREFIX_V1}/administrative/staff-ctc/${staff.id}/ctc-structure/terminate`);
                             // Refresh active CTC and history
                             try {
-                              const activeCtcRes = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/staff/${staff.id}/ctc-structure/active`);
+                              const activeCtcRes = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/administrative/staff-ctc/${staff.id}/ctc-structure/active`);
                               setActiveCTC(activeCtcRes.data);
                             } catch (ctcErr) {
                               setActiveCTC(null);
                             }
-                            const ctcHistoryRes = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/staff/${staff.id}/ctc-structures`);
+                            const ctcHistoryRes = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/administrative/staff-ctc/${staff.id}/ctc-structures`);
                             setCtcHistory(ctcHistoryRes.data);
                           } catch (err) {
                             // Optionally show error
@@ -833,7 +833,7 @@ const StaffDetails = () => {
                     <Button onClick={() => setOpenCtcDialog(false)} color="secondary">Cancel</Button>
                     <Button variant="contained" onClick={async () => {
                       try {
-                        await axiosInstance.post(`${appConfig.API_PREFIX_V1}/staff/ctc-structure/`, {
+                        await axiosInstance.post(`${appConfig.API_PREFIX_V1}/administrative/staff-ctc/ctc-structure/`, {
                           staff_id: staff.id,
                           total_ctc: parseFloat(ctcForm.total_ctc),
                           effective_from: ctcForm.effective_from,
@@ -841,11 +841,11 @@ const StaffDetails = () => {
                         setOpenCtcDialog(false);
                         setCtcForm({ total_ctc: '', effective_from: '' });
                         // Refresh CTC history
-                        const ctcHistoryRes = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/staff/${staff.id}/ctc-structures`);
+                        const ctcHistoryRes = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/administrative/staff-ctc/${staff.id}/ctc-structures`);
                         setCtcHistory(ctcHistoryRes.data);
                         // Refresh active CTC
                         try {
-                          const activeCtcRes = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/staff/${staff.id}/ctc-structure/active`);
+                          const activeCtcRes = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/administrative/staff-ctc/${staff.id}/ctc-structure/active`);
                           setActiveCTC(activeCtcRes.data);
                         } catch (ctcErr) {
                           setActiveCTC(null);

@@ -43,7 +43,7 @@ const FeeCategoryManager = () => {
   const fetchFeeCategories = async () => {
     try {
       setLoading(true);
-      const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/fees-management/fee-categories/`);
+      const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/finance/fee-categories/`);
       setFeeCategories(response.data);
     } catch (error) {
       handleApiError(error, setAlert);
@@ -111,10 +111,10 @@ const FeeCategoryManager = () => {
       };
 
       if (selectedCategory) {
-        await axiosInstance.put(`${appConfig.API_PREFIX_V1}/fees-management/fee-categories/${selectedCategory.id}`, categoryData);
+        await axiosInstance.put(`${appConfig.API_PREFIX_V1}/finance/fee-categories/${selectedCategory.id}`, categoryData);
         setAlert({ open: true, message: 'Fee Category updated successfully!', severity: 'success' });
       } else {
-        await axiosInstance.post(`${appConfig.API_PREFIX_V1}/fees-management/fee-categories/`, categoryData);
+        await axiosInstance.post(`${appConfig.API_PREFIX_V1}/finance/fee-categories/`, categoryData);
         setAlert({ open: true, message: 'Fee Category added successfully!', severity: 'success' });
       }
 
@@ -128,7 +128,7 @@ const FeeCategoryManager = () => {
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this fee category?')) {
       try {
-        await axiosInstance.delete(`${appConfig.API_PREFIX_V1}/fees-management/fee-categories/${id}`);
+        await axiosInstance.delete(`${appConfig.API_PREFIX_V1}/finance/fee-categories/${id}`);
         setAlert({ open: true, message: 'Fee Category deleted successfully!', severity: 'success' });
         fetchFeeCategories();
       } catch (error) {
@@ -299,7 +299,7 @@ const FeeCategoryManager = () => {
             return;
           }
           await axiosInstance.post(
-            `${appConfig.API_PREFIX_V1}/fees-management/fee-categories/bulk`,
+            `${appConfig.API_PREFIX_V1}/finance/fee-categories/bulk`,
             validRows
           );
           setAlert({ open: true, message: 'Fee Categories uploaded successfully!', severity: 'success' });

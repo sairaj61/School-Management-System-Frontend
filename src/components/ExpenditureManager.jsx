@@ -31,7 +31,7 @@ const ExpenditureManager = () => {
   const fetchDependencies = async () => {
     try {
       const [categoriesRes, academicYearsRes] = await Promise.all([
-        axiosInstance.get(`${appConfig.API_PREFIX_V1}/expenditure-management/expenditures/categories/`),
+        axiosInstance.get(`${appConfig.API_PREFIX_V1}/administrative/expenditures/categories/`),
         // IMPORTANT: Your backend provides 'active_academic_years' not all.
         // If you need a list of ALL academic years for the dropdown,
         // you MUST have an endpoint in your backend like /academic-years/
@@ -55,7 +55,7 @@ const ExpenditureManager = () => {
   const fetchExpenditures = async () => {
     try {
       setLoading(true);
-      const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/expenditure-management/expenditures/`);
+      const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/administrative/expenditures/`);
       setExpenditures(response.data);
       // toast.success('Expenditures loaded successfully!'); // Can be noisy on initial load
     } catch (error) {
@@ -84,11 +84,11 @@ const ExpenditureManager = () => {
     try {
       if (editingExpenditure) {
         // Update existing expenditure
-        await axiosInstance.put(`${appConfig.API_PREFIX_V1}/expenditure-management/expenditures/${editingExpenditure.id}`, values);
+        await axiosInstance.put(`${appConfig.API_PREFIX_V1}/administrative/expenditures/${editingExpenditure.id}`, values);
         toast.success('Expenditure updated successfully!');
       } else {
         // Create new expenditure
-        await axiosInstance.post(`${appConfig.API_PREFIX_V1}/expenditure-management/expenditures/`, values);
+        await axiosInstance.post(`${appConfig.API_PREFIX_V1}/administrative/expenditures/`, values);
         toast.success('Expenditure added successfully!');
       }
       handleCloseDialog(); // Close modal on success
@@ -106,7 +106,7 @@ const ExpenditureManager = () => {
   const handleDelete = async (expenditureId) => {
     if (window.confirm('Are you sure you want to delete this expenditure?')) {
       try {
-        await axiosInstance.delete(`${appConfig.API_PREFIX_V1}/expenditure-management/expenditures/${expenditureId}`);
+        await axiosInstance.delete(`${appConfig.API_PREFIX_V1}/administrative/expenditures/${expenditureId}`);
         toast.success('Expenditure deleted successfully!');
         fetchExpenditures(); // Refresh the list
       }

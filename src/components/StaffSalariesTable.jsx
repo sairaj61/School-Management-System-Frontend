@@ -64,7 +64,7 @@ const StaffSalariesTable = ({ staff, onBack }) => {
   const fetchSalaries = async () => {
     try {
       setLoading(true);
-  const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/staff/${staff.id}/salaries/`);
+  const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/administrative/staff/${staff.id}/salaries/`);
       setSalaries(response.data);
       toast.success(`Salaries for ${staff.name} loaded successfully!`);
     } catch (error) {
@@ -77,7 +77,7 @@ const StaffSalariesTable = ({ staff, onBack }) => {
 
   const fetchCtcStructures = async () => {
     try {
-  const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/staff/${staff.id}/ctc-structures`);
+  const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/administrative/staff-ctc/${staff.id}/ctc-structures`);
       setCtcStructures(response.data);
     } catch (error) {
       toast.error('Failed to load CTC structures.');
@@ -87,7 +87,7 @@ const StaffSalariesTable = ({ staff, onBack }) => {
 
   const fetchCtcComponents = async (ctcId) => {
     try {
-  const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/staff/ctc-structure/${ctcId}/components`);
+  const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/administrative/staff-ctc/ctc-structure/${ctcId}/components`);
       setCtcComponents(response.data);
     } catch (error) {
       toast.error('Failed to load CTC components.');
@@ -113,7 +113,7 @@ const StaffSalariesTable = ({ staff, onBack }) => {
         staff_id: staff.id,
         base_salary_amount: parseFloat(values.base_salary_amount),
       };
-  await axiosInstance.post(`${appConfig.API_PREFIX_V1}/staff/salaries/`, payload);
+  await axiosInstance.post(`${appConfig.API_PREFIX_V1}/administrative/staff/salaries/`, payload);
       toast.success('Salary paid successfully!');
       handleClosePayDialog();
       fetchSalaries();
@@ -128,7 +128,7 @@ const StaffSalariesTable = ({ staff, onBack }) => {
   const handleDeleteSalary = async (salaryId) => {
     if (window.confirm('Are you sure you want to delete this salary entry?')) {
       try {
-  await axiosInstance.delete(`${appConfig.API_PREFIX_V1}/staff/salaries/${salaryId}`);
+  await axiosInstance.delete(`${appConfig.API_PREFIX_V1}/administrative/staff/salaries/${salaryId}`);
         toast.success('Salary entry deleted successfully!');
         fetchSalaries();
       } catch (error) {
@@ -149,7 +149,7 @@ const StaffSalariesTable = ({ staff, onBack }) => {
         effective_from: ctcForm.effective_from,
         effective_to: ctcForm.effective_to,
       };
-  await axiosInstance.post(`${appConfig.API_PREFIX_V1}/staff/ctc-structure/`, payload);
+  await axiosInstance.post(`${appConfig.API_PREFIX_V1}/administrative/staff-ctc/ctc-structure/`, payload);
       toast.success('CTC structure created!');
       handleCloseCtcDialog();
       fetchCtcStructures();
@@ -177,7 +177,7 @@ const StaffSalariesTable = ({ staff, onBack }) => {
         amount: parseFloat(ctcComponentForm.amount),
         component_type: ctcComponentForm.component_type,
       };
-  await axiosInstance.post(`${appConfig.API_PREFIX_V1}/staff/ctc-structure/${selectedCtcId}/component`, payload);
+  await axiosInstance.post(`${appConfig.API_PREFIX_V1}/administrative/staff-ctc/ctc-structure/${selectedCtcId}/component`, payload);
       toast.success('CTC component added!');
       fetchCtcComponents(selectedCtcId);
       setCtcComponentForm({ name: '', amount: '', component_type: 'Allowance' });

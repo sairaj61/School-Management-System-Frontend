@@ -54,11 +54,11 @@ const Dashboard = () => {
     setLoading(true);
     try {
       const [enrollmentRes, feeCollectionRes, financialRes, facilitiesRes, transportRes] = await Promise.all([
-        axiosInstance.get(`${appConfig.API_PREFIX_V1}/dashboard/enrollment-attendance-summary`),
-        axiosInstance.get(`${appConfig.API_PREFIX_V1}/dashboard/finance/fee-collection-summary`),
-        axiosInstance.get(`${appConfig.API_PREFIX_V1}/dashboard/finance/revenue-expenditure-summary`),
-        axiosInstance.get(`${appConfig.API_PREFIX_V1}/dashboard/student-facilities-usage`),
-        axiosInstance.get(`${appConfig.API_PREFIX_V1}/dashboard/transport-summary`),
+        axiosInstance.get(`${appConfig.API_PREFIX_V1}/administrative/dashboard/enrollment-attendance-summary`),
+        axiosInstance.get(`${appConfig.API_PREFIX_V1}/administrative/dashboard/finance/fee-collection-summary`),
+        axiosInstance.get(`${appConfig.API_PREFIX_V1}/administrative/dashboard/finance/revenue-expenditure-summary`),
+        axiosInstance.get(`${appConfig.API_PREFIX_V1}/administrative/dashboard/student-facilities-usage`),
+        axiosInstance.get(`${appConfig.API_PREFIX_V1}/administrative/dashboard/transport-summary`),
       ]);
       setEnrollmentAttendance(enrollmentRes.data);
       setFeeCollection(feeCollectionRes.data);

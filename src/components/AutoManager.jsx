@@ -72,7 +72,7 @@ const AutoManager = () => {
   const fetchAutos = async () => {
     try {
       setLoading(true);
-      const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/students-managements/transport/autos`);
+      const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/academic/transport/autos`);
       const autoData = response.data || [];
       setAutos(autoData);
       calculateStats(autoData);
@@ -87,7 +87,7 @@ const AutoManager = () => {
 
   const fetchStudents = async () => {
     try {
-      const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/students-managements/students/`);
+      const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/academic/students/`);
       setStudents(response.data);
     } catch (error) {
       handleApiError(error, setAlert);
@@ -145,10 +145,10 @@ const AutoManager = () => {
     e.preventDefault();
     try {
       if (selectedAuto) {
-        await axiosInstance.put(`${appConfig.API_PREFIX_V1}/students-managements/transport/autos/${selectedAuto.id}`, formData);
+        await axiosInstance.put(`${appConfig.API_PREFIX_V1}/academic/transport/autos/${selectedAuto.id}`, formData);
         setAlert({ open: true, message: 'Auto updated successfully!', severity: 'success' });
       } else {
-        await axiosInstance.post(`${appConfig.API_PREFIX_V1}/students-managements/transport/autos`, formData);
+        await axiosInstance.post(`${appConfig.API_PREFIX_V1}/academic/transport/autos`, formData);
         setAlert({ open: true, message: 'Auto added successfully!', severity: 'success' });
       }
       handleModalClose();
@@ -161,7 +161,7 @@ const AutoManager = () => {
   const handleAssignSubmit = async () => {
     try {
       await axiosInstance.post(
-        `${appConfig.API_PREFIX_V1}/students-managements/transport/autos/${selectedAuto.id}/assign-students`, 
+        `${appConfig.API_PREFIX_V1}/academic/transport/autos/${selectedAuto.id}/assign-students`, 
         { student_ids: selectedStudents }
       );
       
@@ -182,7 +182,7 @@ const AutoManager = () => {
     if (window.confirm('Are you sure you want to delete this auto? This will remove all student assignments.')) {
       try {
         setLoading(true);
-        await axiosInstance.delete(`${appConfig.API_PREFIX_V1}/students-managements/transport/autos/${id}`);
+        await axiosInstance.delete(`${appConfig.API_PREFIX_V1}/academic/transport/autos/${id}`);
         setAlert({ 
           open: true, 
           message: 'Auto and its assignments deleted successfully!', 

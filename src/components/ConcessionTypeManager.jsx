@@ -36,7 +36,7 @@ const ConcessionTypeManager = () => {
   const fetchConcessionTypes = async () => {
     try {
       setLoading(true);
-      const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/concessions-management/concession-types/`);
+      const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/finance/concessions/`);
       setConcessionTypes(response.data);
     } catch (error) {
       handleApiError(error, setAlert);
@@ -88,10 +88,10 @@ const ConcessionTypeManager = () => {
       };
 
       if (selectedConcessionType) {
-        await axiosInstance.put(`${appConfig.API_PREFIX_V1}/concessions-management/concession-types/${selectedConcessionType.id}`, concessionData);
+        await axiosInstance.put(`${appConfig.API_PREFIX_V1}/finance/concessions/${selectedConcessionType.id}`, concessionData);
         setAlert({ open: true, message: 'Concession Type updated successfully!', severity: 'success' });
       } else {
-        await axiosInstance.post(`${appConfig.API_PREFIX_V1}/concessions-management/concession-types/`, concessionData);
+        await axiosInstance.post(`${appConfig.API_PREFIX_V1}/finance/concessions/`, concessionData);
         setAlert({ open: true, message: 'Concession Type added successfully!', severity: 'success' });
       }
 
@@ -105,7 +105,7 @@ const ConcessionTypeManager = () => {
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this concession type?')) {
       try {
-        await axiosInstance.delete(`${appConfig.API_PREFIX_V1}/concessions-management/concession-types/${id}`);
+        await axiosInstance.delete(`${appConfig.API_PREFIX_V1}/finance/concessions/${id}`);
         setAlert({ open: true, message: 'Concession Type deleted successfully!', severity: 'success' });
         fetchConcessionTypes();
       } catch (error) {
@@ -185,7 +185,7 @@ const ConcessionTypeManager = () => {
             return;
           }
           await axiosInstance.post(
-            `${appConfig.API_PREFIX_V1}/concessions-management/concession-types/bulk`,
+            `${appConfig.API_PREFIX_V1}/finance/concessions/bulk`,
             validRows
           );
           setAlert({ open: true, message: 'Concession Types uploaded successfully!', severity: 'success' });

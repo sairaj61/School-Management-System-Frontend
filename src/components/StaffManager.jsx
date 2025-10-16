@@ -51,7 +51,7 @@ const StaffManager = () => {
   const fetchStaff = async () => {
     try {
       setLoading(true);
-      const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/staff/`);
+      const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/administrative/staff/`);
       setStaffList(response.data);
     } catch (error) {
       toast.error('Failed to load staff.');
@@ -92,10 +92,10 @@ const StaffManager = () => {
   const handleSubmit = async (values, { setSubmitting, resetForm }) => {
     try {
       if (editingStaff) {
-        await axiosInstance.put(`${appConfig.API_PREFIX_V1}/staff/${editingStaff.id}`, values);
+        await axiosInstance.put(`${appConfig.API_PREFIX_V1}/administrative/staff/${editingStaff.id}`, values);
         toast.success('Staff updated successfully!');
       } else {
-        await axiosInstance.post(`${appConfig.API_PREFIX_V1}/staff/`, values);
+        await axiosInstance.post(`${appConfig.API_PREFIX_V1}/administrative/staff/`, values);
         toast.success('Staff added successfully!');
       }
       handleCloseDialog();
@@ -112,7 +112,7 @@ const StaffManager = () => {
   const handleDelete = async (staffId) => {
     if (window.confirm('Are you sure you want to delete this staff member?')) {
       try {
-        await axiosInstance.delete(`${appConfig.API_PREFIX_V1}/staff/${staffId}`);
+        await axiosInstance.delete(`${appConfig.API_PREFIX_V1}/administrative/staff/${staffId}`);
         toast.success('Staff deleted successfully!');
         fetchStaff();
       } catch (error) {
@@ -125,7 +125,7 @@ const StaffManager = () => {
   const handleExportStaff = async () => {
     try {
       setExporting(true);
-      const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/staff/export/csv`, {
+      const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/administrative/staff/export/csv`, {
         responseType: 'blob' // Important for file download
       });
 
@@ -156,7 +156,7 @@ const StaffManager = () => {
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await axiosInstance.post(`${appConfig.API_PREFIX_V1}/staff/import/csv`, formData, {
+      const response = await axiosInstance.post(`${appConfig.API_PREFIX_V1}/administrative/staff/import/csv`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
