@@ -268,7 +268,8 @@ const FeeManager = () => {
           fee_category_id: item.fee_category_id,
           student_fixed_fee_id: item.student_fixed_fee_id,
           student_fixed_fee_payment_schedule_mapping_id: item.student_fixed_fee_payment_schedule_mapping_id,
-          amount_paying: '', // Initialize as empty string for user input
+          // Initialize amount_paying to the pending amount (string) so it's prefilled but editable
+          amount_paying: parseFloat(item.pending_amount).toString(),
           pending_amount: parseFloat(item.pending_amount),
           fee_category_name: item.fee_category_name,
           payment_due_date: item.payment_due_date,
@@ -279,15 +280,15 @@ const FeeManager = () => {
 
       setPendingInstallments(allInstallments.filter(item => item.is_pending));
       setUpcomingInstallments(allInstallments.filter(item => !item.is_pending));
-      
-      // Crucially, when setting payment_details, ensure that amount_paying and payment_date are initialized correctly
-      // This is the source of truth for the form submission
+
+      // When setting payment_details, initialize amount_paying to the pending amount so inputs show it by default
+      // Keep as strings to preserve user input behavior and validation logic
       setPaymentFormData(prev => ({
         ...prev,
         payment_details: allInstallments.map(item => ({ 
           ...item, 
-          amount_paying: '', 
-          payment_date: new Date().toISOString().split('T')[0] // Initialize payment_date here too
+          amount_paying: item.amount_paying ?? parseFloat(item.pending_amount).toString(), 
+          payment_date: item.payment_date ?? new Date().toISOString().split('T')[0]
         })) 
       }));
 
