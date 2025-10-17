@@ -356,7 +356,7 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
     // Fetch new payment status for Payment tab
     setLoadingPaymentStatus(true);
     axiosInstance
-      .get(`/api/v1/finance/fee-structure/by-class/${student.class_id}`)
+      .get(`/api/v1/finance/fees-payments/student_payment_status/${student.id}`)
       .then((res) => {
         setStudentPaymentStatus(Array.isArray(res.data) ? res.data : []);
       })
@@ -1095,7 +1095,7 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                     pending_amount: pendingAmount,
                   };
                 });
-                await axiosInstance.post('/api/v1/fees-payments/process_payment', {
+                await axiosInstance.post('/api/v1/finance/fees-payments/process_payment', {
                   student_id: student.id,
                   academic_year_id: student.academic_year_id,
                   payment_method: 'CASH', // or allow user to select
@@ -1107,7 +1107,7 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                 // Optionally show a success alert
                 // Refresh payment status
                 setLoadingPaymentStatus(true);
-                const res = await axiosInstance.get(`/api/v1/finance/fee-structure/by-class/${student.class_id}`);
+                const res = await axiosInstance.get(`/api/v1/finance/fees-payments/student_payment_status/${student.id}`);
                 setStudentPaymentStatus(Array.isArray(res.data) ? res.data : []);
                 setLoadingPaymentStatus(false);
               } catch (err) {
