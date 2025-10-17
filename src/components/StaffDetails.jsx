@@ -608,29 +608,7 @@ const StaffDetails = () => {
             />
             <Button variant="outlined" startIcon={<Email />} sx={{ mb: 1, width: '100%' }}>{staff.email}</Button>
             <Button variant="outlined" startIcon={<Phone />} sx={{ mb: 1, width: '100%' }}>{staff.phone_number}</Button>
-            <Paper elevation={1} sx={{ p: 2, mt: 2, width: '100%' }}>
-              <Typography variant="subtitle2" fontWeight={600} gutterBottom>Personal Info</Typography>
-              <Box sx={{ maxHeight: 220, overflowY: 'auto' }}>
-                <List dense sx={{ pr: 1, pb: 1, maxHeight: 320, overflowY: 'auto' }}>
-                  <ListItem>
-                    <ListItemIcon><School color="primary" /></ListItemIcon>
-                    <ListItemText primary="Qualification" secondary={staff.qualification} />
-                  </ListItem>
-                  <ListItem>
-                    <ListItemIcon><Home color="warning" /></ListItemIcon>
-                    <ListItemText primary="Address" secondary={staff.address} />
-                  </ListItem>
-                  <ListItem>
-                    <ListItemIcon><CalendarToday color="info" /></ListItemIcon>
-                    <ListItemText primary="Date of Joining" secondary={staff.date_of_joining ? new Date(staff.date_of_joining).toLocaleDateString() : 'N/A'} />
-                  </ListItem>
-                  <ListItem>
-                    <ListItemIcon><CalendarToday color="error" /></ListItemIcon>
-                    <ListItemText primary="Date of Termination" secondary={staff.date_of_termination ? new Date(staff.date_of_termination).toLocaleDateString() : 'N/A'} />
-                  </ListItem>
-                </List>
-              </Box>
-            </Paper>
+            {/* Personal Info removed as per request */}
           </Box>
 
           {/* Main Content: Tabs and Panels */}

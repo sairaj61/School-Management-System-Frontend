@@ -356,7 +356,7 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
     // Fetch new payment status for Payment tab
     setLoadingPaymentStatus(true);
     axiosInstance
-      .get(`/api/v1/finance/fee-structure/by-class/${student.class_id}`)
+      .get(`/api/v1/finance/fees-payments/student_payment_status/${student.id}`)
       .then((res) => {
         setStudentPaymentStatus(Array.isArray(res.data) ? res.data : []);
       })
@@ -683,54 +683,139 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                       <Edit fontSize="large" />
                     </IconButton>
                   </Box>
+                  <Box sx={{ width: '100%', mt: 2 }}>
+                    <Button variant="outlined" startIcon={<Email />} sx={{ mb: 1, width: '100%' }}>{student.email}</Button>
+                    <Button variant="outlined" startIcon={<Phone />} sx={{ mb: 1, width: '100%' }}>{student.phone_number}</Button>
+                  </Box>
                 </Box>
               </Box>
-              <Button variant="outlined" startIcon={<Email />} sx={{ mb: 1, width: '100%' }}>{student.email}</Button>
-              <Button variant="outlined" startIcon={<Phone />} sx={{ mb: 1, width: '100%' }}>{student.phone_number}</Button>
-              <Paper elevation={1} sx={{ p: 2, mt: 2, width: '100%' }}>
-                <Typography variant="subtitle2" fontWeight={600} gutterBottom>Personal Info</Typography>
-                <Box sx={{ maxHeight: 220, overflowY: 'auto' }}>
-                  <List dense sx={{ pr: 1, pb: 1, maxHeight: 320, overflowY: 'auto' }}>
-                    <ListItem>
-                      <ListItemIcon><School color="primary" /></ListItemIcon>
-                      <ListItemText primary="Roll Number" secondary={student.roll_number} />
-                    </ListItem>
-                    <ListItem>
-                      <ListItemIcon><CalendarToday color="warning" /></ListItemIcon>
-                      <ListItemText primary="Date of Birth" secondary={student.date_of_birth ? new Date(student.date_of_birth).toLocaleDateString() : 'N/A'} />
-                    </ListItem>
-                    <ListItem>
-                      <ListItemIcon><CalendarToday color="warning" /></ListItemIcon>
-                      <ListItemText primary="Enrollment Date" secondary={student.enrolment_date ? new Date(student.enrolment_date).toLocaleDateString() : 'N/A'} />
-                    </ListItem>
-                    <ListItem>
-                      <ListItemIcon><Person color="info" /></ListItemIcon>
-                      <ListItemText primary="Gender" secondary={student.gender || 'N/A'} />
-                    </ListItem>
-                    <ListItem>
-                      <ListItemIcon><Home color="success" /></ListItemIcon>
-                      <ListItemText primary="Address" secondary={student.address || 'N/A'} />
-                    </ListItem>
-                  </List>
-                </Box>
-              </Paper>
+              {/* Personal Info removed from sidebar (now shown in Overview) */}
             </Box>
 
             {/* Main Content: Tabs and Panels */}
             <Box sx={{ flex: 1, pl: { md: 4 }, pt: 2, overflowY: 'auto' }}>
               <Tabs value={tab} onChange={(e, v) => setTab(v)} variant="scrollable" scrollButtons="auto" sx={{ mb: 3 }}>
                 <Tab label="Overview" icon={<Person />} iconPosition="start" />
+                <Tab label="Parents" icon={<Person />} iconPosition="start" />
                 <Tab label="Payments" icon={<Payment />} iconPosition="start" />
                 <Tab label="Attendance" icon={<CalendarToday />} iconPosition="start" />
                 <Tab label="Uploads" icon={<AttachFile />} iconPosition="start" />
                 <Tab label="Facility Enrolled" icon={<Work />} iconPosition="start" />
               </Tabs>
 
+              {/* Add Parent Dialog - moved outside panels so it is available on all tabs */}
+              <Dialog open={addParentModalOpen} onClose={() => setAddParentModalOpen(false)} maxWidth="sm" fullWidth>
+                <DialogTitle>Add New Parent</DialogTitle>
+                <DialogContent dividers>
+                  {addParentError && <Alert severity="error" sx={{ mb: 2 }}>{addParentError}</Alert>}
+                  <Grid container spacing={2}>
+                    <Grid item xs={12}>
+                      <TextField label="Name" name="name" fullWidth value={newParentForm.name} onChange={handleNewParentInputChange} />
+                    </Grid>
+                    <Grid item xs={12}>
+                      <TextField label="Email" name="email" fullWidth value={newParentForm.email} onChange={handleNewParentInputChange} />
+                    </Grid>
+                    <Grid item xs={12}>
+                      <TextField label="Phone Number" name="phone_number" fullWidth value={newParentForm.phone_number} onChange={handleNewParentInputChange} />
+                    </Grid>
+                    <Grid item xs={12}>
+                      <TextField label="Address" name="address" fullWidth value={newParentForm.address} onChange={handleNewParentInputChange} />
+                    </Grid>
+                    <Grid item xs={12}>
+                      <FormControl fullWidth>
+                        <InputLabel>Gender</InputLabel>
+                        <Select name="gender" value={newParentForm.gender} label="Gender" onChange={handleNewParentInputChange}>
+                          <MenuItem value="MALE">Male</MenuItem>
+                          <MenuItem value="FEMALE">Female</MenuItem>
+                          <MenuItem value="OTHER">Other</MenuItem>
+                        </Select>
+                      </FormControl>
+                    </Grid>
+                    <Grid item xs={12}>
+                      <TextField label="Occupation" name="occupation" fullWidth value={newParentForm.occupation} onChange={handleNewParentInputChange} />
+                    </Grid>
+                    <Grid item xs={12}>
+                      <FormControl fullWidth>
+                        <InputLabel>Relationship</InputLabel>
+                        <Select name="relationship" value={newParentForm.relationship} label="Relationship" onChange={handleNewParentInputChange}>
+                          <MenuItem value="Father">Father</MenuItem>
+                          <MenuItem value="Mother">Mother</MenuItem>
+                          <MenuItem value="Guardian">Guardian</MenuItem>
+                          <MenuItem value="Other">Other</MenuItem>
+                        </Select>
+                      </FormControl>
+                    </Grid>
+                  </Grid>
+                </DialogContent>
+                <DialogActions>
+                  <Button onClick={() => setAddParentModalOpen(false)} color="secondary">Cancel</Button>
+                  <Button onClick={handleAddParentSubmit} color="primary" variant="contained" disabled={addParentLoading}>
+                    {addParentLoading ? <CircularProgress size={20} /> : 'Add Parent'}
+                  </Button>
+                </DialogActions>
+              </Dialog>
+
               {/* Tab Panels */}
               {tab === 0 && (
                 <Grid container spacing={4} alignItems="flex-start">
                   <Grid item xs={12} md={6}>
                     <Paper elevation={2} sx={{ p: 2, borderRadius: 2, display: 'flex', flexDirection: 'column', alignSelf: 'flex-start', maxHeight: 500, overflowY: 'auto' }}>
+                      <Typography variant="h6" fontWeight={600} gutterBottom>Personal Info</Typography>
+                      <List dense>
+                        <ListItem>
+                          <ListItemIcon><School color="primary" /></ListItemIcon>
+                          <ListItemText primary="Roll Number" secondary={student.roll_number} />
+                        </ListItem>
+                        <ListItem>
+                          <ListItemIcon><CalendarToday color="warning" /></ListItemIcon>
+                          <ListItemText primary="Date of Birth" secondary={student.date_of_birth ? new Date(student.date_of_birth).toLocaleDateString() : 'N/A'} />
+                        </ListItem>
+                        <ListItem>
+                          <ListItemIcon><CalendarToday color="warning" /></ListItemIcon>
+                          <ListItemText primary="Enrollment Date" secondary={student.enrolment_date ? new Date(student.enrolment_date).toLocaleDateString() : 'N/A'} />
+                        </ListItem>
+                        <ListItem>
+                          <ListItemIcon><Person color="info" /></ListItemIcon>
+                          <ListItemText primary="Gender" secondary={student.gender || 'N/A'} />
+                        </ListItem>
+                        <ListItem>
+                          <ListItemIcon><Home color="success" /></ListItemIcon>
+                          <ListItemText primary="Address" secondary={student.address || 'N/A'} />
+                        </ListItem>
+                      </List>
+                    </Paper>
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <Paper elevation={2} sx={{ p: 3, borderRadius: 2, display: 'flex', flexDirection: 'column', alignSelf: 'flex-start' }}>
+                      <Typography variant="h6" fontWeight={600} gutterBottom>Academic Information</Typography>
+                      <List dense>
+                        <ListItem>
+                          <ListItemIcon><School color="primary" /></ListItemIcon>
+                          <ListItemText primary="Class" secondary={`${student.class_name} - ${student.section_name}`} />
+                        </ListItem>
+                        <ListItem>
+                          <ListItemIcon><CalendarToday color="warning" /></ListItemIcon>
+                          <ListItemText primary="Enrollment Date" secondary={student.enrolment_date ? new Date(student.enrolment_date).toLocaleDateString() : 'N/A'} />
+                        </ListItem>
+                        <ListItem>
+                          <ListItemIcon><Person color="info" /></ListItemIcon>
+                          <ListItemText primary="Previous School" secondary={student.old_school_name || 'N/A'} />
+                        </ListItem>
+                        <ListItem>
+                          <ListItemIcon><Home color="success" /></ListItemIcon>
+                          <ListItemText primary="Medical History" secondary={student.medical_history || 'None'} />
+                        </ListItem>
+                      </List>
+                    </Paper>
+                  </Grid>
+                </Grid>
+              )}
+
+              {/* Dedicated Parents Tab (duplicate of Overview's Parent Information block) */}
+              {tab === 1 && (
+                <Grid container spacing={4} alignItems="flex-start">
+                  <Grid item xs={12} md={12}>
+                    <Paper elevation={2} sx={{ p: 2, borderRadius: 2, display: 'flex', flexDirection: 'column', alignSelf: 'stretch', maxHeight: 'none', overflowY: 'visible' }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
                         <Typography variant="h6" fontWeight={600} gutterBottom>Parent Information</Typography>
                         <IconButton
@@ -741,56 +826,6 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                           <Add />
                         </IconButton>
                       </Box>
-                      <Dialog open={addParentModalOpen} onClose={() => setAddParentModalOpen(false)} maxWidth="sm" fullWidth>
-                        <DialogTitle>Add New Parent</DialogTitle>
-                        <DialogContent dividers>
-                          {addParentError && <Alert severity="error" sx={{ mb: 2 }}>{addParentError}</Alert>}
-                          <Grid container spacing={2}>
-                            <Grid item xs={12}>
-                              <TextField label="Name" name="name" fullWidth value={newParentForm.name} onChange={handleNewParentInputChange} />
-                            </Grid>
-                            <Grid item xs={12}>
-                              <TextField label="Email" name="email" fullWidth value={newParentForm.email} onChange={handleNewParentInputChange} />
-                            </Grid>
-                            <Grid item xs={12}>
-                              <TextField label="Phone Number" name="phone_number" fullWidth value={newParentForm.phone_number} onChange={handleNewParentInputChange} />
-                            </Grid>
-                            <Grid item xs={12}>
-                              <TextField label="Address" name="address" fullWidth value={newParentForm.address} onChange={handleNewParentInputChange} />
-                            </Grid>
-                            <Grid item xs={12}>
-                              <FormControl fullWidth>
-                                <InputLabel>Gender</InputLabel>
-                                <Select name="gender" value={newParentForm.gender} label="Gender" onChange={handleNewParentInputChange}>
-                                  <MenuItem value="MALE">Male</MenuItem>
-                                  <MenuItem value="FEMALE">Female</MenuItem>
-                                  <MenuItem value="OTHER">Other</MenuItem>
-                                </Select>
-                              </FormControl>
-                            </Grid>
-                            <Grid item xs={12}>
-                              <TextField label="Occupation" name="occupation" fullWidth value={newParentForm.occupation} onChange={handleNewParentInputChange} />
-                            </Grid>
-                            <Grid item xs={12}>
-                              <FormControl fullWidth>
-                                <InputLabel>Relationship</InputLabel>
-                                <Select name="relationship" value={newParentForm.relationship} label="Relationship" onChange={handleNewParentInputChange}>
-                                  <MenuItem value="Father">Father</MenuItem>
-                                  <MenuItem value="Mother">Mother</MenuItem>
-                                  <MenuItem value="Guardian">Guardian</MenuItem>
-                                  <MenuItem value="Other">Other</MenuItem>
-                                </Select>
-                              </FormControl>
-                            </Grid>
-                          </Grid>
-                        </DialogContent>
-                        <DialogActions>
-                          <Button onClick={() => setAddParentModalOpen(false)} color="secondary">Cancel</Button>
-                          <Button onClick={handleAddParentSubmit} color="primary" variant="contained" disabled={addParentLoading}>
-                            {addParentLoading ? <CircularProgress size={20} /> : 'Add Parent'}
-                          </Button>
-                        </DialogActions>
-                      </Dialog>
                       {parentDetails.length === 0 ? (
                         <Typography color="text.secondary">No parent details available.</Typography>
                       ) : (
@@ -865,32 +900,9 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                       )}
                     </Paper>
                   </Grid>
-                  <Grid item xs={12} md={6}>
-                    <Paper elevation={2} sx={{ p: 3, borderRadius: 2, display: 'flex', flexDirection: 'column', alignSelf: 'flex-start' }}>
-                      <Typography variant="h6" fontWeight={600} gutterBottom>Academic Information</Typography>
-                      <List dense>
-                        <ListItem>
-                          <ListItemIcon><School color="primary" /></ListItemIcon>
-                          <ListItemText primary="Class" secondary={`${student.class_name} - ${student.section_name}`} />
-                        </ListItem>
-                        <ListItem>
-                          <ListItemIcon><CalendarToday color="warning" /></ListItemIcon>
-                          <ListItemText primary="Enrollment Date" secondary={student.enrolment_date ? new Date(student.enrolment_date).toLocaleDateString() : 'N/A'} />
-                        </ListItem>
-                        <ListItem>
-                          <ListItemIcon><Person color="info" /></ListItemIcon>
-                          <ListItemText primary="Previous School" secondary={student.old_school_name || 'N/A'} />
-                        </ListItem>
-                        <ListItem>
-                          <ListItemIcon><Home color="success" /></ListItemIcon>
-                          <ListItemText primary="Medical History" secondary={student.medical_history || 'None'} />
-                        </ListItem>
-                      </List>
-                    </Paper>
-                  </Grid>
                 </Grid>
               )}
-              {tab === 1 && (
+              {tab === 2 && (
                 <Box>
                   <Typography variant="h5" fontWeight={700} color="primary" gutterBottom>
                     Fee Payment Status
@@ -1083,7 +1095,7 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                     pending_amount: pendingAmount,
                   };
                 });
-                await axiosInstance.post('/api/v1/fees-payments/process_payment', {
+                await axiosInstance.post('/api/v1/finance/fees-payments/process_payment', {
                   student_id: student.id,
                   academic_year_id: student.academic_year_id,
                   payment_method: 'CASH', // or allow user to select
@@ -1095,7 +1107,7 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                 // Optionally show a success alert
                 // Refresh payment status
                 setLoadingPaymentStatus(true);
-                const res = await axiosInstance.get(`/api/v1/finance/fee-structure/by-class/${student.class_id}`);
+                const res = await axiosInstance.get(`/api/v1/finance/fees-payments/student_payment_status/${student.id}`);
                 setStudentPaymentStatus(Array.isArray(res.data) ? res.data : []);
                 setLoadingPaymentStatus(false);
               } catch (err) {
@@ -1118,7 +1130,7 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                   )}
                 </Box>
               )}
-              {tab === 2 && (
+              {tab === 3 && (
                 <Box>
                   <Typography variant="h5" fontWeight={700} color="primary" gutterBottom>
                     Student Attendance
@@ -1126,7 +1138,7 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                   <StudentAttendance studentId={student.id} />
                 </Box>
               )}
-              {tab === 3 && (
+              {tab === 4 && (
                 <Box>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                     <Typography variant="h6" fontWeight={600}>Student Documents</Typography>
@@ -1204,7 +1216,7 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                   )}
                 </Box>
               )}
-              {tab === 4 && (
+              {tab === 5 && (
                 <Box>
                   <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', mb: 2 }}>
                     {/* Individual totals and grand total beside Add Facility button */}
