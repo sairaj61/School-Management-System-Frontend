@@ -720,11 +720,64 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
             <Box sx={{ flex: 1, pl: { md: 4 }, pt: 2, overflowY: 'auto' }}>
               <Tabs value={tab} onChange={(e, v) => setTab(v)} variant="scrollable" scrollButtons="auto" sx={{ mb: 3 }}>
                 <Tab label="Overview" icon={<Person />} iconPosition="start" />
+                <Tab label="Parents" icon={<Person />} iconPosition="start" />
                 <Tab label="Payments" icon={<Payment />} iconPosition="start" />
                 <Tab label="Attendance" icon={<CalendarToday />} iconPosition="start" />
                 <Tab label="Uploads" icon={<AttachFile />} iconPosition="start" />
                 <Tab label="Facility Enrolled" icon={<Work />} iconPosition="start" />
               </Tabs>
+
+              {/* Add Parent Dialog - moved outside panels so it is available on all tabs */}
+              <Dialog open={addParentModalOpen} onClose={() => setAddParentModalOpen(false)} maxWidth="sm" fullWidth>
+                <DialogTitle>Add New Parent</DialogTitle>
+                <DialogContent dividers>
+                  {addParentError && <Alert severity="error" sx={{ mb: 2 }}>{addParentError}</Alert>}
+                  <Grid container spacing={2}>
+                    <Grid item xs={12}>
+                      <TextField label="Name" name="name" fullWidth value={newParentForm.name} onChange={handleNewParentInputChange} />
+                    </Grid>
+                    <Grid item xs={12}>
+                      <TextField label="Email" name="email" fullWidth value={newParentForm.email} onChange={handleNewParentInputChange} />
+                    </Grid>
+                    <Grid item xs={12}>
+                      <TextField label="Phone Number" name="phone_number" fullWidth value={newParentForm.phone_number} onChange={handleNewParentInputChange} />
+                    </Grid>
+                    <Grid item xs={12}>
+                      <TextField label="Address" name="address" fullWidth value={newParentForm.address} onChange={handleNewParentInputChange} />
+                    </Grid>
+                    <Grid item xs={12}>
+                      <FormControl fullWidth>
+                        <InputLabel>Gender</InputLabel>
+                        <Select name="gender" value={newParentForm.gender} label="Gender" onChange={handleNewParentInputChange}>
+                          <MenuItem value="MALE">Male</MenuItem>
+                          <MenuItem value="FEMALE">Female</MenuItem>
+                          <MenuItem value="OTHER">Other</MenuItem>
+                        </Select>
+                      </FormControl>
+                    </Grid>
+                    <Grid item xs={12}>
+                      <TextField label="Occupation" name="occupation" fullWidth value={newParentForm.occupation} onChange={handleNewParentInputChange} />
+                    </Grid>
+                    <Grid item xs={12}>
+                      <FormControl fullWidth>
+                        <InputLabel>Relationship</InputLabel>
+                        <Select name="relationship" value={newParentForm.relationship} label="Relationship" onChange={handleNewParentInputChange}>
+                          <MenuItem value="Father">Father</MenuItem>
+                          <MenuItem value="Mother">Mother</MenuItem>
+                          <MenuItem value="Guardian">Guardian</MenuItem>
+                          <MenuItem value="Other">Other</MenuItem>
+                        </Select>
+                      </FormControl>
+                    </Grid>
+                  </Grid>
+                </DialogContent>
+                <DialogActions>
+                  <Button onClick={() => setAddParentModalOpen(false)} color="secondary">Cancel</Button>
+                  <Button onClick={handleAddParentSubmit} color="primary" variant="contained" disabled={addParentLoading}>
+                    {addParentLoading ? <CircularProgress size={20} /> : 'Add Parent'}
+                  </Button>
+                </DialogActions>
+              </Dialog>
 
               {/* Tab Panels */}
               {tab === 0 && (
@@ -741,56 +794,6 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                           <Add />
                         </IconButton>
                       </Box>
-                      <Dialog open={addParentModalOpen} onClose={() => setAddParentModalOpen(false)} maxWidth="sm" fullWidth>
-                        <DialogTitle>Add New Parent</DialogTitle>
-                        <DialogContent dividers>
-                          {addParentError && <Alert severity="error" sx={{ mb: 2 }}>{addParentError}</Alert>}
-                          <Grid container spacing={2}>
-                            <Grid item xs={12}>
-                              <TextField label="Name" name="name" fullWidth value={newParentForm.name} onChange={handleNewParentInputChange} />
-                            </Grid>
-                            <Grid item xs={12}>
-                              <TextField label="Email" name="email" fullWidth value={newParentForm.email} onChange={handleNewParentInputChange} />
-                            </Grid>
-                            <Grid item xs={12}>
-                              <TextField label="Phone Number" name="phone_number" fullWidth value={newParentForm.phone_number} onChange={handleNewParentInputChange} />
-                            </Grid>
-                            <Grid item xs={12}>
-                              <TextField label="Address" name="address" fullWidth value={newParentForm.address} onChange={handleNewParentInputChange} />
-                            </Grid>
-                            <Grid item xs={12}>
-                              <FormControl fullWidth>
-                                <InputLabel>Gender</InputLabel>
-                                <Select name="gender" value={newParentForm.gender} label="Gender" onChange={handleNewParentInputChange}>
-                                  <MenuItem value="MALE">Male</MenuItem>
-                                  <MenuItem value="FEMALE">Female</MenuItem>
-                                  <MenuItem value="OTHER">Other</MenuItem>
-                                </Select>
-                              </FormControl>
-                            </Grid>
-                            <Grid item xs={12}>
-                              <TextField label="Occupation" name="occupation" fullWidth value={newParentForm.occupation} onChange={handleNewParentInputChange} />
-                            </Grid>
-                            <Grid item xs={12}>
-                              <FormControl fullWidth>
-                                <InputLabel>Relationship</InputLabel>
-                                <Select name="relationship" value={newParentForm.relationship} label="Relationship" onChange={handleNewParentInputChange}>
-                                  <MenuItem value="Father">Father</MenuItem>
-                                  <MenuItem value="Mother">Mother</MenuItem>
-                                  <MenuItem value="Guardian">Guardian</MenuItem>
-                                  <MenuItem value="Other">Other</MenuItem>
-                                </Select>
-                              </FormControl>
-                            </Grid>
-                          </Grid>
-                        </DialogContent>
-                        <DialogActions>
-                          <Button onClick={() => setAddParentModalOpen(false)} color="secondary">Cancel</Button>
-                          <Button onClick={handleAddParentSubmit} color="primary" variant="contained" disabled={addParentLoading}>
-                            {addParentLoading ? <CircularProgress size={20} /> : 'Add Parent'}
-                          </Button>
-                        </DialogActions>
-                      </Dialog>
                       {parentDetails.length === 0 ? (
                         <Typography color="text.secondary">No parent details available.</Typography>
                       ) : (
@@ -890,7 +893,99 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                   </Grid>
                 </Grid>
               )}
+
+              {/* Dedicated Parents Tab (duplicate of Overview's Parent Information block) */}
               {tab === 1 && (
+                <Grid container spacing={4} alignItems="flex-start">
+                  <Grid item xs={12} md={12}>
+                    <Paper elevation={2} sx={{ p: 2, borderRadius: 2, display: 'flex', flexDirection: 'column', alignSelf: 'stretch', maxHeight: 'none', overflowY: 'visible' }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                        <Typography variant="h6" fontWeight={600} gutterBottom>Parent Information</Typography>
+                        <IconButton
+                          color="primary"
+                          sx={{ background: 'rgba(0,0,0,0.08)' }}
+                          onClick={() => setAddParentModalOpen(true)}
+                        >
+                          <Add />
+                        </IconButton>
+                      </Box>
+                      {parentDetails.length === 0 ? (
+                        <Typography color="text.secondary">No parent details available.</Typography>
+                      ) : (
+                        <Box sx={{ flex: 1 }}>
+                          <Grid container spacing={2}>
+                            {parentDetails.map((parent, index) => (
+                              <Grid item xs={12} key={index}>
+                                <Card sx={{ p: 2, borderRadius: 2, boxShadow: 1, position: 'relative', mb: 2 }}>
+                                  <Typography variant="subtitle1" fontWeight={600} gutterBottom>
+                                    {parent.name} ({parent.relationship_to_student})
+                                  </Typography>
+                                  <Grid container spacing={1}>
+                                    <Grid item xs={12} sm={6}>
+                                      <Typography variant="body2" color="text.secondary">
+                                        <strong>Email:</strong> {parent.email}
+                                      </Typography>
+                                    </Grid>
+                                    <Grid item xs={12} sm={6}>
+                                      <Typography variant="body2" color="text.secondary">
+                                        <strong>Phone:</strong> {parent.phone_number}
+                                      </Typography>
+                                    </Grid>
+                                    <Grid item xs={12} sm={6}>
+                                      <Typography variant="body2" color="text.secondary">
+                                        <strong>Gender:</strong> {parent.gender}
+                                      </Typography>
+                                    </Grid>
+                                    <Grid item xs={12} sm={6}>
+                                      <Typography variant="body2" color="text.secondary">
+                                        <strong>Occupation:</strong> {parent.occupation || 'N/A'}
+                                      </Typography>
+                                    </Grid>
+                                    <Grid item xs={12}>
+                                      <Typography variant="body2" color="text.secondary">
+                                        <strong>Address:</strong> {parent.address}
+                                      </Typography>
+                                    </Grid>
+                                  </Grid>
+                                  <Box sx={{ position: 'absolute', top: 8, right: 8, display: 'flex', gap: 1 }}>
+                                    <IconButton
+                                      color="primary"
+                                      sx={{ background: 'rgba(0,0,0,0.08)' }}
+                                      onClick={() => {
+                                        setEditParentData({ ...parent, parent_id: parent.parent_id });
+                                        setEditParentModalOpen(true);
+                                      }}
+                                    >
+                                      <Edit />
+                                    </IconButton>
+                                    <IconButton
+                                      color="error"
+                                      sx={{ background: 'rgba(0,0,0,0.08)' }}
+                                      onClick={async () => {
+                                        if (!window.confirm(`Are you sure you want to delete parent '${parent.name}'?`)) return;
+                                        try {
+                                          await axiosInstance.delete(`${appConfig.API_PREFIX_V1}/academic/parents/${parent.parent_id}`);
+                                          setParentDetails(prev => prev.filter(p => p.parent_id !== parent.parent_id));
+                                          setAlert({ open: true, message: 'Parent deleted successfully!', severity: 'success' });
+                                        } catch (err) {
+                                          setAlert({ open: true, message: 'Failed to delete parent.', severity: 'error' });
+                                        }
+                                      }}
+                                    >
+                                      <Delete />
+                                    </IconButton>
+                                  </Box>
+                                </Card>
+                              </Grid>
+                            ))}
+                          </Grid>
+                        </Box>
+                      )}
+                    </Paper>
+                  </Grid>
+                </Grid>
+              )}
+              {tab === 2 && (
                 <Box>
                   <Typography variant="h5" fontWeight={700} color="primary" gutterBottom>
                     Fee Payment Status
@@ -1118,7 +1213,7 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                   )}
                 </Box>
               )}
-              {tab === 2 && (
+              {tab === 3 && (
                 <Box>
                   <Typography variant="h5" fontWeight={700} color="primary" gutterBottom>
                     Student Attendance
@@ -1126,7 +1221,7 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                   <StudentAttendance studentId={student.id} />
                 </Box>
               )}
-              {tab === 3 && (
+              {tab === 4 && (
                 <Box>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                     <Typography variant="h6" fontWeight={600}>Student Documents</Typography>
@@ -1204,7 +1299,7 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                   )}
                 </Box>
               )}
-              {tab === 4 && (
+              {tab === 5 && (
                 <Box>
                   <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', mb: 2 }}>
                     {/* Individual totals and grand total beside Add Facility button */}
