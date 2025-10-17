@@ -164,6 +164,8 @@ const FeeManager = () => {
         total_fees_to_be_paid: parseFloat(payment.total_fees_to_be_paid),
         total_fees_paid: parseFloat(payment.total_fees_paid),
         due_amount: parseFloat(payment.total_fees_to_be_paid) - parseFloat(payment.total_fees_paid),
+        // normalize father's name field: some APIs return `father_name`, older code expects `student_father_name`
+        student_father_name: payment.student_father_name || payment.father_name || ''
       }));
       setCumulativePayments(transformedPayments);
       calculateStats(transformedPayments);
