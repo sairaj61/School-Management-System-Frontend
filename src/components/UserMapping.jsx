@@ -12,7 +12,10 @@ import {
   Box,
   Divider,
   CircularProgress,
+  Tabs,
+  Tab,
 } from '@mui/material';
+import { DataGrid } from '@mui/x-data-grid';
 import axiosInstance from '../utils/axiosConfig';
 import appConfig from '../config/appConfig';
 
@@ -23,12 +26,18 @@ const UserMapping = () => {
 
   const [staffPending, setStaffPending] = useState([]);
   const [loadingPendingStaff, setLoadingPendingStaff] = useState(false);
+  const [staffFilter, setStaffFilter] = useState('');
+  const [selectedPendingStaff, setSelectedPendingStaff] = useState([]);
+  const [staffPageSize, setStaffPageSize] = useState(25);
 
   const [parentActive, setParentActive] = useState([
     { id: 21, name: 'David Parent', username: 'dparent', child: 'John D.' },
   ]);
   const [parentPending, setParentPending] = useState([]);
   const [loadingPendingParents, setLoadingPendingParents] = useState(false);
+  const [parentFilter, setParentFilter] = useState('');
+  const [selectedPendingParents, setSelectedPendingParents] = useState([]);
+  const [parentPageSize, setParentPageSize] = useState(25);
 
   const makeStaffDisabled = (user) => {
     setStaffActive(prev => prev.filter(u => u.id !== user.id));
@@ -46,6 +55,14 @@ const UserMapping = () => {
       raw: user.raw || null,
     };
     setStaffActive(prev => [activeObj, ...prev]);
+  };
+
+  const activateSelectedStaff = () => {
+    // Activate each selected pending staff row
+    const toActivate = staffPending.filter(r => selectedPendingStaff.includes(r.id));
+    toActivate.forEach(u => makeStaffActive(u));
+    // clear selection
+    setSelectedPendingStaff([]);
   };
 
   // Fetch probable/pending staff from API on mount
@@ -116,6 +133,23 @@ const UserMapping = () => {
     setParentActive(prev => [activeObj, ...prev]);
   };
 
+  const activateSelectedParents = () => {
+    const toActivate = parentPending.filter(r => selectedPendingParents.includes(r.id));
+    toActivate.forEach(u => makeParentActive(u));
+    setSelectedPendingParents([]);
+  };
+
+  // Tabs state
+  const [tabIndex, setTabIndex] = React.useState(0);
+  const handleTabChange = (e, newIndex) => setTabIndex(newIndex);
+
+  function a11yProps(index) {
+    return {
+      id: `user-mapping-tab-${index}`,
+      'aria-controls': `user-mapping-tabpanel-${index}`,
+    };
+  }
+
   // Fetch active users (staff + parents)
   useEffect(() => {
     const fetchActiveUsers = async () => {
@@ -157,139 +191,170 @@ const UserMapping = () => {
       </Typography>
 
       <Paper sx={{ p: 2, mb: 3 }}>
-        <Typography variant="h6" sx={{ mb: 1 }}>Staff User Mapping</Typography>
-        <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', md: 'row' } }}>
-          <Box sx={{ flex: 1 }}>
-            <Typography variant="subtitle1" sx={{ mb: 1 }}>Active Users</Typography>
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell>Name</TableCell>
-                  <TableCell>Username</TableCell>
-                  <TableCell>Role</TableCell>
-                  <TableCell align="right">Action</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {staffActive.map(u => (
-                  <TableRow key={u.id}>
-                    <TableCell>{u.name}</TableCell>
-                    <TableCell>{u.username}</TableCell>
-                    <TableCell>{u.role}</TableCell>
-                    <TableCell align="right">
-                      <Button size="small" color="error" variant="contained" onClick={() => makeStaffDisabled(u)}>Make Disabled</Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {staffActive.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={4}>No active staff users</TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </Box>
+        <Tabs value={tabIndex} onChange={handleTabChange} aria-label="User mapping tabs">
+          <Tab label={`Staff (${staffActive.length + staffPending.length})`} {...a11yProps(0)} />
+          <Tab label={`Parents (${parentActive.length + parentPending.length})`} {...a11yProps(1)} />
+        </Tabs>
 
-          <Divider orientation="vertical" flexItem sx={{ display: { xs: 'none', md: 'block' } }} />
+        <Box role="tabpanel" hidden={tabIndex !== 0} id={`user-mapping-tabpanel-0`} aria-labelledby={`user-mapping-tab-0`} sx={{ pt: 2 }}>
+          <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', md: 'row' } }}>
+            <Box sx={{ flex: 1, minWidth: 280 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                <Typography variant="subtitle1">Active Users ({staffActive.length})</Typography>
+                {loadingActiveUsers && <CircularProgress size={20} />}
+              </Box>
+              <div style={{ width: '100%' }}>
+                <DataGrid
+                  autoHeight
+                  rows={staffActive}
+                  columns={[
+                    { field: 'name', headerName: 'Name', flex: 1, minWidth: 160 },
+                    { field: 'username', headerName: 'Username', width: 180 },
+                    { field: 'role', headerName: 'Role', width: 140 },
+                    {
+                      field: 'actions', headerName: 'Action', width: 160, sortable: false, filterable: false,
+                      renderCell: (params) => (
+                        <Button size="small" color="error" variant="contained" onClick={() => makeStaffDisabled(params.row)}>Make Disabled</Button>
+                      )
+                    }
+                  ]}
+                  pageSize={5}
+                  rowsPerPageOptions={[5, 10, 25]}
+                  disableSelectionOnClick
+                  density="compact"
+                  getRowId={(row) => row.id}
+                />
+              </div>
+            </Box>
 
-          <Box sx={{ flex: 1 }}>
-            <Typography variant="subtitle1" sx={{ mb: 1 }}>Pending Users</Typography>
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell>Name</TableCell>
-                  <TableCell>Username</TableCell>
-                  <TableCell>Role</TableCell>
-                  <TableCell align="right">Action</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {staffPending.map(u => (
-                  <TableRow key={u.id}>
-                    <TableCell>{u.name}</TableCell>
-                    <TableCell>{u.username}</TableCell>
-                    <TableCell>{u.role}</TableCell>
-                    <TableCell align="right">
-                      <Button size="small" color="primary" variant="contained" onClick={() => makeStaffActive(u)}>Make Active</Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {staffPending.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={4}>No pending staff users</TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
+            <Divider orientation="vertical" flexItem sx={{ display: { xs: 'none', md: 'block' } }} />
+
+            <Box sx={{ flex: 2, minWidth: 320 }}>
+              <Box sx={{ display: 'flex', gap: 1, mb: 1, alignItems: 'center' }}>
+                <Typography variant="subtitle1">Pending Users ({staffPending.length})</Typography>
+                <Box sx={{ ml: 'auto', display: 'flex', gap: 1, alignItems: 'center' }}>
+                  <input
+                    placeholder="Search pending staff..."
+                    value={staffFilter}
+                    onChange={(e) => setStaffFilter(e.target.value)}
+                    style={{ padding: '6px 10px', borderRadius: 4, border: '1px solid #ccc', minWidth: 220 }}
+                  />
+                  <Button size="small" variant="contained" onClick={activateSelectedStaff} disabled={selectedPendingStaff.length === 0}>Activate Selected ({selectedPendingStaff.length})</Button>
+                </Box>
+              </Box>
+
+              <div style={{ height: 420, width: '100%' }}>
+                <DataGrid
+                  rows={staffPending.filter(r => {
+                    if (!staffFilter) return true;
+                    const q = staffFilter.toLowerCase();
+                    return (`${r.name} ${r.username} ${r.role}`).toLowerCase().includes(q);
+                  })}
+                  columns={[
+                    { field: 'name', headerName: 'Name', flex: 1, minWidth: 160 },
+                    { field: 'username', headerName: 'Username', width: 200 },
+                    { field: 'role', headerName: 'Role', width: 140 },
+                    {
+                      field: 'actions', headerName: 'Action', width: 140, sortable: false, filterable: false,
+                      renderCell: (params) => (
+                        <Button size="small" color="primary" variant="contained" onClick={() => makeStaffActive(params.row)}>Make Active</Button>
+                      )
+                    }
+                  ]}
+                  checkboxSelection
+                  onSelectionModelChange={(sel) => setSelectedPendingStaff(sel)}
+                  selectionModel={selectedPendingStaff}
+                  pageSize={staffPageSize}
+                  onPageSizeChange={(newSize) => setStaffPageSize(newSize)}
+                  rowsPerPageOptions={[10, 25, 50, 100]}
+                  pagination
+                  loading={loadingPendingStaff}
+                  getRowId={(row) => row.id}
+                  density="standard"
+                />
+              </div>
+            </Box>
           </Box>
         </Box>
-      </Paper>
 
-      <Paper sx={{ p: 2 }}>
-        <Typography variant="h6" sx={{ mb: 1 }}>Parent User Mapping</Typography>
-        <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', md: 'row' } }}>
-          <Box sx={{ flex: 1 }}>
-            <Typography variant="subtitle1" sx={{ mb: 1 }}>Active Users</Typography>
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell>Name</TableCell>
-                  <TableCell>Username</TableCell>
-                  <TableCell>Child</TableCell>
-                  <TableCell align="right">Action</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {parentActive.map(u => (
-                  <TableRow key={u.id}>
-                    <TableCell>{u.name}</TableCell>
-                    <TableCell>{u.username}</TableCell>
-                    <TableCell>{u.child}</TableCell>
-                    <TableCell align="right">
-                      <Button size="small" color="error" variant="contained" onClick={() => makeParentDisabled(u)}>Make Disabled</Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {parentActive.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={4}>No active parent users</TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </Box>
+        <Box role="tabpanel" hidden={tabIndex !== 1} id={`user-mapping-tabpanel-1`} aria-labelledby={`user-mapping-tab-1`} sx={{ pt: 2 }}>
+          <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', md: 'row' } }}>
+            <Box sx={{ flex: 1, minWidth: 280 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                <Typography variant="subtitle1">Active Users ({parentActive.length})</Typography>
+                {loadingActiveUsers && <CircularProgress size={20} />}
+              </Box>
+              <div style={{ width: '100%' }}>
+                <DataGrid
+                  autoHeight
+                  rows={parentActive}
+                  columns={[
+                    { field: 'name', headerName: 'Name', flex: 1, minWidth: 160 },
+                    { field: 'username', headerName: 'Username', width: 200 },
+                    { field: 'child', headerName: 'Child(ren)', flex: 1, minWidth: 160 },
+                    {
+                      field: 'actions', headerName: 'Action', width: 160, sortable: false, filterable: false,
+                      renderCell: (params) => (
+                        <Button size="small" color="error" variant="contained" onClick={() => makeParentDisabled(params.row)}>Make Disabled</Button>
+                      )
+                    }
+                  ]}
+                  pageSize={5}
+                  rowsPerPageOptions={[5, 10, 25]}
+                  disableSelectionOnClick
+                  density="compact"
+                  getRowId={(row) => row.id}
+                />
+              </div>
+            </Box>
 
-          <Divider orientation="vertical" flexItem sx={{ display: { xs: 'none', md: 'block' } }} />
+            <Divider orientation="vertical" flexItem sx={{ display: { xs: 'none', md: 'block' } }} />
 
-          <Box sx={{ flex: 1 }}>
-            <Typography variant="subtitle1" sx={{ mb: 1 }}>Pending Users</Typography>
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell>Name</TableCell>
-                  <TableCell>Username</TableCell>
-                  <TableCell>Child</TableCell>
-                  <TableCell align="right">Action</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {parentPending.map(u => (
-                  <TableRow key={u.id}>
-                    <TableCell>{u.name}</TableCell>
-                    <TableCell>{u.username}</TableCell>
-                    <TableCell>{u.child}</TableCell>
-                    <TableCell align="right">
-                      <Button size="small" color="primary" variant="contained" onClick={() => makeParentActive(u)}>Make Active</Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {parentPending.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={4}>No pending parent users</TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
+            <Box sx={{ flex: 2, minWidth: 320 }}>
+              <Box sx={{ display: 'flex', gap: 1, mb: 1, alignItems: 'center' }}>
+                <Typography variant="subtitle1">Pending Users ({parentPending.length})</Typography>
+                <Box sx={{ ml: 'auto', display: 'flex', gap: 1, alignItems: 'center' }}>
+                  <input
+                    placeholder="Search pending parents..."
+                    value={parentFilter}
+                    onChange={(e) => setParentFilter(e.target.value)}
+                    style={{ padding: '6px 10px', borderRadius: 4, border: '1px solid #ccc', minWidth: 220 }}
+                  />
+                  <Button size="small" variant="contained" onClick={activateSelectedParents} disabled={selectedPendingParents.length === 0}>Activate Selected ({selectedPendingParents.length})</Button>
+                </Box>
+              </Box>
+
+              <div style={{ height: 420, width: '100%' }}>
+                <DataGrid
+                  rows={parentPending.filter(r => {
+                    if (!parentFilter) return true;
+                    const q = parentFilter.toLowerCase();
+                    return (`${r.name} ${r.username} ${r.child}`).toLowerCase().includes(q);
+                  })}
+                  columns={[
+                    { field: 'name', headerName: 'Name', flex: 1, minWidth: 160 },
+                    { field: 'username', headerName: 'Username', width: 200 },
+                    { field: 'child', headerName: 'Child(ren)', flex: 1, minWidth: 160 },
+                    {
+                      field: 'actions', headerName: 'Action', width: 140, sortable: false, filterable: false,
+                      renderCell: (params) => (
+                        <Button size="small" color="primary" variant="contained" onClick={() => makeParentActive(params.row)}>Make Active</Button>
+                      )
+                    }
+                  ]}
+                  checkboxSelection
+                  onSelectionModelChange={(sel) => setSelectedPendingParents(sel)}
+                  selectionModel={selectedPendingParents}
+                  pageSize={parentPageSize}
+                  onPageSizeChange={(newSize) => setParentPageSize(newSize)}
+                  rowsPerPageOptions={[10, 25, 50, 100]}
+                  pagination
+                  loading={loadingPendingParents}
+                  getRowId={(row) => row.id}
+                  density="standard"
+                />
+              </div>
+            </Box>
           </Box>
         </Box>
       </Paper>
