@@ -121,54 +121,42 @@ const UserMapping = () => {
   };
 
   // Fetch probable/pending staff from API on mount
+  // Fetch pending users (staff + parents) from admin pending endpoint on mount
   useEffect(() => {
-    const fetchPendingStaff = async () => {
+    const fetchPendingUsers = async () => {
       try {
         setLoadingPendingStaff(true);
-        const res = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/mapping/user-mapping/probable-staff`);
-        // Map response to the fields used by the table
-        const mapped = res.data.map(item => ({
+        setLoadingPendingParents(true);
+        const res = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/mapping/user-mapping/pending-user`);
+
+        // Map pending_staff
+        const mappedStaff = Array.isArray(res.data.pending_staff) ? res.data.pending_staff.map(item => ({
           id: item.id,
           name: item.name,
           username: item.email || item.phone_number || item.id,
           role: item.staff_type || 'UNKNOWN',
           raw: item,
-        }));
-        setStaffPending(mapped);
-      } catch (error) {
-        // axios interceptor will dispatch a global alert; keep pending as empty
-        console.error('Failed to fetch pending staff', error);
-      } finally {
-        setLoadingPendingStaff(false);
-      }
-    };
+        })) : [];
+        setStaffPending(mappedStaff);
 
-    fetchPendingStaff();
-  }, []);
-
-  // Fetch probable/pending parents on mount
-  useEffect(() => {
-    const fetchPendingParents = async () => {
-      try {
-        setLoadingPendingParents(true);
-        const res = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/mapping/user-mapping/probable-parents`);
-        const mapped = res.data.map(item => ({
-          id: item.parent_id,
+        // Map pending_parents
+        const mappedParents = Array.isArray(res.data.pending_parents) ? res.data.pending_parents.map(item => ({
+          id: item.parent_id || item.id,
           name: item.name,
-          username: item.email || item.phone_number || item.parent_id,
-          // pick first associated child's name for quick display
+          username: item.email || item.phone_number || item.parent_id || item.id,
           child: Array.isArray(item.associations) && item.associations.length > 0 ? item.associations.map(a => a.student_name).join(', ') : '',
           raw: item,
-        }));
-        setParentPending(mapped);
+        })) : [];
+        setParentPending(mappedParents);
       } catch (error) {
-        console.error('Failed to fetch pending parents', error);
+        console.error('Failed to fetch pending users', error);
       } finally {
+        setLoadingPendingStaff(false);
         setLoadingPendingParents(false);
       }
     };
 
-    fetchPendingParents();
+    fetchPendingUsers();
   }, []);
 
   const makeParentDisabled = (user) => {
