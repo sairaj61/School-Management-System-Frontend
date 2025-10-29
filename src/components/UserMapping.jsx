@@ -38,23 +38,59 @@ const UserMapping = () => {
   const [parentFilter, setParentFilter] = useState('');
   const [selectedPendingParents, setSelectedPendingParents] = useState([]);
   const [parentPageSize, setParentPageSize] = useState(25);
+  const [actionLoadingIds, setActionLoadingIds] = useState([]);
 
   const makeStaffDisabled = (user) => {
-    setStaffActive(prev => prev.filter(u => u.id !== user.id));
-    setStaffPending(prev => [user, ...prev]);
+    // Call backend to disable active staff (POST /mapping/user-mapping/disable/{id}/STAFF)
+    (async () => {
+      const id = user.id;
+      try {
+        setActionLoadingIds(prev => [...prev, id]);
+        await axiosInstance.post(`${appConfig.API_PREFIX_V1}/mapping/user-mapping/disable/${id}/STAFF`);
+        // Move to pending on success
+        setStaffActive(prev => prev.filter(u => u.id !== id));
+        // normalize pending shape
+        const pendingObj = {
+          id: id,
+          name: user.name,
+          username: user.username || (user.raw && (user.raw.email || user.raw.phone_number)) || id,
+          role: user.role || (user.raw && user.raw.staff_type) || 'UNKNOWN',
+          raw: user.raw || null,
+        };
+        setStaffPending(prev => [pendingObj, ...prev]);
+        window.dispatchEvent(new CustomEvent('global-alert', { detail: { message: 'Staff disabled successfully', severity: 'success' } }));
+      } catch (error) {
+        console.error('Disable staff failed', error);
+      } finally {
+        setActionLoadingIds(prev => prev.filter(i => i !== id));
+      }
+    })();
   };
 
   const makeStaffActive = (user) => {
-    setStaffPending(prev => prev.filter(u => u.id !== user.id));
-    // Ensure the activated object matches active structure
-    const activeObj = {
-      id: user.id,
-      name: user.name,
-      username: user.username,
-      role: user.role || user.raw?.staff_type || 'UNKNOWN',
-      raw: user.raw || null,
-    };
-    setStaffActive(prev => [activeObj, ...prev]);
+    // Call backend to activate pending staff (POST /mapping/user-mapping/activate/{id}/STAFF)
+    (async () => {
+      const id = user.id;
+      try {
+        setActionLoadingIds(prev => [...prev, id]);
+        await axiosInstance.post(`${appConfig.API_PREFIX_V1}/mapping/user-mapping/activate/${id}/STAFF`);
+        // On success, move from pending to active
+        setStaffPending(prev => prev.filter(u => u.id !== id));
+        const activeObj = {
+          id: id,
+          name: user.name,
+          username: user.username,
+          role: user.role || (user.raw && user.raw.staff_type) || 'UNKNOWN',
+          raw: user.raw || null,
+        };
+        setStaffActive(prev => [activeObj, ...prev]);
+        window.dispatchEvent(new CustomEvent('global-alert', { detail: { message: 'Staff activated successfully', severity: 'success' } }));
+      } catch (error) {
+        console.error('Activate staff failed', error);
+      } finally {
+        setActionLoadingIds(prev => prev.filter(i => i !== id));
+      }
+    })();
   };
 
   const activateSelectedStaff = () => {
@@ -117,20 +153,53 @@ const UserMapping = () => {
   }, []);
 
   const makeParentDisabled = (user) => {
-    setParentActive(prev => prev.filter(u => u.id !== user.id));
-    setParentPending(prev => [user, ...prev]);
+    // Call backend to disable parent
+    (async () => {
+      const id = user.id;
+      try {
+        setActionLoadingIds(prev => [...prev, id]);
+        await axiosInstance.post(`${appConfig.API_PREFIX_V1}/mapping/user-mapping/disable/${id}/PARENT`);
+        setParentActive(prev => prev.filter(u => u.id !== id));
+        const pendingObj = {
+          id: id,
+          name: user.name,
+          username: user.username || (user.raw && (user.raw.email || user.raw.phone_number)) || id,
+          child: user.child || (user.raw && Array.isArray(user.raw.associations) ? user.raw.associations.map(a => a.student_name).join(', ') : ''),
+          raw: user.raw || null,
+        };
+        setParentPending(prev => [pendingObj, ...prev]);
+        window.dispatchEvent(new CustomEvent('global-alert', { detail: { message: 'Parent disabled successfully', severity: 'success' } }));
+      } catch (error) {
+        console.error('Disable parent failed', error);
+      } finally {
+        setActionLoadingIds(prev => prev.filter(i => i !== id));
+      }
+    })();
   };
 
   const makeParentActive = (user) => {
-    setParentPending(prev => prev.filter(u => u.id !== user.id));
-    const activeObj = {
-      id: user.id,
-      name: user.name,
-      username: user.username,
-      child: user.child || (user.raw && Array.isArray(user.raw.associations) ? user.raw.associations.map(a => a.student_name).join(', ') : ''),
-      raw: user.raw || null,
-    };
-    setParentActive(prev => [activeObj, ...prev]);
+    // Call backend to activate parent
+    (async () => {
+      const id = user.id;
+      try {
+        setActionLoadingIds(prev => [...prev, id]);
+        await axiosInstance.post(`${appConfig.API_PREFIX_V1}/mapping/user-mapping/activate/${id}/PARENT`);
+        setParentPending(prev => prev.filter(u => u.id !== id));
+        const activeObj = {
+          id: id,
+          name: user.name,
+          username: user.username,
+          child: user.child || (user.raw && Array.isArray(user.raw.associations) ? user.raw.associations.map(a => a.student_name).join(', ') : ''),
+          raw: user.raw || null,
+        };
+        setParentActive(prev => [activeObj, ...prev]);
+        window.dispatchEvent(new CustomEvent('global-alert', { detail: { message: 'Parent activated successfully', severity: 'success' } }));
+      } catch (error) {
+        console.error('Activate parent failed', error);
+      } finally {
+        setActionLoadingIds(prev => prev.filter(i => i !== id));
+      }
+    })();
   };
 
   const activateSelectedParents = () => {
@@ -214,7 +283,7 @@ const UserMapping = () => {
                     {
                       field: 'actions', headerName: 'Action', width: 160, sortable: false, filterable: false,
                       renderCell: (params) => (
-                        <Button size="small" color="error" variant="contained" onClick={() => makeStaffDisabled(params.row)}>Make Disabled</Button>
+                        <Button size="small" color="error" variant="contained" onClick={() => makeStaffDisabled(params.row)} disabled={actionLoadingIds.includes(params.row.id)}>Make Disabled</Button>
                       )
                     }
                   ]}
@@ -257,7 +326,7 @@ const UserMapping = () => {
                     {
                       field: 'actions', headerName: 'Action', width: 140, sortable: false, filterable: false,
                       renderCell: (params) => (
-                        <Button size="small" color="primary" variant="contained" onClick={() => makeStaffActive(params.row)}>Make Active</Button>
+                        <Button size="small" color="primary" variant="contained" onClick={() => makeStaffActive(params.row)} disabled={actionLoadingIds.includes(params.row.id)}>Make Active</Button>
                       )
                     }
                   ]}
@@ -295,7 +364,7 @@ const UserMapping = () => {
                     {
                       field: 'actions', headerName: 'Action', width: 160, sortable: false, filterable: false,
                       renderCell: (params) => (
-                        <Button size="small" color="error" variant="contained" onClick={() => makeParentDisabled(params.row)}>Make Disabled</Button>
+                        <Button size="small" color="error" variant="contained" onClick={() => makeParentDisabled(params.row)} disabled={actionLoadingIds.includes(params.row.id)}>Make Disabled</Button>
                       )
                     }
                   ]}
@@ -338,7 +407,7 @@ const UserMapping = () => {
                     {
                       field: 'actions', headerName: 'Action', width: 140, sortable: false, filterable: false,
                       renderCell: (params) => (
-                        <Button size="small" color="primary" variant="contained" onClick={() => makeParentActive(params.row)}>Make Active</Button>
+                        <Button size="small" color="primary" variant="contained" onClick={() => makeParentActive(params.row)} disabled={actionLoadingIds.includes(params.row.id)}>Make Active</Button>
                       )
                     }
                   ]}
