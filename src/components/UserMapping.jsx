@@ -100,6 +100,32 @@ const UserMapping = () => {
     })();
   };
 
+  const makeStaffEnable = (user) => {
+    // Call backend to enable a disabled staff user (POST /mapping/user-mapping/enable/{id}/STAFF)
+    (async () => {
+      const id = user.id;
+      try {
+        setActionLoadingIds(prev => [...prev, id]);
+        await axiosInstance.post(`${appConfig.API_PREFIX_V1}/mapping/user-mapping/enable/${id}/STAFF`);
+        // remove from disabled list
+        setDisabledStaff(prev => prev.filter(u => u.id !== id));
+        const activeObj = {
+          id: id,
+          name: user.name,
+          username: user.username,
+          role: user.role || (user.raw && user.raw.staff_type) || 'UNKNOWN',
+          raw: user.raw || null,
+        };
+        setStaffActive(prev => [activeObj, ...prev]);
+        window.dispatchEvent(new CustomEvent('global-alert', { detail: { message: 'Staff enabled successfully', severity: 'success' } }));
+      } catch (error) {
+        console.error('Enable staff failed', error);
+      } finally {
+        setActionLoadingIds(prev => prev.filter(i => i !== id));
+      }
+    })();
+  };
+
   const activateSelectedStaff = () => {
     // Activate each selected pending staff row
     const toActivate = staffPending.filter(r => selectedPendingStaff.includes(r.id));
@@ -215,6 +241,32 @@ const UserMapping = () => {
         window.dispatchEvent(new CustomEvent('global-alert', { detail: { message: 'Parent activated successfully', severity: 'success' } }));
       } catch (error) {
         console.error('Activate parent failed', error);
+      } finally {
+        setActionLoadingIds(prev => prev.filter(i => i !== id));
+      }
+    })();
+  };
+
+  const makeParentEnable = (user) => {
+    // Call backend to enable a disabled parent user (POST /mapping/user-mapping/enable/{id}/PARENT)
+    (async () => {
+      const id = user.id;
+      try {
+        setActionLoadingIds(prev => [...prev, id]);
+        await axiosInstance.post(`${appConfig.API_PREFIX_V1}/mapping/user-mapping/enable/${id}/PARENT`);
+        // remove from disabled list
+        setDisabledParents(prev => prev.filter(u => u.id !== id));
+        const activeObj = {
+          id: id,
+          name: user.name,
+          username: user.username,
+          child: user.child || (user.raw && Array.isArray(user.raw.associations) ? user.raw.associations.map(a => a.student_name).join(', ') : ''),
+          raw: user.raw || null,
+        };
+        setParentActive(prev => [activeObj, ...prev]);
+        window.dispatchEvent(new CustomEvent('global-alert', { detail: { message: 'Parent enabled successfully', severity: 'success' } }));
+      } catch (error) {
+        console.error('Enable parent failed', error);
       } finally {
         setActionLoadingIds(prev => prev.filter(i => i !== id));
       }
@@ -438,7 +490,7 @@ const UserMapping = () => {
                 { field: 'role', headerName: 'Role', width: 140 },
                 { field: 'actions', headerName: 'Action', width: 160, sortable: false, filterable: false,
                   renderCell: (params) => (
-                    <Button size="small" color="primary" variant="contained" onClick={() => makeStaffActive(params.row)} disabled={actionLoadingIds.includes(params.row.id)}>Make Active</Button>
+                    <Button size="small" color="primary" variant="contained" onClick={() => makeStaffEnable(params.row)} disabled={actionLoadingIds.includes(params.row.id)}>Make Active</Button>
                   )
                 }
               ]}
@@ -562,9 +614,9 @@ const UserMapping = () => {
                 { field: 'name', headerName: 'Name', flex: 1, minWidth: 160 },
                 { field: 'username', headerName: 'Username', width: 200 },
                 { field: 'child', headerName: 'Child(ren)', flex: 1, minWidth: 160 },
-                { field: 'actions', headerName: 'Action', width: 140, sortable: false, filterable: false,
+                    { field: 'actions', headerName: 'Action', width: 140, sortable: false, filterable: false,
                   renderCell: (params) => (
-                    <Button size="small" color="primary" variant="contained" onClick={() => makeParentActive(params.row)} disabled={actionLoadingIds.includes(params.row.id)}>Make Active</Button>
+                    <Button size="small" color="primary" variant="contained" onClick={() => makeParentEnable(params.row)} disabled={actionLoadingIds.includes(params.row.id)}>Make Active</Button>
                   )
                 }
               ]}
