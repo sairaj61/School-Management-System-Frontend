@@ -197,6 +197,42 @@ const UserMapping = () => {
     fetchPendingParents();
   }, []);
 
+  // Fetch pending users intended for Form Admin Pending tab (staff + parents)
+  useEffect(() => {
+    const fetchFormAdminPending = async () => {
+      try {
+        const res = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/mapping/user-mapping/pending-user`);
+
+        const pendingStaffRaw = Array.isArray(res.data.pending_staff) ? res.data.pending_staff : [];
+        const pendingParentsRaw = Array.isArray(res.data.pending_parents) ? res.data.pending_parents : [];
+
+        const mappedStaffForm = pendingStaffRaw.map(item => ({
+          id: item.id,
+          name: item.name,
+          username: item.email || item.phone_number || item.id,
+          role: item.staff_type || 'UNKNOWN',
+          raw: item,
+        }));
+
+        const mappedParentsForm = pendingParentsRaw.map(item => ({
+          id: item.parent_id || item.id,
+          name: item.name,
+          username: item.email || item.phone_number || item.parent_id || item.id,
+          child: Array.isArray(item.associations) && item.associations.length > 0 ? item.associations.map(a => a.student_name).join(', ') : '',
+          raw: item,
+        }));
+
+        // Populate the Form Admin Pending lists (do NOT alter the regular pending lists)
+        setStaffFormPending(mappedStaffForm);
+        setParentFormPending(mappedParentsForm);
+      } catch (error) {
+        console.error('Failed to fetch form-admin pending users', error);
+      }
+    };
+
+    fetchFormAdminPending();
+  }, []);
+
   const makeParentDisabled = (user) => {
     // Call backend to disable parent
     (async () => {
