@@ -29,6 +29,8 @@ const UserMapping = () => {
   const [staffFilter, setStaffFilter] = useState('');
   const [selectedPendingStaff, setSelectedPendingStaff] = useState([]);
   const [staffPageSize, setStaffPageSize] = useState(25);
+  const [staffFormPending, setStaffFormPending] = useState([]);
+  const [staffStatusIndex, setStaffStatusIndex] = useState(0); // 0:Active,1:Pending,2:FormAdminPending,3:Disabled
 
   const [parentActive, setParentActive] = useState([
     { id: 21, name: 'David Parent', username: 'dparent', child: 'John D.' },
@@ -38,7 +40,12 @@ const UserMapping = () => {
   const [parentFilter, setParentFilter] = useState('');
   const [selectedPendingParents, setSelectedPendingParents] = useState([]);
   const [parentPageSize, setParentPageSize] = useState(25);
+  const [parentFormPending, setParentFormPending] = useState([]);
+  const [parentStatusIndex, setParentStatusIndex] = useState(0); // 0:Active,1:Pending,2:FormAdminPending,3:Disabled
   const [actionLoadingIds, setActionLoadingIds] = useState([]);
+  const [disabledStaff, setDisabledStaff] = useState([]);
+  const [disabledParents, setDisabledParents] = useState([]);
+  const [loadingDisabled, setLoadingDisabled] = useState(false);
 
   const makeStaffDisabled = (user) => {
     // Call backend to disable active staff (POST /mapping/user-mapping/disable/{id}/STAFF)
@@ -99,6 +106,18 @@ const UserMapping = () => {
     toActivate.forEach(u => makeStaffActive(u));
     // clear selection
     setSelectedPendingStaff([]);
+  };
+
+  const tagStaffToFormPending = (user) => {
+    // remove from pending if present and add to form pending
+    setStaffPending(prev => prev.filter(u => u.id !== user.id));
+    const obj = { ...user };
+    setStaffFormPending(prev => [obj, ...prev]);
+  };
+
+  const untagStaffFromFormPending = (user) => {
+    setStaffFormPending(prev => prev.filter(u => u.id !== user.id));
+    setStaffPending(prev => [user, ...prev]);
   };
 
   // Fetch probable/pending staff from API on mount
@@ -208,6 +227,17 @@ const UserMapping = () => {
     setSelectedPendingParents([]);
   };
 
+  const tagParentToFormPending = (user) => {
+    setParentPending(prev => prev.filter(u => u.id !== user.id));
+    const obj = { ...user };
+    setParentFormPending(prev => [obj, ...prev]);
+  };
+
+  const untagParentFromFormPending = (user) => {
+    setParentFormPending(prev => prev.filter(u => u.id !== user.id));
+    setParentPending(prev => [user, ...prev]);
+  };
+
   // Tabs state
   const [tabIndex, setTabIndex] = React.useState(0);
   const handleTabChange = (e, newIndex) => setTabIndex(newIndex);
@@ -251,6 +281,35 @@ const UserMapping = () => {
     };
 
     fetchActiveUsers();
+    // also fetch disabled users
+    const fetchDisabledUsers = async () => {
+      try {
+        setLoadingDisabled(true);
+        const res = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/mapping/user-mapping/disabled-user`);
+        const dStaff = Array.isArray(res.data.disabled_staff) ? res.data.disabled_staff.map(item => ({
+          id: item.id,
+          name: item.name,
+          username: item.email || item.phone_number || item.id,
+          role: item.staff_type || 'UNKNOWN',
+          raw: item,
+        })) : [];
+        const dParents = Array.isArray(res.data.disabled_parents) ? res.data.disabled_parents.map(item => ({
+          id: item.parent_id || item.id,
+          name: item.name,
+          username: item.email || item.phone_number || item.parent_id || item.id,
+          child: Array.isArray(item.associations) && item.associations.length > 0 ? item.associations.map(a => a.student_name).join(', ') : '',
+          raw: item,
+        })) : [];
+        setDisabledStaff(dStaff);
+        setDisabledParents(dParents);
+      } catch (error) {
+        console.error('Failed to fetch disabled users', error);
+      } finally {
+        setLoadingDisabled(false);
+      }
+    };
+
+    fetchDisabledUsers();
   }, []);
 
   return (
@@ -261,169 +320,263 @@ const UserMapping = () => {
 
       <Paper sx={{ p: 2, mb: 3 }}>
         <Tabs value={tabIndex} onChange={handleTabChange} aria-label="User mapping tabs">
-          <Tab label={`Staff (${staffActive.length + staffPending.length})`} {...a11yProps(0)} />
-          <Tab label={`Parents (${parentActive.length + parentPending.length})`} {...a11yProps(1)} />
+          <Tab label={`Staff (${staffActive.length + staffPending.length + staffFormPending.length + disabledStaff.length})`} {...a11yProps(0)} />
+          <Tab label={`Parents (${parentActive.length + parentPending.length + parentFormPending.length + disabledParents.length})`} {...a11yProps(1)} />
         </Tabs>
 
         <Box role="tabpanel" hidden={tabIndex !== 0} id={`user-mapping-tabpanel-0`} aria-labelledby={`user-mapping-tab-0`} sx={{ pt: 2 }}>
-          <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', md: 'row' } }}>
-            <Box sx={{ flex: 1, minWidth: 280 }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                <Typography variant="subtitle1">Active Users ({staffActive.length})</Typography>
-                {loadingActiveUsers && <CircularProgress size={20} />}
-              </Box>
-              <div style={{ width: '100%' }}>
-                <DataGrid
-                  autoHeight
-                  rows={staffActive}
-                  columns={[
-                    { field: 'name', headerName: 'Name', flex: 1, minWidth: 160 },
-                    { field: 'username', headerName: 'Username', width: 180 },
-                    { field: 'role', headerName: 'Role', width: 140 },
-                    {
-                      field: 'actions', headerName: 'Action', width: 160, sortable: false, filterable: false,
-                      renderCell: (params) => (
-                        <Button size="small" color="error" variant="contained" onClick={() => makeStaffDisabled(params.row)} disabled={actionLoadingIds.includes(params.row.id)}>Make Disabled</Button>
-                      )
-                    }
-                  ]}
-                  pageSize={5}
-                  rowsPerPageOptions={[5, 10, 25]}
-                  disableSelectionOnClick
-                  density="compact"
-                  getRowId={(row) => row.id}
-                />
-              </div>
+          <Tabs value={staffStatusIndex} onChange={(e, v) => setStaffStatusIndex(v)} aria-label="staff status tabs" sx={{ mb: 2 }}>
+            <Tab label={`Active (${staffActive.length})`} />
+            <Tab label={`Pending (${staffPending.length})`} />
+            <Tab label={`Form Admin Pending (${staffFormPending.length})`} />
+            <Tab label={`Disabled (${disabledStaff.length})`} />
+          </Tabs>
+
+          {/* Active */}
+          <Box role="tabpanel" hidden={staffStatusIndex !== 0} sx={{ pt: 1 }}>
+            <DataGrid
+              autoHeight
+              rows={staffActive}
+              columns={[
+                { field: 'name', headerName: 'Name', flex: 1, minWidth: 160 },
+                { field: 'username', headerName: 'Username', width: 180 },
+                { field: 'role', headerName: 'Role', width: 140 },
+                { field: 'actions', headerName: 'Action', width: 160, sortable: false, filterable: false,
+                  renderCell: (params) => (
+                    <Button size="small" color="error" variant="contained" onClick={() => makeStaffDisabled(params.row)} disabled={actionLoadingIds.includes(params.row.id)}>Make Disabled</Button>
+                  )
+                }
+              ]}
+              pageSize={5}
+              rowsPerPageOptions={[5, 10, 25]}
+              disableSelectionOnClick
+              density="compact"
+              getRowId={(row) => row.id}
+            />
+          </Box>
+
+          {/* Pending */}
+          <Box role="tabpanel" hidden={staffStatusIndex !== 1} sx={{ pt: 1 }}>
+            <Box sx={{ display: 'flex', gap: 1, mb: 1, alignItems: 'center' }}>
+              <input
+                placeholder="Search pending staff..."
+                value={staffFilter}
+                onChange={(e) => setStaffFilter(e.target.value)}
+                style={{ padding: '6px 10px', borderRadius: 4, border: '1px solid #ccc', minWidth: 220 }}
+              />
+              <Button size="small" variant="contained" onClick={activateSelectedStaff} disabled={selectedPendingStaff.length === 0}>Activate Selected ({selectedPendingStaff.length})</Button>
             </Box>
-
-            <Divider orientation="vertical" flexItem sx={{ display: { xs: 'none', md: 'block' } }} />
-
-            <Box sx={{ flex: 2, minWidth: 320 }}>
-              <Box sx={{ display: 'flex', gap: 1, mb: 1, alignItems: 'center' }}>
-                <Typography variant="subtitle1">Pending Users ({staffPending.length})</Typography>
-                <Box sx={{ ml: 'auto', display: 'flex', gap: 1, alignItems: 'center' }}>
-                  <input
-                    placeholder="Search pending staff..."
-                    value={staffFilter}
-                    onChange={(e) => setStaffFilter(e.target.value)}
-                    style={{ padding: '6px 10px', borderRadius: 4, border: '1px solid #ccc', minWidth: 220 }}
-                  />
-                  <Button size="small" variant="contained" onClick={activateSelectedStaff} disabled={selectedPendingStaff.length === 0}>Activate Selected ({selectedPendingStaff.length})</Button>
-                </Box>
-              </Box>
-
-              <div style={{ height: 420, width: '100%' }}>
-                <DataGrid
-                  rows={staffPending.filter(r => {
-                    if (!staffFilter) return true;
-                    const q = staffFilter.toLowerCase();
-                    return (`${r.name} ${r.username} ${r.role}`).toLowerCase().includes(q);
-                  })}
-                  columns={[
-                    { field: 'name', headerName: 'Name', flex: 1, minWidth: 160 },
-                    { field: 'username', headerName: 'Username', width: 200 },
-                    { field: 'role', headerName: 'Role', width: 140 },
-                    {
-                      field: 'actions', headerName: 'Action', width: 140, sortable: false, filterable: false,
-                      renderCell: (params) => (
+            <div style={{ height: 520, width: '100%' }}>
+              <DataGrid
+                rows={staffPending.filter(r => {
+                  if (!staffFilter) return true;
+                  const q = staffFilter.toLowerCase();
+                  return (`${r.name} ${r.username} ${r.role}`).toLowerCase().includes(q);
+                })}
+                columns={[
+                  { field: 'name', headerName: 'Name', flex: 1, minWidth: 160 },
+                  { field: 'username', headerName: 'Username', width: 200 },
+                  { field: 'role', headerName: 'Role', width: 140 },
+                  { field: 'actions', headerName: 'Action', width: 260, sortable: false, filterable: false,
+                    renderCell: (params) => (
+                      <Box sx={{ display: 'flex', gap: 1 }}>
                         <Button size="small" color="primary" variant="contained" onClick={() => makeStaffActive(params.row)} disabled={actionLoadingIds.includes(params.row.id)}>Make Active</Button>
-                      )
-                    }
-                  ]}
-                  checkboxSelection
-                  onSelectionModelChange={(sel) => setSelectedPendingStaff(sel)}
-                  selectionModel={selectedPendingStaff}
-                  pageSize={staffPageSize}
-                  onPageSizeChange={(newSize) => setStaffPageSize(newSize)}
-                  rowsPerPageOptions={[10, 25, 50, 100]}
-                  pagination
-                  loading={loadingPendingStaff}
-                  getRowId={(row) => row.id}
-                  density="standard"
-                />
-              </div>
-            </Box>
+                        <Button size="small" color="secondary" variant="outlined" onClick={() => tagStaffToFormPending(params.row)}>Tag as Admin Pending</Button>
+                      </Box>
+                    )
+                  }
+                ]}
+                checkboxSelection
+                onSelectionModelChange={(sel) => setSelectedPendingStaff(sel)}
+                selectionModel={selectedPendingStaff}
+                pageSize={staffPageSize}
+                onPageSizeChange={(newSize) => setStaffPageSize(newSize)}
+                rowsPerPageOptions={[10, 25, 50, 100]}
+                pagination
+                loading={loadingPendingStaff}
+                getRowId={(row) => row.id}
+                density="standard"
+              />
+            </div>
+          </Box>
+
+          {/* Form Admin Pending */}
+          <Box role="tabpanel" hidden={staffStatusIndex !== 2} sx={{ pt: 1 }}>
+            <div style={{ height: 520, width: '100%' }}>
+              <DataGrid
+                rows={staffFormPending}
+                columns={[
+                  { field: 'name', headerName: 'Name', flex: 1, minWidth: 160 },
+                  { field: 'username', headerName: 'Username', width: 200 },
+                  { field: 'role', headerName: 'Role', width: 140 },
+                  { field: 'actions', headerName: 'Action', width: 260, sortable: false, filterable: false,
+                    renderCell: (params) => (
+                      <Box sx={{ display: 'flex', gap: 1 }}>
+                        <Button size="small" color="primary" variant="contained" onClick={() => makeStaffActive(params.row)} disabled={actionLoadingIds.includes(params.row.id)}>Make Active</Button>
+                        <Button size="small" color="warning" variant="outlined" onClick={() => untagStaffFromFormPending(params.row)}>Un-tag</Button>
+                      </Box>
+                    )
+                  }
+                ]}
+                pageSize={25}
+                rowsPerPageOptions={[10, 25, 50]}
+                disableSelectionOnClick
+                getRowId={(row) => row.id}
+                density="standard"
+              />
+            </div>
+          </Box>
+
+          {/* Disabled */}
+          <Box role="tabpanel" hidden={staffStatusIndex !== 3} sx={{ pt: 1 }}>
+            <DataGrid
+              autoHeight
+              rows={disabledStaff}
+              columns={[
+                { field: 'name', headerName: 'Name', flex: 1, minWidth: 160 },
+                { field: 'username', headerName: 'Username', width: 200 },
+                { field: 'role', headerName: 'Role', width: 140 },
+                { field: 'actions', headerName: 'Action', width: 160, sortable: false, filterable: false,
+                  renderCell: (params) => (
+                    <Button size="small" color="primary" variant="contained" onClick={() => makeStaffActive(params.row)} disabled={actionLoadingIds.includes(params.row.id)}>Make Active</Button>
+                  )
+                }
+              ]}
+              pageSize={5}
+              rowsPerPageOptions={[5, 10, 25]}
+              disableSelectionOnClick
+              density="compact"
+              getRowId={(row) => row.id}
+            />
           </Box>
         </Box>
 
         <Box role="tabpanel" hidden={tabIndex !== 1} id={`user-mapping-tabpanel-1`} aria-labelledby={`user-mapping-tab-1`} sx={{ pt: 2 }}>
-          <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', md: 'row' } }}>
-            <Box sx={{ flex: 1, minWidth: 280 }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                <Typography variant="subtitle1">Active Users ({parentActive.length})</Typography>
-                {loadingActiveUsers && <CircularProgress size={20} />}
-              </Box>
-              <div style={{ width: '100%' }}>
-                <DataGrid
-                  autoHeight
-                  rows={parentActive}
-                  columns={[
-                    { field: 'name', headerName: 'Name', flex: 1, minWidth: 160 },
-                    { field: 'username', headerName: 'Username', width: 200 },
-                    { field: 'child', headerName: 'Child(ren)', flex: 1, minWidth: 160 },
-                    {
-                      field: 'actions', headerName: 'Action', width: 160, sortable: false, filterable: false,
-                      renderCell: (params) => (
-                        <Button size="small" color="error" variant="contained" onClick={() => makeParentDisabled(params.row)} disabled={actionLoadingIds.includes(params.row.id)}>Make Disabled</Button>
-                      )
-                    }
-                  ]}
-                  pageSize={5}
-                  rowsPerPageOptions={[5, 10, 25]}
-                  disableSelectionOnClick
-                  density="compact"
-                  getRowId={(row) => row.id}
-                />
-              </div>
+          <Tabs value={parentStatusIndex} onChange={(e, v) => setParentStatusIndex(v)} aria-label="parent status tabs" sx={{ mb: 2 }}>
+            <Tab label={`Active (${parentActive.length})`} />
+            <Tab label={`Pending (${parentPending.length})`} />
+            <Tab label={`Form Admin Pending (${parentFormPending.length})`} />
+            <Tab label={`Disabled (${disabledParents.length})`} />
+          </Tabs>
+
+          {/* Active */}
+          <Box role="tabpanel" hidden={parentStatusIndex !== 0} sx={{ pt: 1 }}>
+            <DataGrid
+              autoHeight
+              rows={parentActive}
+              columns={[
+                { field: 'name', headerName: 'Name', flex: 1, minWidth: 160 },
+                { field: 'username', headerName: 'Username', width: 200 },
+                { field: 'child', headerName: 'Child(ren)', flex: 1, minWidth: 160 },
+                { field: 'actions', headerName: 'Action', width: 160, sortable: false, filterable: false,
+                  renderCell: (params) => (
+                    <Button size="small" color="error" variant="contained" onClick={() => makeParentDisabled(params.row)} disabled={actionLoadingIds.includes(params.row.id)}>Make Disabled</Button>
+                  )
+                }
+              ]}
+              pageSize={5}
+              rowsPerPageOptions={[5, 10, 25]}
+              disableSelectionOnClick
+              density="compact"
+              getRowId={(row) => row.id}
+            />
+          </Box>
+
+          {/* Pending */}
+          <Box role="tabpanel" hidden={parentStatusIndex !== 1} sx={{ pt: 1 }}>
+            <Box sx={{ display: 'flex', gap: 1, mb: 1, alignItems: 'center' }}>
+              <input
+                placeholder="Search pending parents..."
+                value={parentFilter}
+                onChange={(e) => setParentFilter(e.target.value)}
+                style={{ padding: '6px 10px', borderRadius: 4, border: '1px solid #ccc', minWidth: 220 }}
+              />
+              <Button size="small" variant="contained" onClick={activateSelectedParents} disabled={selectedPendingParents.length === 0}>Activate Selected ({selectedPendingParents.length})</Button>
             </Box>
-
-            <Divider orientation="vertical" flexItem sx={{ display: { xs: 'none', md: 'block' } }} />
-
-            <Box sx={{ flex: 2, minWidth: 320 }}>
-              <Box sx={{ display: 'flex', gap: 1, mb: 1, alignItems: 'center' }}>
-                <Typography variant="subtitle1">Pending Users ({parentPending.length})</Typography>
-                <Box sx={{ ml: 'auto', display: 'flex', gap: 1, alignItems: 'center' }}>
-                  <input
-                    placeholder="Search pending parents..."
-                    value={parentFilter}
-                    onChange={(e) => setParentFilter(e.target.value)}
-                    style={{ padding: '6px 10px', borderRadius: 4, border: '1px solid #ccc', minWidth: 220 }}
-                  />
-                  <Button size="small" variant="contained" onClick={activateSelectedParents} disabled={selectedPendingParents.length === 0}>Activate Selected ({selectedPendingParents.length})</Button>
-                </Box>
-              </Box>
-
-              <div style={{ height: 420, width: '100%' }}>
-                <DataGrid
-                  rows={parentPending.filter(r => {
-                    if (!parentFilter) return true;
-                    const q = parentFilter.toLowerCase();
-                    return (`${r.name} ${r.username} ${r.child}`).toLowerCase().includes(q);
-                  })}
-                  columns={[
-                    { field: 'name', headerName: 'Name', flex: 1, minWidth: 160 },
-                    { field: 'username', headerName: 'Username', width: 200 },
-                    { field: 'child', headerName: 'Child(ren)', flex: 1, minWidth: 160 },
-                    {
-                      field: 'actions', headerName: 'Action', width: 140, sortable: false, filterable: false,
-                      renderCell: (params) => (
+            <div style={{ height: 520, width: '100%' }}>
+              <DataGrid
+                rows={parentPending.filter(r => {
+                  if (!parentFilter) return true;
+                  const q = parentFilter.toLowerCase();
+                  return (`${r.name} ${r.username} ${r.child}`).toLowerCase().includes(q);
+                })}
+                columns={[
+                  { field: 'name', headerName: 'Name', flex: 1, minWidth: 160 },
+                  { field: 'username', headerName: 'Username', width: 200 },
+                  { field: 'child', headerName: 'Child(ren)', flex: 1, minWidth: 160 },
+                  { field: 'actions', headerName: 'Action', width: 260, sortable: false, filterable: false,
+                    renderCell: (params) => (
+                      <Box sx={{ display: 'flex', gap: 1 }}>
                         <Button size="small" color="primary" variant="contained" onClick={() => makeParentActive(params.row)} disabled={actionLoadingIds.includes(params.row.id)}>Make Active</Button>
-                      )
-                    }
-                  ]}
-                  checkboxSelection
-                  onSelectionModelChange={(sel) => setSelectedPendingParents(sel)}
-                  selectionModel={selectedPendingParents}
-                  pageSize={parentPageSize}
-                  onPageSizeChange={(newSize) => setParentPageSize(newSize)}
-                  rowsPerPageOptions={[10, 25, 50, 100]}
-                  pagination
-                  loading={loadingPendingParents}
-                  getRowId={(row) => row.id}
-                  density="standard"
-                />
-              </div>
-            </Box>
+                        <Button size="small" color="secondary" variant="outlined" onClick={() => tagParentToFormPending(params.row)}>Tag as Admin Pending</Button>
+                      </Box>
+                    )
+                  }
+                ]}
+                checkboxSelection
+                onSelectionModelChange={(sel) => setSelectedPendingParents(sel)}
+                selectionModel={selectedPendingParents}
+                pageSize={parentPageSize}
+                onPageSizeChange={(newSize) => setParentPageSize(newSize)}
+                rowsPerPageOptions={[10, 25, 50, 100]}
+                pagination
+                loading={loadingPendingParents}
+                getRowId={(row) => row.id}
+                density="standard"
+              />
+            </div>
+          </Box>
+
+          {/* Form Admin Pending */}
+          <Box role="tabpanel" hidden={parentStatusIndex !== 2} sx={{ pt: 1 }}>
+            <div style={{ height: 520, width: '100%' }}>
+              <DataGrid
+                rows={parentFormPending}
+                columns={[
+                  { field: 'name', headerName: 'Name', flex: 1, minWidth: 160 },
+                  { field: 'username', headerName: 'Username', width: 200 },
+                  { field: 'child', headerName: 'Child(ren)', flex: 1, minWidth: 160 },
+                  { field: 'actions', headerName: 'Action', width: 260, sortable: false, filterable: false,
+                    renderCell: (params) => (
+                      <Box sx={{ display: 'flex', gap: 1 }}>
+                        <Button size="small" color="primary" variant="contained" onClick={() => makeParentActive(params.row)} disabled={actionLoadingIds.includes(params.row.id)}>Make Active</Button>
+                        <Button size="small" color="warning" variant="outlined" onClick={() => untagParentFromFormPending(params.row)}>Un-tag</Button>
+                      </Box>
+                    )
+                  }
+                ]}
+                pageSize={25}
+                rowsPerPageOptions={[10, 25, 50]}
+                disableSelectionOnClick
+                getRowId={(row) => row.id}
+                density="standard"
+              />
+            </div>
+          </Box>
+
+          {/* Disabled */}
+          <Box role="tabpanel" hidden={parentStatusIndex !== 3} sx={{ pt: 1 }}>
+            <DataGrid
+              rows={disabledParents}
+              columns={[
+                { field: 'name', headerName: 'Name', flex: 1, minWidth: 160 },
+                { field: 'username', headerName: 'Username', width: 200 },
+                { field: 'child', headerName: 'Child(ren)', flex: 1, minWidth: 160 },
+                { field: 'actions', headerName: 'Action', width: 140, sortable: false, filterable: false,
+                  renderCell: (params) => (
+                    <Button size="small" color="primary" variant="contained" onClick={() => makeParentActive(params.row)} disabled={actionLoadingIds.includes(params.row.id)}>Make Active</Button>
+                  )
+                }
+              ]}
+              checkboxSelection={false}
+              pageSize={parentPageSize}
+              onPageSizeChange={(newSize) => setParentPageSize(newSize)}
+              rowsPerPageOptions={[10, 25, 50]}
+              pagination
+              loading={loadingDisabled}
+              getRowId={(row) => row.id}
+              density="standard"
+            />
           </Box>
         </Box>
       </Paper>
