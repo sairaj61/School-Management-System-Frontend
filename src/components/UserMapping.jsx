@@ -496,15 +496,7 @@ const UserMapping = () => {
                 columns={[
                   { field: 'name', headerName: 'Name', flex: 1, minWidth: 160 },
                   { field: 'username', headerName: 'Username', width: 200 },
-                  { field: 'role', headerName: 'Role', width: 140 },
-                  { field: 'actions', headerName: 'Action', width: 260, sortable: false, filterable: false,
-                    renderCell: (params) => (
-                      <Box sx={{ display: 'flex', gap: 1 }}>
-                        <Button size="small" color="primary" variant="contained" onClick={() => makeStaffActive(params.row)} disabled={actionLoadingIds.includes(params.row.id)}>Make Active</Button>
-                        <Button size="small" color="warning" variant="outlined" onClick={() => untagStaffFromFormPending(params.row)}>Un-tag</Button>
-                      </Box>
-                    )
-                  }
+                  { field: 'role', headerName: 'Role', width: 140 }
                 ]}
                 pageSize={25}
                 rowsPerPageOptions={[10, 25, 50]}
