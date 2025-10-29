@@ -25,6 +25,7 @@ import StaffManager from './components/StaffManager';
 import StaffDetails from './components/StaffDetails';
 import ExpenditureManager from './components/ExpenditureManager';
 import ExpenditureCategoryManager from './components/ExpenditureCategoryManager';
+import UserMapping from './components/UserMapping';
 
 const App = () => {
   const [token, setToken] = useState(localStorage.getItem('token'));
@@ -111,6 +112,7 @@ const AuthenticatedApp = ({ onLogout }) => {
   <Route path="/staff/:id" element={<StaffDetails />} />
         <Route path="/expenditures" element={<ExpenditureManager />} />
         <Route path="/expenditure-categories" element={<ExpenditureCategoryManager />} />
+  <Route path="/user-mapping" element={<UserMapping />} />
         {/* Remove ManagementDashboard from normal user routes */}
         {/* <Route path="/management" element={<ManagementDashboard />} /> */}
 

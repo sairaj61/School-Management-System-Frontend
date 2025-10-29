@@ -347,6 +347,15 @@ const Navbar = () => {
                     <MenuItem
                       onClick={() => {
                         handleAdminMenuClose();
+                        navigate('/user-mapping');
+                      }}
+                    >
+                      <PersonIcon sx={{ mr: 1 }} />
+                      User Mapping
+                    </MenuItem>
+                    <MenuItem
+                      onClick={() => {
+                        handleAdminMenuClose();
                         navigate('/staff'); // New route for Staff
                       }}
                     >
