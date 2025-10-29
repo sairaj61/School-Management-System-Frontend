@@ -100,6 +100,32 @@ const UserMapping = () => {
     })();
   };
 
+  const makeStaffEnable = (user) => {
+    // Call backend to enable a disabled staff user (POST /mapping/user-mapping/enable/{id}/STAFF)
+    (async () => {
+      const id = user.id;
+      try {
+        setActionLoadingIds(prev => [...prev, id]);
+        await axiosInstance.post(`${appConfig.API_PREFIX_V1}/mapping/user-mapping/enable/${id}/STAFF`);
+        // remove from disabled list
+        setDisabledStaff(prev => prev.filter(u => u.id !== id));
+        const activeObj = {
+          id: id,
+          name: user.name,
+          username: user.username,
+          role: user.role || (user.raw && user.raw.staff_type) || 'UNKNOWN',
+          raw: user.raw || null,
+        };
+        setStaffActive(prev => [activeObj, ...prev]);
+        window.dispatchEvent(new CustomEvent('global-alert', { detail: { message: 'Staff enabled successfully', severity: 'success' } }));
+      } catch (error) {
+        console.error('Enable staff failed', error);
+      } finally {
+        setActionLoadingIds(prev => prev.filter(i => i !== id));
+      }
+    })();
+  };
+
   const activateSelectedStaff = () => {
     // Activate each selected pending staff row
     const toActivate = staffPending.filter(r => selectedPendingStaff.includes(r.id));
@@ -121,42 +147,54 @@ const UserMapping = () => {
   };
 
   // Fetch probable/pending staff from API on mount
-  // Fetch pending users (staff + parents) from admin pending endpoint on mount
   useEffect(() => {
-    const fetchPendingUsers = async () => {
+    const fetchPendingStaff = async () => {
       try {
         setLoadingPendingStaff(true);
-        setLoadingPendingParents(true);
-        const res = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/mapping/user-mapping/pending-user`);
-
-        // Map pending_staff
-        const mappedStaff = Array.isArray(res.data.pending_staff) ? res.data.pending_staff.map(item => ({
+        const res = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/mapping/user-mapping/probable-staff`);
+        // Map response to the fields used by the table
+        const mapped = res.data.map(item => ({
           id: item.id,
           name: item.name,
           username: item.email || item.phone_number || item.id,
           role: item.staff_type || 'UNKNOWN',
           raw: item,
-        })) : [];
-        setStaffPending(mappedStaff);
-
-        // Map pending_parents
-        const mappedParents = Array.isArray(res.data.pending_parents) ? res.data.pending_parents.map(item => ({
-          id: item.parent_id || item.id,
-          name: item.name,
-          username: item.email || item.phone_number || item.parent_id || item.id,
-          child: Array.isArray(item.associations) && item.associations.length > 0 ? item.associations.map(a => a.student_name).join(', ') : '',
-          raw: item,
-        })) : [];
-        setParentPending(mappedParents);
+        }));
+        setStaffPending(mapped);
       } catch (error) {
-        console.error('Failed to fetch pending users', error);
+        // axios interceptor will dispatch a global alert; keep pending as empty
+        console.error('Failed to fetch pending staff', error);
       } finally {
         setLoadingPendingStaff(false);
+      }
+    };
+
+    fetchPendingStaff();
+  }, []);
+
+  // Fetch probable/pending parents on mount
+  useEffect(() => {
+    const fetchPendingParents = async () => {
+      try {
+        setLoadingPendingParents(true);
+        const res = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/mapping/user-mapping/probable-parents`);
+        const mapped = res.data.map(item => ({
+          id: item.parent_id,
+          name: item.name,
+          username: item.email || item.phone_number || item.parent_id,
+          // pick first associated child's name for quick display
+          child: Array.isArray(item.associations) && item.associations.length > 0 ? item.associations.map(a => a.student_name).join(', ') : '',
+          raw: item,
+        }));
+        setParentPending(mapped);
+      } catch (error) {
+        console.error('Failed to fetch pending parents', error);
+      } finally {
         setLoadingPendingParents(false);
       }
     };
 
-    fetchPendingUsers();
+    fetchPendingParents();
   }, []);
 
   const makeParentDisabled = (user) => {
@@ -209,6 +247,32 @@ const UserMapping = () => {
     })();
   };
 
+  const makeParentEnable = (user) => {
+    // Call backend to enable a disabled parent user (POST /mapping/user-mapping/enable/{id}/PARENT)
+    (async () => {
+      const id = user.id;
+      try {
+        setActionLoadingIds(prev => [...prev, id]);
+        await axiosInstance.post(`${appConfig.API_PREFIX_V1}/mapping/user-mapping/enable/${id}/PARENT`);
+        // remove from disabled list
+        setDisabledParents(prev => prev.filter(u => u.id !== id));
+        const activeObj = {
+          id: id,
+          name: user.name,
+          username: user.username,
+          child: user.child || (user.raw && Array.isArray(user.raw.associations) ? user.raw.associations.map(a => a.student_name).join(', ') : ''),
+          raw: user.raw || null,
+        };
+        setParentActive(prev => [activeObj, ...prev]);
+        window.dispatchEvent(new CustomEvent('global-alert', { detail: { message: 'Parent enabled successfully', severity: 'success' } }));
+      } catch (error) {
+        console.error('Enable parent failed', error);
+      } finally {
+        setActionLoadingIds(prev => prev.filter(i => i !== id));
+      }
+    })();
+  };
+
   const activateSelectedParents = () => {
     const toActivate = parentPending.filter(r => selectedPendingParents.includes(r.id));
     toActivate.forEach(u => makeParentActive(u));
@@ -224,58 +288,6 @@ const UserMapping = () => {
   const untagParentFromFormPending = (user) => {
     setParentFormPending(prev => prev.filter(u => u.id !== user.id));
     setParentPending(prev => [user, ...prev]);
-  };
-
-  // Enable a disabled staff (POST /mapping/user-mapping/enable/{id}/STAFF)
-  const makeStaffEnable = (user) => {
-    (async () => {
-      const id = user.id;
-      try {
-        setActionLoadingIds(prev => [...prev, id]);
-        await axiosInstance.post(`${appConfig.API_PREFIX_V1}/mapping/user-mapping/enable/${id}/STAFF`);
-        // remove from disabled and add to active
-        setDisabledStaff(prev => prev.filter(u => u.id !== id));
-        const activeObj = {
-          id: id,
-          name: user.name,
-          username: user.username || (user.raw && (user.raw.email || user.raw.phone_number)) || id,
-          role: user.role || (user.raw && user.raw.staff_type) || 'UNKNOWN',
-          raw: user.raw || null,
-        };
-        setStaffActive(prev => [activeObj, ...prev]);
-        window.dispatchEvent(new CustomEvent('global-alert', { detail: { message: 'Staff enabled successfully', severity: 'success' } }));
-      } catch (error) {
-        console.error('Enable staff failed', error);
-      } finally {
-        setActionLoadingIds(prev => prev.filter(i => i !== id));
-      }
-    })();
-  };
-
-  // Enable a disabled parent (POST /mapping/user-mapping/enable/{id}/PARENT)
-  const makeParentEnable = (user) => {
-    (async () => {
-      const id = user.id;
-      try {
-        setActionLoadingIds(prev => [...prev, id]);
-        await axiosInstance.post(`${appConfig.API_PREFIX_V1}/mapping/user-mapping/enable/${id}/PARENT`);
-        // move from disabled to active
-        setDisabledParents(prev => prev.filter(u => u.id !== id));
-        const activeObj = {
-          id: id,
-          name: user.name,
-          username: user.username || (user.raw && (user.raw.email || user.raw.phone_number)) || id,
-          child: user.child || (user.raw && Array.isArray(user.raw.associations) ? user.raw.associations.map(a => a.student_name).join(', ') : ''),
-          raw: user.raw || null,
-        };
-        setParentActive(prev => [activeObj, ...prev]);
-        window.dispatchEvent(new CustomEvent('global-alert', { detail: { message: 'Parent enabled successfully', severity: 'success' } }));
-      } catch (error) {
-        console.error('Enable parent failed', error);
-      } finally {
-        setActionLoadingIds(prev => prev.filter(i => i !== id));
-      }
-    })();
   };
 
   // Tabs state
@@ -478,7 +490,7 @@ const UserMapping = () => {
                 { field: 'role', headerName: 'Role', width: 140 },
                 { field: 'actions', headerName: 'Action', width: 160, sortable: false, filterable: false,
                   renderCell: (params) => (
-                    <Button size="small" color="primary" variant="contained" onClick={() => makeStaffEnable(params.row)} disabled={actionLoadingIds.includes(params.row.id)}>Make Active</Button>
+                    <Button size="small" color="primary" variant="contained" onClick={() => makeStaffActive(params.row)} disabled={actionLoadingIds.includes(params.row.id)}>Make Active</Button>
                   )
                 }
               ]}
@@ -602,9 +614,9 @@ const UserMapping = () => {
                 { field: 'name', headerName: 'Name', flex: 1, minWidth: 160 },
                 { field: 'username', headerName: 'Username', width: 200 },
                 { field: 'child', headerName: 'Child(ren)', flex: 1, minWidth: 160 },
-                    { field: 'actions', headerName: 'Action', width: 140, sortable: false, filterable: false,
+                { field: 'actions', headerName: 'Action', width: 140, sortable: false, filterable: false,
                   renderCell: (params) => (
-                    <Button size="small" color="primary" variant="contained" onClick={() => makeParentEnable(params.row)} disabled={actionLoadingIds.includes(params.row.id)}>Make Active</Button>
+                    <Button size="small" color="primary" variant="contained" onClick={() => makeParentActive(params.row)} disabled={actionLoadingIds.includes(params.row.id)}>Make Active</Button>
                   )
                 }
               ]}
