@@ -17,11 +17,9 @@ import axiosInstance from '../utils/axiosConfig';
 import appConfig from '../config/appConfig';
 
 const UserMapping = () => {
-  // Hardcoded demo data
-  const [staffActive, setStaffActive] = useState([
-    { id: 1, name: 'Alice Johnson', username: 'alice.j', role: 'Teacher' },
-    { id: 2, name: 'Bob Smith', username: 'bob.s', role: 'Clerk' },
-  ]);
+  // Active users (will be loaded from API)
+  const [staffActive, setStaffActive] = useState([]);
+  const [loadingActiveUsers, setLoadingActiveUsers] = useState(false);
 
   const [staffPending, setStaffPending] = useState([]);
   const [loadingPendingStaff, setLoadingPendingStaff] = useState(false);
@@ -39,7 +37,15 @@ const UserMapping = () => {
 
   const makeStaffActive = (user) => {
     setStaffPending(prev => prev.filter(u => u.id !== user.id));
-    setStaffActive(prev => [user, ...prev]);
+    // Ensure the activated object matches active structure
+    const activeObj = {
+      id: user.id,
+      name: user.name,
+      username: user.username,
+      role: user.role || user.raw?.staff_type || 'UNKNOWN',
+      raw: user.raw || null,
+    };
+    setStaffActive(prev => [activeObj, ...prev]);
   };
 
   // Fetch probable/pending staff from API on mount
@@ -100,8 +106,49 @@ const UserMapping = () => {
 
   const makeParentActive = (user) => {
     setParentPending(prev => prev.filter(u => u.id !== user.id));
-    setParentActive(prev => [user, ...prev]);
+    const activeObj = {
+      id: user.id,
+      name: user.name,
+      username: user.username,
+      child: user.child || (user.raw && Array.isArray(user.raw.associations) ? user.raw.associations.map(a => a.student_name).join(', ') : ''),
+      raw: user.raw || null,
+    };
+    setParentActive(prev => [activeObj, ...prev]);
   };
+
+  // Fetch active users (staff + parents)
+  useEffect(() => {
+    const fetchActiveUsers = async () => {
+      try {
+        setLoadingActiveUsers(true);
+        const res = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/mapping/user-mapping/active-user`);
+        const activeStaff = Array.isArray(res.data.active_staff) ? res.data.active_staff.map(item => ({
+          id: item.id,
+          name: item.name,
+          username: item.email || item.phone_number || item.id,
+          role: item.staff_type || 'UNKNOWN',
+          raw: item,
+        })) : [];
+
+        const activeParents = Array.isArray(res.data.active_parents) ? res.data.active_parents.map(item => ({
+          id: item.parent_id || item.id,
+          name: item.name,
+          username: item.email || item.phone_number || item.parent_id || item.id,
+          child: Array.isArray(item.associations) && item.associations.length > 0 ? item.associations.map(a => a.student_name).join(', ') : '',
+          raw: item,
+        })) : [];
+
+        setStaffActive(activeStaff);
+        setParentActive(activeParents);
+      } catch (error) {
+        console.error('Failed to fetch active users', error);
+      } finally {
+        setLoadingActiveUsers(false);
+      }
+    };
+
+    fetchActiveUsers();
+  }, []);
 
   return (
     <Container sx={{ mt: 10, mb: 4 }}>
