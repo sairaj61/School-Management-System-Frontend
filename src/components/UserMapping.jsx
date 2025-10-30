@@ -163,18 +163,6 @@ const UserMapping = () => {
     setSelectedPendingStaff([]);
   };
 
-  const tagStaffToFormPending = (user) => {
-    // remove from pending if present and add to form pending
-    setStaffPending(prev => prev.filter(u => u.id !== user.id));
-    const obj = { ...user };
-    setStaffFormPending(prev => [obj, ...prev]);
-  };
-
-  const untagStaffFromFormPending = (user) => {
-    setStaffFormPending(prev => prev.filter(u => u.id !== user.id));
-    setStaffPending(prev => [user, ...prev]);
-  };
-
   // Fetch probable/pending staff from API on mount
   useEffect(() => {
     const fetchPendingStaff = async () => {
@@ -373,17 +361,6 @@ const UserMapping = () => {
     setSelectedPendingParents([]);
   };
 
-  const tagParentToFormPending = (user) => {
-    setParentPending(prev => prev.filter(u => u.id !== user.id));
-    const obj = { ...user };
-    setParentFormPending(prev => [obj, ...prev]);
-  };
-
-  const untagParentFromFormPending = (user) => {
-    setParentFormPending(prev => prev.filter(u => u.id !== user.id));
-    setParentPending(prev => [user, ...prev]);
-  };
-
   // Tabs state
   const [tabIndex, setTabIndex] = React.useState(0);
   const handleTabChange = (e, newIndex) => setTabIndex(newIndex);
@@ -527,7 +504,6 @@ const UserMapping = () => {
                     renderCell: (params) => (
                       <Box sx={{ display: 'flex', gap: 1 }}>
                         <Button size="small" color="primary" variant="contained" onClick={() => makeStaffFromProbable(params.row)} disabled={actionLoadingIds.includes(params.row.id)}>Make Active</Button>
-                        <Button size="small" color="secondary" variant="outlined" onClick={() => tagStaffToFormPending(params.row)}>Tag as Admin Pending</Button>
                       </Box>
                     )
                   }
@@ -646,7 +622,7 @@ const UserMapping = () => {
                     renderCell: (params) => (
                       <Box sx={{ display: 'flex', gap: 1 }}>
                         <Button size="small" color="primary" variant="contained" onClick={() => makeParentFromProbable(params.row)} disabled={actionLoadingIds.includes(params.row.id)}>Make Active</Button>
-                        <Button size="small" color="secondary" variant="outlined" onClick={() => tagParentToFormPending(params.row)}>Tag as Admin Pending</Button>
+                    
                       </Box>
                     )
                   }
@@ -678,7 +654,6 @@ const UserMapping = () => {
                     renderCell: (params) => (
                       <Box sx={{ display: 'flex', gap: 1 }}>
                         <Button size="small" color="primary" variant="contained" onClick={() => makeParentActive(params.row)} disabled={actionLoadingIds.includes(params.row.id)}>Make Active</Button>
-                        <Button size="small" color="warning" variant="outlined" onClick={() => untagParentFromFormPending(params.row)}>Un-tag</Button>
                       </Box>
                     )
                   }
