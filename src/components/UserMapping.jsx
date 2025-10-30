@@ -100,6 +100,35 @@ const UserMapping = () => {
     })();
   };
 
+  // Create a user from the probable/pending staff list (calls make_user)
+  const makeStaffFromProbable = (user) => {
+    (async () => {
+      const id = user.id;
+      try {
+        setActionLoadingIds(prev => [...prev, id]);
+        await axiosInstance.post(`${appConfig.API_PREFIX_V1}/mapping/user-mapping/make_user`, {
+          tenant_user_id: id,
+          user_type: 'STAFF',
+        });
+        // On success, remove from probable pending and add to active
+        setStaffPending(prev => prev.filter(u => u.id !== id));
+        const activeObj = {
+          id: id,
+          name: user.name,
+          username: user.username,
+          role: user.role || (user.raw && user.raw.staff_type) || 'UNKNOWN',
+          raw: user.raw || null,
+        };
+        setStaffActive(prev => [activeObj, ...prev]);
+        window.dispatchEvent(new CustomEvent('global-alert', { detail: { message: 'Staff user created successfully', severity: 'success' } }));
+      } catch (error) {
+        console.error('Create staff user failed', error);
+      } finally {
+        setActionLoadingIds(prev => prev.filter(i => i !== id));
+      }
+    })();
+  };
+
   const makeStaffEnable = (user) => {
     // Call backend to enable a disabled staff user (POST /mapping/user-mapping/enable/{id}/STAFF)
     (async () => {
@@ -129,21 +158,9 @@ const UserMapping = () => {
   const activateSelectedStaff = () => {
     // Activate each selected pending staff row
     const toActivate = staffPending.filter(r => selectedPendingStaff.includes(r.id));
-    toActivate.forEach(u => makeStaffActive(u));
+    toActivate.forEach(u => makeStaffFromProbable(u));
     // clear selection
     setSelectedPendingStaff([]);
-  };
-
-  const tagStaffToFormPending = (user) => {
-    // remove from pending if present and add to form pending
-    setStaffPending(prev => prev.filter(u => u.id !== user.id));
-    const obj = { ...user };
-    setStaffFormPending(prev => [obj, ...prev]);
-  };
-
-  const untagStaffFromFormPending = (user) => {
-    setStaffFormPending(prev => prev.filter(u => u.id !== user.id));
-    setStaffPending(prev => [user, ...prev]);
   };
 
   // Fetch probable/pending staff from API on mount
@@ -283,6 +300,35 @@ const UserMapping = () => {
     })();
   };
 
+  // Create a user from the probable/pending parent list (calls make_user)
+  const makeParentFromProbable = (user) => {
+    (async () => {
+      const id = user.id;
+      try {
+        setActionLoadingIds(prev => [...prev, id]);
+        await axiosInstance.post(`${appConfig.API_PREFIX_V1}/mapping/user-mapping/make_user`, {
+          tenant_user_id: id,
+          user_type: 'PARENT',
+        });
+
+        setParentPending(prev => prev.filter(u => u.id !== id));
+        const activeObj = {
+          id: id,
+          name: user.name,
+          username: user.username,
+          child: user.child || (user.raw && Array.isArray(user.raw.associations) ? user.raw.associations.map(a => a.student_name).join(', ') : ''),
+          raw: user.raw || null,
+        };
+        setParentActive(prev => [activeObj, ...prev]);
+        window.dispatchEvent(new CustomEvent('global-alert', { detail: { message: 'Parent user created successfully', severity: 'success' } }));
+      } catch (error) {
+        console.error('Create parent user failed', error);
+      } finally {
+        setActionLoadingIds(prev => prev.filter(i => i !== id));
+      }
+    })();
+  };
+
   const makeParentEnable = (user) => {
     // Call backend to enable a disabled parent user (POST /mapping/user-mapping/enable/{id}/PARENT)
     (async () => {
@@ -311,19 +357,8 @@ const UserMapping = () => {
 
   const activateSelectedParents = () => {
     const toActivate = parentPending.filter(r => selectedPendingParents.includes(r.id));
-    toActivate.forEach(u => makeParentActive(u));
+    toActivate.forEach(u => makeParentFromProbable(u));
     setSelectedPendingParents([]);
-  };
-
-  const tagParentToFormPending = (user) => {
-    setParentPending(prev => prev.filter(u => u.id !== user.id));
-    const obj = { ...user };
-    setParentFormPending(prev => [obj, ...prev]);
-  };
-
-  const untagParentFromFormPending = (user) => {
-    setParentFormPending(prev => prev.filter(u => u.id !== user.id));
-    setParentPending(prev => [user, ...prev]);
   };
 
   // Tabs state
@@ -428,7 +463,7 @@ const UserMapping = () => {
               columns={[
                 { field: 'name', headerName: 'Name', flex: 1, minWidth: 160 },
                 { field: 'username', headerName: 'Username', width: 180 },
-                { field: 'role', headerName: 'Role', width: 140 },
+                { field: 'role', headerName: 'User Type', width: 140 },
                 { field: 'actions', headerName: 'Action', width: 160, sortable: false, filterable: false,
                   renderCell: (params) => (
                     <Button size="small" color="error" variant="contained" onClick={() => makeStaffDisabled(params.row)} disabled={actionLoadingIds.includes(params.row.id)}>Make Disabled</Button>
@@ -464,12 +499,11 @@ const UserMapping = () => {
                 columns={[
                   { field: 'name', headerName: 'Name', flex: 1, minWidth: 160 },
                   { field: 'username', headerName: 'Username', width: 200 },
-                  { field: 'role', headerName: 'Role', width: 140 },
+                  { field: 'role', headerName: 'User Type', width: 140 },
                   { field: 'actions', headerName: 'Action', width: 260, sortable: false, filterable: false,
                     renderCell: (params) => (
                       <Box sx={{ display: 'flex', gap: 1 }}>
-                        <Button size="small" color="primary" variant="contained" onClick={() => makeStaffActive(params.row)} disabled={actionLoadingIds.includes(params.row.id)}>Make Active</Button>
-                        <Button size="small" color="secondary" variant="outlined" onClick={() => tagStaffToFormPending(params.row)}>Tag as Admin Pending</Button>
+                        <Button size="small" color="primary" variant="contained" onClick={() => makeStaffFromProbable(params.row)} disabled={actionLoadingIds.includes(params.row.id)}>Make Active</Button>
                       </Box>
                     )
                   }
@@ -496,7 +530,7 @@ const UserMapping = () => {
                 columns={[
                   { field: 'name', headerName: 'Name', flex: 1, minWidth: 160 },
                   { field: 'username', headerName: 'Username', width: 200 },
-                  { field: 'role', headerName: 'Role', width: 140 }
+                  { field: 'role', headerName: 'User Type', width: 140 }
                 ]}
                 pageSize={25}
                 rowsPerPageOptions={[10, 25, 50]}
@@ -515,7 +549,7 @@ const UserMapping = () => {
               columns={[
                 { field: 'name', headerName: 'Name', flex: 1, minWidth: 160 },
                 { field: 'username', headerName: 'Username', width: 200 },
-                { field: 'role', headerName: 'Role', width: 140 },
+                { field: 'role', headerName: 'User Type', width: 140 },
                 { field: 'actions', headerName: 'Action', width: 160, sortable: false, filterable: false,
                   renderCell: (params) => (
                     <Button size="small" color="primary" variant="contained" onClick={() => makeStaffActive(params.row)} disabled={actionLoadingIds.includes(params.row.id)}>Make Active</Button>
@@ -587,8 +621,8 @@ const UserMapping = () => {
                   { field: 'actions', headerName: 'Action', width: 260, sortable: false, filterable: false,
                     renderCell: (params) => (
                       <Box sx={{ display: 'flex', gap: 1 }}>
-                        <Button size="small" color="primary" variant="contained" onClick={() => makeParentActive(params.row)} disabled={actionLoadingIds.includes(params.row.id)}>Make Active</Button>
-                        <Button size="small" color="secondary" variant="outlined" onClick={() => tagParentToFormPending(params.row)}>Tag as Admin Pending</Button>
+                        <Button size="small" color="primary" variant="contained" onClick={() => makeParentFromProbable(params.row)} disabled={actionLoadingIds.includes(params.row.id)}>Make Active</Button>
+                    
                       </Box>
                     )
                   }
@@ -620,7 +654,6 @@ const UserMapping = () => {
                     renderCell: (params) => (
                       <Box sx={{ display: 'flex', gap: 1 }}>
                         <Button size="small" color="primary" variant="contained" onClick={() => makeParentActive(params.row)} disabled={actionLoadingIds.includes(params.row.id)}>Make Active</Button>
-                        <Button size="small" color="warning" variant="outlined" onClick={() => untagParentFromFormPending(params.row)}>Un-tag</Button>
                       </Box>
                     )
                   }
