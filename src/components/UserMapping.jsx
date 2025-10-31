@@ -47,6 +47,34 @@ const UserMapping = () => {
   const [disabledParents, setDisabledParents] = useState([]);
   const [loadingDisabled, setLoadingDisabled] = useState(false);
 
+  // Fetch disabled users (staff + parents) - extracted so we can call it after actions
+  const fetchDisabledUsers = async () => {
+    try {
+      setLoadingDisabled(true);
+      const res = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/mapping/user-mapping/disabled-user`);
+      const dStaff = Array.isArray(res.data.disabled_staff) ? res.data.disabled_staff.map(item => ({
+        id: item.id,
+        name: item.name,
+        username: item.email || item.phone_number || item.id,
+        role: item.staff_type || 'UNKNOWN',
+        raw: item,
+      })) : [];
+      const dParents = Array.isArray(res.data.disabled_parents) ? res.data.disabled_parents.map(item => ({
+        id: item.parent_id || item.id,
+        name: item.name,
+        username: item.email || item.phone_number || item.parent_id || item.id,
+        child: Array.isArray(item.associations) && item.associations.length > 0 ? item.associations.map(a => a.student_name).join(', ') : '',
+        raw: item,
+      })) : [];
+      setDisabledStaff(dStaff);
+      setDisabledParents(dParents);
+    } catch (error) {
+      console.error('Failed to fetch disabled users', error);
+    } finally {
+      setLoadingDisabled(false);
+    }
+  };
+
   const makeStaffDisabled = (user) => {
     // Call backend to disable active staff (POST /mapping/user-mapping/disable/{id}/STAFF)
     (async () => {
@@ -65,6 +93,12 @@ const UserMapping = () => {
           raw: user.raw || null,
         };
         setStaffPending(prev => [pendingObj, ...prev]);
+        // Refresh disabled lists so the Disabled tab shows the latest data
+        try {
+          await fetchDisabledUsers();
+        } catch (e) {
+          // swallow - fetchDisabledUsers logs errors itself
+        }
         window.dispatchEvent(new CustomEvent('global-alert', { detail: { message: 'Staff disabled successfully', severity: 'success' } }));
       } catch (error) {
         console.error('Disable staff failed', error);
@@ -75,12 +109,12 @@ const UserMapping = () => {
   };
 
   const makeStaffActive = (user) => {
-    // Call backend to activate pending staff (POST /mapping/user-mapping/activate/{id}/STAFF)
+    // Call backend to activate pending staff (POST /mapping/user-mapping/enable/{id}/STAFF)
     (async () => {
       const id = user.id;
       try {
         setActionLoadingIds(prev => [...prev, id]);
-        await axiosInstance.post(`${appConfig.API_PREFIX_V1}/mapping/user-mapping/activate/${id}/STAFF`);
+        await axiosInstance.post(`${appConfig.API_PREFIX_V1}/mapping/user-mapping/enable/${id}/STAFF`);
         // On success, move from pending to active
         setStaffPending(prev => prev.filter(u => u.id !== id));
         const activeObj = {
@@ -266,6 +300,12 @@ const UserMapping = () => {
           raw: user.raw || null,
         };
         setParentPending(prev => [pendingObj, ...prev]);
+        // Refresh disabled lists so the Disabled tab shows the latest data
+        try {
+          await fetchDisabledUsers();
+        } catch (e) {
+          // fetchDisabledUsers already logs errors; ignore here
+        }
         window.dispatchEvent(new CustomEvent('global-alert', { detail: { message: 'Parent disabled successfully', severity: 'success' } }));
       } catch (error) {
         console.error('Disable parent failed', error);
@@ -281,7 +321,7 @@ const UserMapping = () => {
       const id = user.id;
       try {
         setActionLoadingIds(prev => [...prev, id]);
-        await axiosInstance.post(`${appConfig.API_PREFIX_V1}/mapping/user-mapping/activate/${id}/PARENT`);
+        await axiosInstance.post(`${appConfig.API_PREFIX_V1}/mapping/user-mapping/enable/${id}/PARENT`);
         setParentPending(prev => prev.filter(u => u.id !== id));
         const activeObj = {
           id: id,
@@ -405,33 +445,6 @@ const UserMapping = () => {
 
     fetchActiveUsers();
     // also fetch disabled users
-    const fetchDisabledUsers = async () => {
-      try {
-        setLoadingDisabled(true);
-        const res = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/mapping/user-mapping/disabled-user`);
-        const dStaff = Array.isArray(res.data.disabled_staff) ? res.data.disabled_staff.map(item => ({
-          id: item.id,
-          name: item.name,
-          username: item.email || item.phone_number || item.id,
-          role: item.staff_type || 'UNKNOWN',
-          raw: item,
-        })) : [];
-        const dParents = Array.isArray(res.data.disabled_parents) ? res.data.disabled_parents.map(item => ({
-          id: item.parent_id || item.id,
-          name: item.name,
-          username: item.email || item.phone_number || item.parent_id || item.id,
-          child: Array.isArray(item.associations) && item.associations.length > 0 ? item.associations.map(a => a.student_name).join(', ') : '',
-          raw: item,
-        })) : [];
-        setDisabledStaff(dStaff);
-        setDisabledParents(dParents);
-      } catch (error) {
-        console.error('Failed to fetch disabled users', error);
-      } finally {
-        setLoadingDisabled(false);
-      }
-    };
-
     fetchDisabledUsers();
   }, []);
 
