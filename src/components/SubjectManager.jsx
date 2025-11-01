@@ -94,7 +94,7 @@ const SubjectManager = () => {
     }
   };
 
-  const handleModalOpen = (subject = null) => {
+  const handleModalOpen = async (subject = null) => {
     if (subject) {
       setSelectedSubject(subject);
       setFormData({
@@ -104,6 +104,7 @@ const SubjectManager = () => {
         class_id: subject.class_id || '',
         section_id: subject.section_id || '',
       });
+      await fetchSectionsByClass(subject.class_id);
     } else {
       setSelectedSubject(null);
       setFormData({
@@ -113,6 +114,7 @@ const SubjectManager = () => {
         class_id: '',
         section_id: '',
       });
+      setSections([]);
     }
     setModalOpen(true);
   };
