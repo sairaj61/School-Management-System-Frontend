@@ -58,7 +58,6 @@ const SubjectManager = () => {
   useEffect(() => {
     fetchSubjects();
     fetchClasses();
-    fetchSections();
   }, []);
 
   const fetchSubjects = async () => {
@@ -82,9 +81,13 @@ const SubjectManager = () => {
     }
   };
 
-  const fetchSections = async () => {
+  const fetchSectionsByClass = async (classId) => {
+    if (!classId) {
+      setSections([]);
+      return;
+    }
     try {
-      const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/academic/sections/`);
+      const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/academic/sections/by-class/${classId}`);
       setSections(response.data);
     } catch (error) {
       handleApiError(error, setAlert);
@@ -128,10 +131,19 @@ const SubjectManager = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    if (name === 'class_id') {
+      setFormData(prev => ({
+        ...prev,
+        class_id: value,
+        section_id: '' // Clear section when class changes
+      }));
+      fetchSectionsByClass(value);
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -162,8 +174,24 @@ const SubjectManager = () => {
     { field: 'name', headerName: 'Name', width: 150 },
     { field: 'code', headerName: 'Code', width: 120 },
     { field: 'category', headerName: 'Category', width: 150 },
-    { field: 'class_name', headerName: 'Class', width: 150 },
-    { field: 'section_name', headerName: 'Section', width: 150 },
+    {
+      field: 'class_id',
+      headerName: 'Class',
+      width: 150,
+      valueGetter: (params) => {
+        const cls = classes.find(c => c.id === params.row.class_id);
+        return cls ? cls.class_name : '';
+      }
+    },
+    {
+      field: 'section_id',
+      headerName: 'Section',
+      width: 150,
+      valueGetter: (params) => {
+        const sec = sections.find(s => s.id === params.row.section_id);
+        return sec ? sec.name : '';
+      }
+    },
   ];
 
   return (
@@ -266,6 +294,7 @@ const SubjectManager = () => {
                   name="section_id"
                   value={formData.section_id}
                   onChange={handleInputChange}
+                  disabled={!formData.class_id}
                 >
                   <MenuItem value="">None</MenuItem>
                   {sections.map((sec) => (
