@@ -175,23 +175,16 @@ const SubjectManager = () => {
     { field: 'code', headerName: 'Code', width: 120 },
     { field: 'category', headerName: 'Category', width: 150 },
     {
-      field: 'class_id',
+      field: 'class_name',
       headerName: 'Class',
       width: 150,
-      valueGetter: (params) => {
-        const cls = classes.find(c => c.id === params.row.class_id);
-        return cls ? cls.class_name : '';
-      }
+      
     },
     {
-      field: 'section_id',
+      field: 'section_name',
       headerName: 'Section',
-      width: 150,
-      valueGetter: (params) => {
-        const sec = sections.find(s => s.id === params.row.section_id);
-        return sec ? sec.name : '';
-      }
-    },
+      width: 150
+    }
   ];
 
   return (
