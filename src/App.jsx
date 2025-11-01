@@ -26,6 +26,7 @@ import StaffDetails from './components/StaffDetails';
 import ExpenditureManager from './components/ExpenditureManager';
 import ExpenditureCategoryManager from './components/ExpenditureCategoryManager';
 import UserMapping from './components/UserMapping';
+import SubjectManager from './components/SubjectManager';
 
 const App = () => {
   const [token, setToken] = useState(localStorage.getItem('token'));
@@ -98,6 +99,7 @@ const AuthenticatedApp = ({ onLogout }) => {
         <Route path="/students" element={<StudentManager />} />
         <Route path="/academic/:id" element={<StudentDetails />} />
         <Route path="/classes" element={<ClassManager />} />
+        <Route path="/subjects" element={<SubjectManager />} />
         <Route path="/sections" element={<SectionManager />} />
         <Route path="/fees" element={<FeeManager />} />
         <Route path="/fee-categories" element={<FeeCategoryManager />} />
