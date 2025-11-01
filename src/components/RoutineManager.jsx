@@ -14,46 +14,63 @@ import {
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import appConfig from '../config/appConfig';
+import { handleApiError } from '../utils/errorHandler';
 const ROUTINE_DAYS = [
   'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'
 ];
 
-// Static data for demo
-const classes = [
-  { id: 'class1', name: 'Class 1' },
-  { id: 'class2', name: 'Class 2' },
-];
-const sections = [
-  { id: 'sectionA', name: 'A' },
-  { id: 'sectionB', name: 'B' },
-];
-const subjects = [
-  { id: 'subj1', name: 'Math' },
-  { id: 'subj2', name: 'English' },
-  { id: 'subj3', name: 'Science' },
-];
-const staff = [
-  { id: 'staff1', name: 'Mr. Sharma' },
-  { id: 'staff2', name: 'Ms. Gupta' },
-  { id: 'staff3', name: 'Mrs. Singh' },
-];
-const academicYears = [
-  { id: 'year1', name: '2025-26' },
-];
+// Remove static demo data, will fetch from API
 
 import axiosInstance from '../utils/axiosConfig';
 
 const RoutineManager = () => {
+  const [classes, setClasses] = useState([]);
+  const [sections, setSections] = useState([]);
   const [selectedClass, setSelectedClass] = useState('');
   const [selectedSection, setSelectedSection] = useState('');
-  const [selectedYear, setSelectedYear] = useState('');
   const [routineData, setRoutineData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  // Fetch classes on mount
   useEffect(() => {
+    const fetchClasses = async () => {
+      try {
+        const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/academic/classes/`);
+        setClasses(response.data);
+      } catch (error) {
+        handleApiError(error, setError);
+      }
+    };
+    fetchClasses();
+  }, []);
+
+  // Fetch sections when class changes
+  useEffect(() => {
+    if (!selectedClass) {
+      setSections([]);
+      setSelectedSection('');
+      return;
+    }
+    const fetchSectionsByClass = async (classId) => {
+      try {
+        const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/academic/sections/by-class/${classId}`);
+        setSections(response.data);
+      } catch (error) {
+        handleApiError(error, setError);
+      }
+    };
+    fetchSectionsByClass(selectedClass);
+  }, [selectedClass]);
+
+  // Fetch routine for selected section
+  useEffect(() => {
+    if (!selectedSection) {
+      setRoutineData([]);
+      return;
+    }
     setLoading(true);
-  axiosInstance.get(`${appConfig.API_PREFIX_V1}/academic/routine/`)
+    axiosInstance.get(`${appConfig.API_PREFIX_V1}/academic/routine/section/${selectedSection}`)
       .then(res => {
         setRoutineData(res.data);
         setLoading(false);
@@ -62,7 +79,7 @@ const RoutineManager = () => {
         setError('Failed to fetch routine');
         setLoading(false);
       });
-  }, []);
+  }, [selectedSection]);
 
   return (
     <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
@@ -70,7 +87,35 @@ const RoutineManager = () => {
       {loading && <Typography>Loading...</Typography>}
       {error && <Typography color="error">{error}</Typography>}
       <Grid container spacing={2} sx={{ mb: 3 }}>
-        {/* Optionally add filters for class, section, year here */}
+        <Grid item xs={12} sm={6} md={4}>
+          <TextField
+            select
+            fullWidth
+            label="Class"
+            value={selectedClass}
+            onChange={e => setSelectedClass(e.target.value)}
+          >
+            <MenuItem value="">Select Class</MenuItem>
+            {classes.map(cls => (
+              <MenuItem key={cls.id} value={cls.id}>{cls.class_name || cls.name}</MenuItem>
+            ))}
+          </TextField>
+        </Grid>
+        <Grid item xs={12} sm={6} md={4}>
+          <TextField
+            select
+            fullWidth
+            label="Section"
+            value={selectedSection}
+            onChange={e => setSelectedSection(e.target.value)}
+            disabled={!selectedClass}
+          >
+            <MenuItem value="">Select Section</MenuItem>
+            {sections.map(sec => (
+              <MenuItem key={sec.id} value={sec.id}>{sec.name}</MenuItem>
+            ))}
+          </TextField>
+        </Grid>
       </Grid>
       {ROUTINE_DAYS.map(day => (
         <Paper key={day} sx={{ mb: 3, p: 2 }}>
