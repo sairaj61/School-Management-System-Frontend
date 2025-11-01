@@ -146,24 +146,7 @@ const SubjectManager = () => {
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const subjectData = {
-        name: formData.name.trim(),
-        code: formData.code.trim(),
-        category: formData.category,
-        class_id: formData.class_id || null,
-        section_id: formData.section_id || null,
-      };
-      await axiosInstance.post(`${appConfig.API_PREFIX_V1}/academic/subject/`, subjectData);
-      setAlert({ open: true, message: 'Subject added successfully!', severity: 'success' });
-      handleModalClose();
-      fetchSubjects();
-    } catch (error) {
-      handleApiError(error, setAlert);
-    }
-  };
+  // ...existing code...
 
   const filteredSubjects = subjects.filter(subj =>
     subj.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -174,18 +157,75 @@ const SubjectManager = () => {
     { field: 'name', headerName: 'Name', width: 150 },
     { field: 'code', headerName: 'Code', width: 120 },
     { field: 'category', headerName: 'Category', width: 150 },
+    { field: 'class_name', headerName: 'Class', width: 150 },
+    { field: 'section_name', headerName: 'Section', width: 150 },
     {
-      field: 'class_name',
-      headerName: 'Class',
-      width: 150,
-      
+      field: 'actions',
+      headerName: 'Actions',
+      width: 180,
+      renderCell: (params) => (
+        <>
+          <Button
+            variant="contained"
+            color="primary"
+            size="small"
+            onClick={() => handleModalOpen(params.row)}
+            sx={{ mr: 1 }}
+          >
+            Edit
+          </Button>
+          <Button
+            variant="contained"
+            color="error"
+            size="small"
+            onClick={() => handleDelete(params.row.id)}
+          >
+            Delete
+          </Button>
+        </>
+      ),
+      sortable: false,
+      filterable: false,
+      disableColumnMenu: true,
     },
-    {
-      field: 'section_name',
-      headerName: 'Section',
-      width: 150
-    }
   ];
+  // Edit logic
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const subjectData = {
+        name: formData.name.trim(),
+        code: formData.code.trim(),
+        category: formData.category,
+        class_id: formData.class_id || null,
+        section_id: formData.section_id || null,
+      };
+      if (selectedSubject) {
+        await axiosInstance.put(`${appConfig.API_PREFIX_V1}/academic/subject/${selectedSubject.id}`, subjectData);
+        setAlert({ open: true, message: 'Subject updated successfully!', severity: 'success' });
+      } else {
+        await axiosInstance.post(`${appConfig.API_PREFIX_V1}/academic/subject/`, subjectData);
+        setAlert({ open: true, message: 'Subject added successfully!', severity: 'success' });
+      }
+      handleModalClose();
+      fetchSubjects();
+    } catch (error) {
+      handleApiError(error, setAlert);
+    }
+  };
+
+  // Delete logic
+  const handleDelete = async (id) => {
+    if (window.confirm('Are you sure you want to delete this subject?')) {
+      try {
+        await axiosInstance.delete(`${appConfig.API_PREFIX_V1}/academic/subject/${id}`);
+        setAlert({ open: true, message: 'Subject deleted successfully!', severity: 'success' });
+        fetchSubjects();
+      } catch (error) {
+        handleApiError(error, setAlert);
+      }
+    }
+  };
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
