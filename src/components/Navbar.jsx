@@ -212,15 +212,24 @@ const Navbar = () => {
                       <PeopleIcon sx={{ mr: 1 }} />
                       Students
                     </MenuItem>
-                      <MenuItem
-                        onClick={() => {
-                          handleAcademicMenuClose();
-                          navigate('/subjects');
-                        }}
-                      >
-                        <CategoryIcon sx={{ mr: 1 }} />
-                        Subjects
-                      </MenuItem>
+                    <MenuItem
+                      onClick={() => {
+                        handleAcademicMenuClose();
+                        navigate('/subjects');
+                      }}
+                    >
+                      <CategoryIcon sx={{ mr: 1 }} />
+                      Subjects
+                    </MenuItem>
+                    <MenuItem
+                      onClick={() => {
+                        handleAcademicMenuClose();
+                        navigate('/routine');
+                      }}
+                    >
+                      <CalendarTodayIcon sx={{ mr: 1 }} />
+                      Routine
+                    </MenuItem>
                     <MenuItem
                       onClick={() => {
                         handleAcademicMenuClose();
