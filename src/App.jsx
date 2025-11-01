@@ -93,16 +93,16 @@ const App = () => {
 
 const AuthenticatedApp = ({ onLogout }) => {
   return (
-    <div>
+    <>
       <Navbar onLogout={onLogout} />
       <Routes>
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/students" element={<StudentManager />} />
         <Route path="/academic/:id" element={<StudentDetails />} />
         <Route path="/classes" element={<ClassManager />} />
+        <Route path="/sections" element={<SectionManager />} />
         <Route path="/subjects" element={<SubjectManager />} />
         <Route path="/routine" element={<RoutineManager />} />
-        <Route path="/sections" element={<SectionManager />} />
         <Route path="/fees" element={<FeeManager />} />
         <Route path="/fee-categories" element={<FeeCategoryManager />} />
         <Route path="/finance/concessions" element={<ConcessionTypeManager />} />
@@ -110,18 +110,29 @@ const AuthenticatedApp = ({ onLogout }) => {
         <Route path="/routes" element={<RouteManager />} />
         <Route path="/drivers" element={<DriverManager />} />
         <Route path="/academic-years" element={<AcademicYearManager />} />
+        
         {/* New Administrative Routes */}
-        <Route path="/staff" element={<StaffManager />} />
-        <Route path="/staff/:id" element={<StaffDetails />} />
+  <Route path="/staff" element={<StaffManager />} />
+  <Route path="/staff/:id" element={<StaffDetails />} />
         <Route path="/expenditures" element={<ExpenditureManager />} />
         <Route path="/expenditure-categories" element={<ExpenditureCategoryManager />} />
-        <Route path="/user-mapping" element={<UserMapping />} />
+  <Route path="/user-mapping" element={<UserMapping />} />
         {/* Remove ManagementDashboard from normal user routes */}
         {/* <Route path="/management" element={<ManagementDashboard />} /> */}
+
         <Route path="*" element={<Navigate to="/dashboard" />} />
       </Routes>
-    </div>
+    </>
   );
-}
+};
+
+const UnauthenticatedApp = ({ onLogin }) => {
+  return (
+    <Routes>
+      <Route path="/login" element={<Login onLogin={onLogin} />} />
+      <Route path="*" element={<Navigate to="/login" />} />
+    </Routes>
+  );
+};
 
 export default App;
