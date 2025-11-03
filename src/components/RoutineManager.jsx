@@ -207,6 +207,66 @@ const RoutineManager = () => {
   };
 
   // Save weekly routine (transform table to API format)
+// State for copy dialog
+const [copyTargets, setCopyTargets] = useState(null); // { dayIdx, periodIdx }
+const [copyDayChecks, setCopyDayChecks] = useState({});
+
+// Handle checkbox change for copy dialog
+const handleCopyDayCheck = (targetDayIdx, periodIdx, sourceDayIdx) => {
+  setCopyDayChecks(prev => ({ ...prev, [targetDayIdx]: !prev[targetDayIdx] }));
+};
+
+// Perform copy to checked days
+const performCopyToCheckedDays = (sourceDayIdx, periodIdx) => {
+  setRoutineTable(prev => {
+    if (prev.length === 0) return prev;
+    const sourceCell = prev[sourceDayIdx][periodIdx];
+    return prev.map((row, dayIdx) => {
+      if (dayIdx === sourceDayIdx) return row;
+      if (!copyDayChecks[dayIdx]) return row;
+      return row.map((cell, idx) => idx === periodIdx ? {
+        ...cell,
+        subject_id: sourceCell.subject_id,
+        remarks: sourceCell.remarks,
+        staff_assignments: [...sourceCell.staff_assignments],
+      } : cell);
+    });
+  });
+  setCopyTargets(null);
+  setCopyDayChecks({});
+};
+  // Copy selected day's period data to all other days for that period
+  const copyDayPeriodToAllDays = (sourceDayIdx, periodIdx) => {
+    setRoutineTable(prev => {
+      if (prev.length === 0) return prev;
+      const sourceCell = prev[sourceDayIdx][periodIdx];
+      return prev.map((row, dayIdx) => {
+        if (dayIdx === sourceDayIdx) return row;
+        return row.map((cell, idx) => idx === periodIdx ? {
+          ...cell,
+          subject_id: sourceCell.subject_id,
+          remarks: sourceCell.remarks,
+          staff_assignments: [...sourceCell.staff_assignments],
+        } : cell);
+      });
+    });
+  };
+  // Copy Monday's period data to all other days for a given period
+  const copyPeriodDataToAllDays = (periodIdx) => {
+    setRoutineTable(prev => {
+      if (prev.length === 0) return prev;
+      const mondayCell = prev[0][periodIdx];
+      return prev.map((row, dayIdx) => {
+        if (dayIdx === 0) return row; // skip Monday
+        return row.map((cell, idx) => idx === periodIdx ? {
+          ...cell,
+          subject_id: mondayCell.subject_id,
+          remarks: mondayCell.remarks,
+          staff_assignments: [...mondayCell.staff_assignments],
+        } : cell);
+      });
+    });
+  };
   const handleSaveWeeklyRoutine = async () => {
     if (!selectedClass || !selectedSection || routineTable.length === 0 || periods.length === 0) {
       setAlert({ open: true, message: 'Please select class, section and create routine.', severity: 'error' });
@@ -328,7 +388,7 @@ const RoutineManager = () => {
                       />
                     </th>
                   ))}
-                  <th style={{ minWidth: 80 }}>
+                <th style={{ minWidth: 80 }}>
                     <Button variant="outlined" startIcon={<AddIcon />} onClick={addPeriod} sx={{ mt: 1 }}>Add Period</Button>
                   </th>
                 </tr>
@@ -385,8 +445,43 @@ const RoutineManager = () => {
                             <MenuItem key={s.id} value={s.id}>{s.name}</MenuItem>
                           ))}
                         </TextField>
+                        <Button
+                          variant="outlined"
+                          size="small"
+                          sx={{ mt: 1, width: '100%' }}
+                          onClick={() => setCopyTargets({ dayIdx, periodIdx })}
+                        >
+                          Copy to days
+                        </Button>
+                        {copyTargets && copyTargets.dayIdx === dayIdx && copyTargets.periodIdx === periodIdx && (
+                          <Box sx={{ mt: 1, border: '1px solid #eee', borderRadius: 1, p: 1, background: '#fafafa' }}>
+                            <Typography variant="body2" sx={{ mb: 1 }}>Select days to copy:</Typography>
+                            {routineTable.map((r, idx) => (
+                              idx !== dayIdx ? (
+                                <Box key={r[0].day} sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
+                                  <input
+                                    type="checkbox"
+                                    checked={!!copyDayChecks[idx]}
+                                    onChange={e => handleCopyDayCheck(idx, periodIdx, dayIdx)}
+                                    style={{ marginRight: 8 }}
+                                  />
+                                  <Typography variant="body2">{r[0].day}</Typography>
+                                </Box>
+                              ) : null
+                            ))}
+                            <Button
+                              variant="contained"
+                              size="small"
+                              sx={{ mt: 1, width: '100%' }}
+                              onClick={() => performCopyToCheckedDays(dayIdx, periodIdx)}
+                            >
+                              Apply Copy
+                            </Button>
+                          </Box>
+                        )}
                       </td>
                     ))}
+
                   </tr>
                 ))}
               </tbody>
