@@ -38,7 +38,7 @@ const RoutineManager = () => {
   const [saving, setSaving] = useState(false);
   const [alert, setAlert] = useState({ open: false, message: '', severity: 'info' });
 
-  // Fetch classes, subjects, staff on mount
+  // Fetch classes, subjects, staff, and all routines on mount
   useEffect(() => {
     const fetchClasses = async () => {
       try {
@@ -64,16 +64,30 @@ const RoutineManager = () => {
         handleApiError(error, setError);
       }
     };
+    const fetchAllRoutines = async () => {
+      setLoading(true);
+      try {
+        const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/academic/routine/`);
+        setRoutineData(response.data);
+      } catch (error) {
+        setRoutineData([]);
+        handleApiError(error, setError);
+      } finally {
+        setLoading(false);
+      }
+    };
     fetchClasses();
     fetchSubjects();
     fetchStaff();
+    fetchAllRoutines();
   }, []);
 
-  // Fetch sections when class changes
+  // Fetch sections and routines by class when class changes
   useEffect(() => {
     if (!selectedClass) {
       setSections([]);
       setSelectedSection('');
+      // Optionally, fetch all routines again if no class selected
       return;
     }
     const fetchSectionsByClass = async (classId) => {
@@ -84,25 +98,47 @@ const RoutineManager = () => {
         handleApiError(error, setError);
       }
     };
+    const fetchRoutineByClass = async (classId) => {
+      setLoading(true);
+      try {
+        const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/academic/routine/class/${classId}`);
+        setRoutineData(response.data);
+      } catch (error) {
+        setRoutineData([]);
+        handleApiError(error, setError);
+      } finally {
+        setLoading(false);
+      }
+    };
     fetchSectionsByClass(selectedClass);
+    fetchRoutineByClass(selectedClass);
   }, [selectedClass]);
 
   // Fetch routine for selected section
   useEffect(() => {
     if (!selectedSection) {
-      setRoutineData([]);
-      return;
+      // If section is cleared, show routine by class (if class selected), else all routines
+      if (selectedClass) {
+        // Already handled by class effect
+        return;
+      } else {
+        // Already handled by mount effect
+        return;
+      }
     }
-    setLoading(true);
-    axiosInstance.get(`${appConfig.API_PREFIX_V1}/academic/routine/section/${selectedSection}`)
-      .then(res => {
-        setRoutineData(res.data);
+    const fetchRoutineBySection = async (sectionId) => {
+      setLoading(true);
+      try {
+        const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/academic/routine/section/${sectionId}`);
+        setRoutineData(response.data);
+      } catch (error) {
+        setRoutineData([]);
+        handleApiError(error, setError);
+      } finally {
         setLoading(false);
-      })
-      .catch(err => {
-        setError('Failed to fetch routine');
-        setLoading(false);
-      });
+      }
+    };
+    fetchRoutineBySection(selectedSection);
   }, [selectedSection]);
 
   // Add/Remove/Update weekly entries
@@ -152,13 +188,11 @@ const RoutineManager = () => {
           period_number: Number(e.period_number),
         }))
       });
-      setAlert({ open: true, message: 'Weekly routine created successfully!', severity: 'success' });
-      setWeeklyEntries([]);
-      // Optionally refresh routineData
       setLoading(true);
       const res = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/academic/routine/section/${selectedSection}`);
       setRoutineData(res.data);
       setLoading(false);
+      setAlert({ open: true, message: 'Weekly routine saved successfully!', severity: 'success' });
     } catch (error) {
       handleApiError(error, setAlert);
     } finally {
@@ -315,73 +349,60 @@ const RoutineManager = () => {
           </Box>
         )}
       </Paper>
-      {/* Existing routine view */}
-      {ROUTINE_DAYS.map(day => (
-        <Paper key={day} sx={{ mb: 3, p: 2 }}>
-          <Typography variant="h6" sx={{ mb: 2 }}>{day}</Typography>
-          {routineData.filter(r => r.day === day).length === 0 ? (
-            <Typography variant="body2" color="text.secondary">No periods for {day}</Typography>
-          ) : (
-            routineData.filter(r => r.day === day).map((period, idx) => (
-              <Box key={period.id || idx} sx={{ mb: 2, p: 2, border: '1px solid #eee', borderRadius: 2 }}>
-                <Grid container spacing={2} alignItems="center">
-                  <Grid item xs={12} sm={2}>
-                    <Typography><b>Period:</b> {period.period_number}</Typography>
-                  </Grid>
-                  <Grid item xs={12} sm={2}>
-                    <Typography><b>Start:</b> {period.start_time?.slice(0,5)}</Typography>
-                  </Grid>
-                  <Grid item xs={12} sm={2}>
-                    <Typography><b>End:</b> {period.end_time?.slice(0,5)}</Typography>
-                  </Grid>
-                  <Grid item xs={12} sm={2}>
-                    <Typography><b>Subject:</b> {period.subject_name}</Typography>
-                  </Grid>
-                  <Grid item xs={12} sm={2}>
-                    <Typography><b>Class:</b> {period.class_name}</Typography>
-                  </Grid>
-                  <Grid item xs={12} sm={2}>
-                    <Typography><b>Section:</b> {period.section_name}</Typography>
-                  </Grid>
-                  <Grid item xs={12} sm={2}>
-                    <Typography><b>Remarks:</b> {period.remarks}</Typography>
-                  </Grid>
-                  <Grid item xs={12} sm={4}>
-                    <Typography><b>Teachers:</b></Typography>
-                    {period.staff_assignments && period.staff_assignments.length > 0 ? (
-                      period.staff_assignments.map(staff => (
-                        <Chip
-                          key={staff.id}
-                          label={`ID: ${staff.staff_id}${staff.is_substitute ? ' (Sub)' : ''}`}
-                          sx={{ mr: 0.5, mb: 0.5 }}
-                        />
-                      ))
-                    ) : (
-                      <Typography variant="body2" color="text.secondary">No teachers assigned</Typography>
-                    )}
-                  </Grid>
-                </Grid>
-              </Box>
-            ))
-          )}
-        </Paper>
-      ))}
-      {/* Snackbar for alerts */}
-      <Box>
-        <Snackbar
-          open={alert.open}
-          autoHideDuration={6000}
-          onClose={() => setAlert({ ...alert, open: false })}
-        >
-          <Chip
-            label={alert.message}
-            color={alert.severity === 'success' ? 'success' : alert.severity === 'error' ? 'error' : 'info'}
-            sx={{ fontWeight: 600, fontSize: 16 }}
-          />
-        </Snackbar>
-      </Box>
-    </Container>
-  );
-};
+      {/* Refactored: Render tables for each class and section, columns based on max periods */}
+      {Array.isArray(routineData) && routineData.length > 0 ? (
+        routineData.flatMap(classObj =>
+          classObj.sections.map(sectionObj => {
+            let maxPeriods = 0;
+            sectionObj.days.forEach(dayObj => {
+              if (dayObj.routines.length > maxPeriods) maxPeriods = dayObj.routines.length;
+              const maxPeriodNum = Math.max(...dayObj.routines.map(r => r.period_number), 0);
+              if (maxPeriodNum > maxPeriods) maxPeriods = maxPeriodNum;
+            });
+            const columns = Array.from({ length: maxPeriods }, (_, i) => i + 1);
+            return (
+              <Paper key={sectionObj.section_id} sx={{ p: 3, mb: 4, overflowX: 'auto' }}>
+                <Typography variant="h6" sx={{ mb: 2 }}>{classObj.class_name} - {sectionObj.section_name}</Typography>
+                <Box sx={{ width: '100%', overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 900 }}>
+                    <thead>
+                      <tr style={{ background: '#f5f5f5' }}>
+                        <th style={{ padding: '8px', border: '1px solid #ddd', minWidth: 80 }}>Day</th>
+                        {columns.map(periodNum => (
+                          <th key={periodNum} style={{ padding: '8px', border: '1px solid #ddd', minWidth: 120 }}>{periodNum} Period</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {sectionObj.days.map(dayObj => (
+                        <tr key={dayObj.day}>
+                          <td style={{ padding: '8px', border: '1px solid #ddd', fontWeight: 600 }}>{dayObj.day}</td>
+                          {columns.map(periodNum => {
+                            const routine = dayObj.routines.find(r => r.period_number === periodNum);
+                            return (
+                              <td key={periodNum} style={{ padding: '8px', border: '1px solid #ddd', verticalAlign: 'top' }}>
+                                {routine ? (
+                                  <>
+                                    <span>{routine.subject_name}</span><br/>
+                                    <sub>{routine.staff_assignments?.map(s => s.staff_id).join(', ')}</sub>
+                                    {routine.remarks && <div style={{ color: '#888', fontSize: 12 }}>{routine.remarks}</div>}
+                                  </>
+                                ) : ''}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </Box>
+              </Paper>
+            );
+          })
+        )
+      ) : null}
+  </Container>
+);
+}
 
 export default RoutineManager;
