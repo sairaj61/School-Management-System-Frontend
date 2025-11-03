@@ -34,7 +34,10 @@ const RoutineManager = () => {
   const [routineData, setRoutineData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [weeklyEntries, setWeeklyEntries] = useState([]); // For creating weekly routine
+  // Weekly routine table: rows = days, columns = periods
+  const [routineTable, setRoutineTable] = useState([]); // 2D array: [day][period]
+  const [periods, setPeriods] = useState([{ period_number: 1, start_time: '', end_time: '' }]);
+  const [routineEditMode, setRoutineEditMode] = useState(false);
   const [saving, setSaving] = useState(false);
   const [alert, setAlert] = useState({ open: false, message: '', severity: 'info' });
 
@@ -141,64 +144,108 @@ const RoutineManager = () => {
     fetchRoutineBySection(selectedSection);
   }, [selectedSection]);
 
-  // Add/Remove/Update weekly entries
-  const addWeeklyEntry = (day) => {
-    setWeeklyEntries(prev => ([...prev, {
-      day,
-      period_number: '',
-      subject_id: '',
-      start_time: '',
-      end_time: '',
-      remarks: '',
-      staff_assignments: [],
-    }]));
-  };
-  const removeWeeklyEntry = (idx) => {
-    setWeeklyEntries(prev => prev.filter((_, i) => i !== idx));
-  };
-  const updateWeeklyEntry = (idx, field, value) => {
-    setWeeklyEntries(prev => prev.map((entry, i) => i === idx ? { ...entry, [field]: value } : entry));
-  };
-  const addStaffToEntry = (idx, staffId) => {
-    setWeeklyEntries(prev => prev.map((entry, i) => i === idx ? {
-      ...entry,
-      staff_assignments: [...entry.staff_assignments, { staff_id: staffId, priority: 1, is_substitute: 0, remarks: '' }]
-    } : entry));
-  };
-  const removeStaffFromEntry = (idx, staffId) => {
-    setWeeklyEntries(prev => prev.map((entry, i) => i === idx ? {
-      ...entry,
-      staff_assignments: entry.staff_assignments.filter(s => s.staff_id !== staffId)
-    } : entry));
+  // Weekly routine table helpers
+  const ROUTINE_DAYS_LIST = [
+    'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'
+  ];
+
+  // Start routine creation: initialize table
+  const startRoutineEdit = () => {
+    setRoutineEditMode(true);
+    setPeriods([{ period_number: 1, start_time: '', end_time: '' }]);
+    setRoutineTable(
+      ROUTINE_DAYS_LIST.map(day => [
+        {
+          day,
+          period_number: 1,
+          subject_id: '',
+          remarks: '',
+          staff_assignments: [],
+        }
+      ])
+    );
   };
 
-  // Save weekly routine
+  // Add a new period (column)
+  const addPeriod = () => {
+    const nextPeriodNum = periods.length + 1;
+    setPeriods([...periods, { period_number: nextPeriodNum, start_time: '', end_time: '' }]);
+    setRoutineTable(prev => prev.map(row => ([
+      ...row,
+      {
+        day: row[0].day,
+        period_number: nextPeriodNum,
+        subject_id: '',
+        remarks: '',
+        staff_assignments: [],
+      }
+    ])));
+  };
+
+  // Update period time
+  const updatePeriodTime = (idx, field, value) => {
+    setPeriods(prev => prev.map((p, i) => i === idx ? { ...p, [field]: value } : p));
+  };
+
+  // Update cell (subject, remarks, staff)
+  const updateRoutineCell = (dayIdx, periodIdx, field, value) => {
+    setRoutineTable(prev => prev.map((row, i) => i === dayIdx ? row.map((cell, j) => j === periodIdx ? { ...cell, [field]: value } : cell) : row));
+  };
+
+  // Add/remove staff for a cell
+  const addStaffToCell = (dayIdx, periodIdx, staffId) => {
+    setRoutineTable(prev => prev.map((row, i) => i === dayIdx ? row.map((cell, j) => j === periodIdx ? {
+      ...cell,
+      staff_assignments: [...cell.staff_assignments, { staff_id: staffId, priority: 1, is_substitute: 0, remarks: '' }]
+    } : cell) : row));
+  };
+  const removeStaffFromCell = (dayIdx, periodIdx, staffId) => {
+    setRoutineTable(prev => prev.map((row, i) => i === dayIdx ? row.map((cell, j) => j === periodIdx ? {
+      ...cell,
+      staff_assignments: cell.staff_assignments.filter(s => s.staff_id !== staffId)
+    } : cell) : row));
+  };
+
+  // Save weekly routine (transform table to API format)
   const handleSaveWeeklyRoutine = async () => {
-    if (!selectedClass || !selectedSection || weeklyEntries.length === 0) {
-      setAlert({ open: true, message: 'Please select class, section and add at least one entry.', severity: 'error' });
+    if (!selectedClass || !selectedSection || routineTable.length === 0 || periods.length === 0) {
+      setAlert({ open: true, message: 'Please select class, section and create routine.', severity: 'error' });
       return;
     }
     setSaving(true);
     try {
+      // Flatten table to entries
+      const entries = [];
+      routineTable.forEach((row, dayIdx) => {
+        row.forEach((cell, periodIdx) => {
+          entries.push({
+            ...cell,
+            period_number: periods[periodIdx].period_number,
+            start_time: periods[periodIdx].start_time,
+            end_time: periods[periodIdx].end_time,
+          });
+        });
+      });
       await axiosInstance.post(`${appConfig.API_PREFIX_V1}/academic/routine/weekly`, {
         class_id: selectedClass,
         section_id: selectedSection,
-        entries: weeklyEntries.map(e => ({
-          ...e,
-          period_number: Number(e.period_number),
-        }))
+        entries,
       });
       setLoading(true);
       const res = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/academic/routine/section/${selectedSection}`);
       setRoutineData(res.data);
       setLoading(false);
       setAlert({ open: true, message: 'Weekly routine saved successfully!', severity: 'success' });
+      setRoutineEditMode(false);
+      setRoutineTable([]);
+      setPeriods([{ period_number: 1, start_time: '', end_time: '' }]);
     } catch (error) {
       handleApiError(error, setAlert);
     } finally {
       setSaving(false);
     }
   };
+
 
   return (
     <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
@@ -237,112 +284,111 @@ const RoutineManager = () => {
         </Grid>
       </Grid>
 
-      {/* Weekly Routine Creation UI */}
+      {/* Weekly Routine Creation UI - Table based */}
       <Paper sx={{ mb: 4, p: 3, background: '#f9f9f9' }}>
-        <Typography variant="h6" sx={{ mb: 2 }}>Create Weekly Routine</Typography>
+        <Typography variant="h6" sx={{ mb: 2 }}>Weekly Routine Creation</Typography>
         <Grid container spacing={2} alignItems="center">
-          <Grid item xs={12}>
-            <Button variant="outlined" startIcon={<AddIcon />} onClick={() => addWeeklyEntry('MONDAY')}>Add Monday Period</Button>
-            <Button variant="outlined" startIcon={<AddIcon />} onClick={() => addWeeklyEntry('TUESDAY')} sx={{ ml: 1 }}>Add Tuesday Period</Button>
-            <Button variant="outlined" startIcon={<AddIcon />} onClick={() => addWeeklyEntry('WEDNESDAY')} sx={{ ml: 1 }}>Add Wednesday Period</Button>
-            <Button variant="outlined" startIcon={<AddIcon />} onClick={() => addWeeklyEntry('THURSDAY')} sx={{ ml: 1 }}>Add Thursday Period</Button>
-            <Button variant="outlined" startIcon={<AddIcon />} onClick={() => addWeeklyEntry('FRIDAY')} sx={{ ml: 1 }}>Add Friday Period</Button>
-            <Button variant="outlined" startIcon={<AddIcon />} onClick={() => addWeeklyEntry('SATURDAY')} sx={{ ml: 1 }}>Add Saturday Period</Button>
-            <Button variant="outlined" startIcon={<AddIcon />} onClick={() => addWeeklyEntry('SUNDAY')} sx={{ ml: 1 }}>Add Sunday Period</Button>
+          <Grid item>
+            <Button
+              variant="contained"
+              color="primary"
+              disabled={!selectedClass || !selectedSection || routineEditMode}
+              onClick={startRoutineEdit}
+            >
+              Create Weekly Routine
+            </Button>
           </Grid>
         </Grid>
-        {weeklyEntries.length > 0 && (
-          <Box sx={{ mt: 3 }}>
-            {weeklyEntries.map((entry, idx) => (
-              <Paper key={idx} sx={{ mb: 2, p: 2, border: '1px solid #eee', borderRadius: 2 }}>
-                <Grid container spacing={2} alignItems="center">
-                  <Grid item xs={12} sm={2}>
-                    <Typography><b>Day:</b> {entry.day}</Typography>
-                  </Grid>
-                  <Grid item xs={12} sm={2}>
-                    <TextField
-                      label="Period #"
-                      type="number"
-                      value={entry.period_number}
-                      onChange={e => updateWeeklyEntry(idx, 'period_number', e.target.value)}
-                      fullWidth
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={2}>
-                    <TextField
-                      label="Start Time"
-                      type="time"
-                      value={entry.start_time}
-                      onChange={e => updateWeeklyEntry(idx, 'start_time', e.target.value)}
-                      fullWidth
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={2}>
-                    <TextField
-                      label="End Time"
-                      type="time"
-                      value={entry.end_time}
-                      onChange={e => updateWeeklyEntry(idx, 'end_time', e.target.value)}
-                      fullWidth
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={2}>
-                    <TextField
-                      select
-                      label="Subject"
-                      value={entry.subject_id}
-                      onChange={e => updateWeeklyEntry(idx, 'subject_id', e.target.value)}
-                      fullWidth
-                    >
-                      <MenuItem value="">Select Subject</MenuItem>
-                      {subjects.map(subj => (
-                        <MenuItem key={subj.id} value={subj.id}>{subj.name}</MenuItem>
-                      ))}
-                    </TextField>
-                  </Grid>
-                  <Grid item xs={12} sm={2}>
-                    <TextField
-                      label="Remarks"
-                      value={entry.remarks}
-                      onChange={e => updateWeeklyEntry(idx, 'remarks', e.target.value)}
-                      fullWidth
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={3}>
-                    <Typography variant="body2">Teachers:</Typography>
-                    {entry.staff_assignments.map(staffObj => {
-                      const teacher = staff.find(s => s.id === staffObj.staff_id);
-                      return teacher ? (
-                        <Chip
-                          key={staffObj.staff_id}
-                          label={teacher.name}
-                          onDelete={() => removeStaffFromEntry(idx, staffObj.staff_id)}
-                          sx={{ mr: 0.5, mb: 0.5 }}
+        {routineEditMode && (
+          <Box sx={{ mt: 3, overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 900 }}>
+              <thead>
+                <tr style={{ background: '#f5f5f5' }}>
+                  <th style={{ padding: '8px', border: '1px solid #ddd', minWidth: 80 }}>Day</th>
+                  {periods.map((period, idx) => (
+                    <th key={period.period_number} style={{ padding: '8px', border: '1px solid #ddd', minWidth: 120 }}>
+                      Period {period.period_number}<br/>
+                      <TextField
+                        type="time"
+                        label="Start Time"
+                        value={period.start_time}
+                        onChange={e => updatePeriodTime(idx, 'start_time', e.target.value)}
+                        size="small"
+                        sx={{ width: 100, mt: 1 }}
+                      />
+                      <TextField
+                        type="time"
+                        label="End Time"
+                        value={period.end_time}
+                        onChange={e => updatePeriodTime(idx, 'end_time', e.target.value)}
+                        size="small"
+                        sx={{ width: 100, mt: 1 }}
+                      />
+                    </th>
+                  ))}
+                  <th style={{ minWidth: 80 }}>
+                    <Button variant="outlined" startIcon={<AddIcon />} onClick={addPeriod} sx={{ mt: 1 }}>Add Period</Button>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {routineTable.map((row, dayIdx) => (
+                  <tr key={row[0].day}>
+                    <td style={{ padding: '8px', border: '1px solid #ddd', fontWeight: 600 }}>{row[0].day}</td>
+                    {row.map((cell, periodIdx) => (
+                      <td key={periodIdx} style={{ padding: '8px', border: '1px solid #ddd', verticalAlign: 'top', minWidth: 180 }}>
+                        <TextField
+                          select
+                          label="Subject"
+                          value={cell.subject_id}
+                          onChange={e => updateRoutineCell(dayIdx, periodIdx, 'subject_id', e.target.value)}
+                          fullWidth
+                          size="small"
+                        >
+                          <MenuItem value="">Select Subject</MenuItem>
+                          {subjects.map(subj => (
+                            <MenuItem key={subj.id} value={subj.id}>{subj.name}</MenuItem>
+                          ))}
+                        </TextField>
+                        <TextField
+                          label="Remarks"
+                          value={cell.remarks}
+                          onChange={e => updateRoutineCell(dayIdx, periodIdx, 'remarks', e.target.value)}
+                          fullWidth
+                          size="small"
+                          sx={{ mt: 1 }}
                         />
-                      ) : null;
-                    })}
-                    <TextField
-                      select
-                      size="small"
-                      label="Add Teacher"
-                      value=""
-                      onChange={e => addStaffToEntry(idx, e.target.value)}
-                      sx={{ mt: 1, minWidth: 120 }}
-                    >
-                      <MenuItem value="">Select</MenuItem>
-                      {staff.filter(s => !entry.staff_assignments.some(sa => sa.staff_id === s.id)).map(s => (
-                        <MenuItem key={s.id} value={s.id}>{s.name}</MenuItem>
-                      ))}
-                    </TextField>
-                  </Grid>
-                  <Grid item xs={12} sm={1}>
-                    <IconButton color="error" onClick={() => removeWeeklyEntry(idx)}>
-                      <DeleteIcon />
-                    </IconButton>
-                  </Grid>
-                </Grid>
-              </Paper>
-            ))}
+                        <Typography variant="body2" sx={{ mt: 1 }}>Teachers:</Typography>
+                        {cell.staff_assignments.map(staffObj => {
+                          const teacher = staff.find(s => s.id === staffObj.staff_id);
+                          return teacher ? (
+                            <Chip
+                              key={staffObj.staff_id}
+                              label={teacher.name}
+                              onDelete={() => removeStaffFromCell(dayIdx, periodIdx, staffObj.staff_id)}
+                              sx={{ mr: 0.5, mb: 0.5 }}
+                            />
+                          ) : null;
+                        })}
+                        <TextField
+                          select
+                          size="small"
+                          label="Add Teacher"
+                          value=""
+                          onChange={e => addStaffToCell(dayIdx, periodIdx, e.target.value)}
+                          sx={{ mt: 1, minWidth: 120 }}
+                        >
+                          <MenuItem value="">Select</MenuItem>
+                          {staff.filter(s => !cell.staff_assignments.some(sa => sa.staff_id === s.id)).map(s => (
+                            <MenuItem key={s.id} value={s.id}>{s.name}</MenuItem>
+                          ))}
+                        </TextField>
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
             <Button variant="contained" color="primary" onClick={handleSaveWeeklyRoutine} disabled={saving} sx={{ mt: 2 }}>
               {saving ? 'Saving...' : 'Save Weekly Routine'}
             </Button>
