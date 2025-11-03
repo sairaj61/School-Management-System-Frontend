@@ -272,6 +272,13 @@ const performCopyToCheckedDays = (sourceDayIdx, periodIdx) => {
       setAlert({ open: true, message: 'Please select class, section and create routine.', severity: 'error' });
       return;
     }
+    // Check all periods for start and end time
+    for (let i = 0; i < periods.length; i++) {
+      if (!periods[i].start_time || !periods[i].end_time) {
+        setAlert({ open: true, message: `Please enter start and end time for period ${periods[i].period_number}.`, severity: 'error' });
+        return;
+      }
+    }
     setSaving(true);
     try {
       // Flatten table to entries, filter out empty subject_id
