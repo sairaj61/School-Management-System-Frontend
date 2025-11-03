@@ -378,15 +378,18 @@ const RoutineManager = () => {
                         <tr key={dayObj.day}>
                           <td style={{ padding: '8px', border: '1px solid #ddd', fontWeight: 600 }}>{dayObj.day}</td>
                           {columns.map(periodNum => {
-                            const routine = dayObj.routines.find(r => r.period_number === periodNum);
+                            // Find all routines for this period (could be multiple)
+                            const routines = dayObj.routines.filter(r => r.period_number === periodNum);
                             return (
                               <td key={periodNum} style={{ padding: '8px', border: '1px solid #ddd', verticalAlign: 'top' }}>
-                                {routine ? (
-                                  <>
-                                    <span>{routine.subject_name}</span><br/>
-                                    <sub>{routine.staff_assignments?.map(s => s.staff_id).join(', ')}</sub>
-                                    {routine.remarks && <div style={{ color: '#888', fontSize: 12 }}>{routine.remarks}</div>}
-                                  </>
+                                {routines.length > 0 ? (
+                                  routines.map((routine, idx) => (
+                                    <div key={routine.id || idx} style={{ marginBottom: 8 }}>
+                                      <span>{routine.subject_name}</span><br/>
+                                      <sub>{routine.staff_assignments?.map(s => s.staff_id).join(', ')}</sub>
+                                      {routine.remarks && <div style={{ color: '#888', fontSize: 12 }}>{routine.remarks}</div>}
+                                    </div>
+                                  ))
                                 ) : ''}
                               </td>
                             );
