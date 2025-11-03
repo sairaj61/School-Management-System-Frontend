@@ -11,7 +11,8 @@ import {
   Paper,
   IconButton,
   Chip,
-  Snackbar
+  Snackbar,
+  Dialog
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
@@ -26,6 +27,137 @@ const ROUTINE_DAYS = [
 import axiosInstance from '../utils/axiosConfig';
 
 const RoutineManager = () => {
+  // State for editing a routine cell
+  const [editCell, setEditCell] = useState(null); // routine object being edited
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+
+  // Handler to open edit dialog
+  const handleEditRoutineCell = (routine) => {
+    setEditCell(routine);
+    setEditDialogOpen(true);
+  };
+
+  // Handler to close edit dialog
+  const handleCloseEditDialog = () => {
+    setEditDialogOpen(false);
+    setEditCell(null);
+  };
+  // Handler to update cell fields in edit dialog
+  const handleEditCellChange = (field, value) => {
+    setEditCell(prev => ({ ...prev, [field]: value }));
+  };
+  // Handler to update staff assignments in edit dialog
+  const handleEditCellStaffChange = (staffAssignments) => {
+    setEditCell(prev => ({ ...prev, staff_assignments: staffAssignments }));
+  };
+  // Save handler for edit dialog
+  const handleSaveEditCell = async () => {
+    if (!editCell || !editCell.id) return;
+    try {
+      // Build payload for API
+      const payload = {
+        class_id: editCell.class_id,
+        section_id: editCell.section_id,
+        subject_id: editCell.subject_id,
+        day: editCell.day ? editCell.day.toUpperCase() : '',
+        period_number: editCell.period_number,
+        start_time: editCell.start_time,
+        end_time: editCell.end_time,
+        remarks: editCell.remarks,
+        staff_assignments: editCell.staff_assignments,
+      };
+      await axiosInstance.put(`${appConfig.API_PREFIX_V1}/academic/routine/${editCell.id}`, payload);
+      setAlert({ open: true, message: 'Routine cell updated successfully!', severity: 'success' });
+      handleCloseEditDialog();
+      // Refetch routine data for section
+      if (selectedSection) {
+        const res = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/academic/routine/section/${selectedSection}`);
+        setRoutineData(res.data);
+      }
+    } catch (error) {
+      setAlert({ open: true, message: 'Failed to update routine cell.', severity: 'error' });
+    }
+  };
+
+  // Modal/dialog for editing a routine cell
+  const renderEditDialog = () => (
+    <Dialog open={editDialogOpen} onClose={handleCloseEditDialog} maxWidth="sm" fullWidth>
+      <Box sx={{ p: 3 }}>
+        <Typography variant="h6" sx={{ mb: 2 }}>Edit Routine Cell</Typography>
+        {editCell && (
+          <>
+            <TextField
+              select
+              label="Subject"
+              value={editCell.subject_id}
+              onChange={e => handleEditCellChange('subject_id', e.target.value)}
+              fullWidth
+              size="small"
+              sx={{ mb: 2 }}
+            >
+              <MenuItem value="">Select Subject</MenuItem>
+              {subjects.map(subj => (
+                <MenuItem key={subj.id} value={subj.id}>{subj.name}</MenuItem>
+              ))}
+            </TextField>
+            <TextField
+              label="Remarks"
+              value={editCell.remarks}
+              onChange={e => handleEditCellChange('remarks', e.target.value)}
+              fullWidth
+              size="small"
+              sx={{ mb: 2 }}
+            />
+            <TextField
+              type="time"
+              label="Start Time"
+              value={editCell.start_time ? editCell.start_time.slice(0,5) : ''}
+              onChange={e => handleEditCellChange('start_time', e.target.value)}
+              size="small"
+              sx={{ mb: 2, mr: 2 }}
+            />
+            <TextField
+              type="time"
+              label="End Time"
+              value={editCell.end_time ? editCell.end_time.slice(0,5) : ''}
+              onChange={e => handleEditCellChange('end_time', e.target.value)}
+              size="small"
+              sx={{ mb: 2 }}
+            />
+            <Typography variant="body2" sx={{ mt: 2, mb: 1 }}>Teachers:</Typography>
+            {editCell.staff_assignments && editCell.staff_assignments.map((staffObj, idx) => {
+              const teacher = staff.find(s => s.id === staffObj.staff_id);
+              return teacher ? (
+                <Chip
+                  key={staffObj.staff_id}
+                  label={teacher.name}
+                  onDelete={() => handleEditCellStaffChange(editCell.staff_assignments.filter(s => s.staff_id !== staffObj.staff_id))}
+                  sx={{ mr: 0.5, mb: 0.5 }}
+                />
+              ) : null;
+            })}
+            <TextField
+              select
+              size="small"
+              label="Add Teacher"
+              value=""
+              onChange={e => handleEditCellStaffChange([...editCell.staff_assignments, { staff_id: e.target.value, priority: 1, is_substitute: 0, remarks: '' }])}
+              sx={{ mt: 1, minWidth: 120 }}
+            >
+              <MenuItem value="">Select</MenuItem>
+              {staff.filter(s => !editCell.staff_assignments.some(sa => sa.staff_id === s.id)).map(s => (
+                <MenuItem key={s.id} value={s.id}>{s.name}</MenuItem>
+              ))}
+            </TextField>
+            <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end' }}>
+              <Button onClick={handleCloseEditDialog} sx={{ mr: 2 }}>Cancel</Button>
+              <Button variant="contained" color="primary" onClick={handleSaveEditCell} disabled={!editCell.subject_id || !editCell.start_time || !editCell.end_time}>Save</Button>
+            </Box>
+          </>
+        )}
+      </Box>
+    </Dialog>
+  );
   const [classes, setClasses] = useState([]);
   const [sections, setSections] = useState([]);
   const [subjects, setSubjects] = useState([]);
@@ -503,7 +635,9 @@ const performCopyToCheckedDays = (sourceDayIdx, periodIdx) => {
           </Box>
         )}
       </Paper>
-      {/* Refactored: Render tables for each class and section, columns based on max periods */}
+  {/* Edit Routine Cell Dialog */}
+  {renderEditDialog()}
+  {/* Refactored: Render tables for each class and section, columns based on max periods */}
       {Array.isArray(routineData) && routineData.length > 0 ? (
         routineData.flatMap(classObj =>
           classObj.sections.map(sectionObj => {
@@ -538,8 +672,17 @@ const performCopyToCheckedDays = (sourceDayIdx, periodIdx) => {
                               <td key={periodNum} style={{ padding: '8px', border: '1px solid #ddd', verticalAlign: 'top' }}>
                                 {routines.length > 0 ? (
                                   routines.map((routine, idx) => (
-                                    <div key={routine.id || idx} style={{ marginBottom: 8, padding: 8, borderRadius: 6, background: '#f5faff', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
+                                    <div key={routine.id || idx} style={{ marginBottom: 8, padding: 8, borderRadius: 6, background: '#f5faff', boxShadow: '0 1px 4px rgba(0,0,0,0.04)', position: 'relative' }}>
                                       <span style={{ fontWeight: 600, color: '#1976d2', fontSize: 15 }}>{routine.subject_name}</span>
+                                      {/* Edit button for cell */}
+                                      <IconButton
+                                        size="small"
+                                        sx={{ position: 'absolute', top: 4, right: 4 }}
+                                        onClick={() => handleEditRoutineCell(routine)}
+                                        aria-label="Edit Routine Cell"
+                                      >
+                                        <span role="img" aria-label="edit">✏️</span>
+                                      </IconButton>
                                       {routine.staff_assignments && routine.staff_assignments.length > 0 && (
                                         <div style={{ marginTop: 4 }}>
                                           <span style={{ color: '#388e3c', fontWeight: 500, fontSize: 14 }}>Teacher:</span>
