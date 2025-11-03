@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import MuiAlert from '@mui/material/Alert';
 import {
   Container,
   Typography,
@@ -277,7 +278,7 @@ const performCopyToCheckedDays = (sourceDayIdx, periodIdx) => {
       if (!periods[i].start_time || !periods[i].end_time) {
         setAlert({ open: true, message: `Please enter start and end time for period ${periods[i].period_number}.`, severity: 'error' });
         // Use setTimeout to allow React to process state update before returning
-        console.log('Missing time for period:', periods[i].period_number);
+        
         setTimeout(() => {}, 0);
         return;
       }
@@ -569,6 +570,23 @@ const performCopyToCheckedDays = (sourceDayIdx, periodIdx) => {
           })
         )
       ) : null}
+      {/* Snackbar for alerts */}
+      <Snackbar
+        open={alert.open}
+        autoHideDuration={3000}
+        onClose={() => setAlert({ ...alert, open: false })}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <MuiAlert
+          elevation={6}
+          variant="filled"
+          onClose={() => setAlert({ ...alert, open: false })}
+          severity={alert.severity}
+          sx={{ width: '100%' }}
+        >
+          {alert.message}
+        </MuiAlert>
+      </Snackbar>
   </Container>
 );
 }
