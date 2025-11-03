@@ -527,10 +527,22 @@ const performCopyToCheckedDays = (sourceDayIdx, periodIdx) => {
                               <td key={periodNum} style={{ padding: '8px', border: '1px solid #ddd', verticalAlign: 'top' }}>
                                 {routines.length > 0 ? (
                                   routines.map((routine, idx) => (
-                                    <div key={routine.id || idx} style={{ marginBottom: 8 }}>
-                                      <span>{routine.subject_name}</span><br/>
-                                      <sub>{routine.staff_assignments?.map(s => s.staff_id).join(', ')}</sub>
-                                      {routine.remarks && <div style={{ color: '#888', fontSize: 12 }}>{routine.remarks}</div>}
+                                    <div key={routine.id || idx} style={{ marginBottom: 8, padding: 8, borderRadius: 6, background: '#f5faff', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
+                                      <span style={{ fontWeight: 600, color: '#1976d2', fontSize: 15 }}>{routine.subject_name}</span>
+                                      {routine.staff_assignments && routine.staff_assignments.length > 0 && (
+                                        <div style={{ marginTop: 4 }}>
+                                          <span style={{ color: '#388e3c', fontWeight: 500, fontSize: 14 }}>Teacher:</span>
+                                          {routine.staff_assignments.map((s, i) => (
+                                            <span key={s.staff_id} style={{ marginLeft: 6, color: '#388e3c', background: '#e8f5e9', borderRadius: 4, padding: '2px 6px', fontSize: 13 }}>{s.staff_name || s.staff_id}</span>
+                                          ))}
+                                        </div>
+                                      )}
+                                      {routine.remarks && (
+                                        <div style={{ marginTop: 4 }}>
+                                          <span style={{ color: '#f57c00', fontWeight: 500, fontSize: 13 }}>Remarks:</span>
+                                          <span style={{ marginLeft: 6, color: '#f57c00', background: '#fff3e0', borderRadius: 4, padding: '2px 6px', fontSize: 13 }}>{routine.remarks}</span>
+                                        </div>
+                                      )}
                                     </div>
                                   ))
                                 ) : ''}
