@@ -276,6 +276,9 @@ const performCopyToCheckedDays = (sourceDayIdx, periodIdx) => {
     for (let i = 0; i < periods.length; i++) {
       if (!periods[i].start_time || !periods[i].end_time) {
         setAlert({ open: true, message: `Please enter start and end time for period ${periods[i].period_number}.`, severity: 'error' });
+        // Use setTimeout to allow React to process state update before returning
+        console.log('Missing time for period:', periods[i].period_number);
+        setTimeout(() => {}, 0);
         return;
       }
     }
