@@ -214,16 +214,18 @@ const RoutineManager = () => {
     }
     setSaving(true);
     try {
-      // Flatten table to entries
+      // Flatten table to entries, filter out empty subject_id
       const entries = [];
       routineTable.forEach((row, dayIdx) => {
         row.forEach((cell, periodIdx) => {
-          entries.push({
-            ...cell,
-            period_number: periods[periodIdx].period_number,
-            start_time: periods[periodIdx].start_time,
-            end_time: periods[periodIdx].end_time,
-          });
+          if (cell.subject_id) {
+            entries.push({
+              ...cell,
+              period_number: periods[periodIdx].period_number,
+              start_time: periods[periodIdx].start_time,
+              end_time: periods[periodIdx].end_time,
+            });
+          }
         });
       });
       await axiosInstance.post(`${appConfig.API_PREFIX_V1}/academic/routine/weekly`, {
