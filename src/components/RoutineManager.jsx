@@ -30,6 +30,8 @@ const RoutineManager = () => {
   // State for editing a routine cell
   const [editCell, setEditCell] = useState(null); // routine object being edited
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  // State for selected staff for routine filter
+  const [selectedStaffId, setSelectedStaffId] = useState('');
 
   // Handler to open edit dialog
   const handleEditRoutineCell = (routine) => {
@@ -458,6 +460,44 @@ const performCopyToCheckedDays = (sourceDayIdx, periodIdx) => {
       {loading && <Typography>Loading...</Typography>}
       {error && <Typography color="error">{error}</Typography>}
       <Grid container spacing={2} sx={{ mb: 3 }}>
+      <Grid item xs={12} sm={6} md={4}>
+        <TextField
+          select
+          fullWidth
+          label="Staff (Teacher)"
+          value={selectedStaffId}
+          onChange={e => setSelectedStaffId(e.target.value)}
+        >
+          <MenuItem value="">Select Staff</MenuItem>
+          {staff.map(s => (
+            <MenuItem key={s.id} value={s.id}>{s.name}</MenuItem>
+          ))}
+        </TextField>
+      </Grid>
+      <Grid item xs={12} sm={6} md={2}>
+        <Button
+          variant="contained"
+          color="secondary"
+          disabled={!selectedStaffId}
+          onClick={async () => {
+            if (!selectedStaffId) return;
+            setLoading(true);
+            setError('');
+            try {
+              const response = await axiosInstance.get(`${appConfig.API_PREFIX_V1}/academic/routine/staff/${selectedStaffId}`);
+              setRoutineData(response.data);
+            } catch (error) {
+              setRoutineData([]);
+              handleApiError(error, setError);
+            } finally {
+              setLoading(false);
+            }
+          }}
+          sx={{ mt: { xs: 2, sm: 0 } }}
+        >
+          Fetch Routines by Staff
+        </Button>
+      </Grid>
         <Grid item xs={12} sm={6} md={4}>
           <TextField
             select

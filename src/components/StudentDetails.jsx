@@ -22,6 +22,36 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
   const [paymentStatusTab, setPaymentStatusTab] = useState(0);
   // Facility tab state for nested facility tabs
   const [facilityTab, setFacilityTab] = React.useState(0);
+      // Email validation state for Add Parent modal
+      const [addParentEmailError, setAddParentEmailError] = useState('');
+
+      // Email validation function (reuse)
+      const validateEmail = (email) => {
+        if (!email) return '';
+        const re = /^(([^<>()\[\]\\.,;:\s@\"]+(\.[^<>()\[\]\\.,;:\s@\"]+)*)|(".+"))@(([^<>()[\]\\.,;:\s@\"]+\.)+[^<>()[\]\\.,;:\s@\"]{2,})$/i;
+        return re.test(email) ? '' : 'Invalid email address';
+      };
+
+      // Wrap the add parent change handler to validate email
+      const handleNewParentInputChangeWithValidation = (e) => {
+        const { name, value } = e.target;
+        if (name === 'email') {
+          setAddParentEmailError(validateEmail(value));
+        }
+        handleNewParentInputChange(e);
+      };
+    const [editParentEmailError, setEditParentEmailError] = useState('');
+
+    // Email validation function
+
+    // Wrap the edit parent change handler to validate email
+    const handleEditParentChangeWithValidation = (e) => {
+      const { name, value } = e.target;
+      if (name === 'email') {
+        setEditParentEmailError(validateEmail(value));
+      }
+      handleEditParentChange(e);
+    };
   // Delete facility API call
   const handleDeleteFacility = async (studentId, facilityMappingId) => {
     if (!window.confirm('Are you sure you want to delete this facility?')) return;
@@ -591,7 +621,15 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                   <TextField label="Name" name="name" fullWidth value={editParentData.name || ''} onChange={handleEditParentChange} />
                 </Grid>
                 <Grid item xs={12}>
-                  <TextField label="Email" name="email" fullWidth value={editParentData.email || ''} onChange={handleEditParentChange} />
+                  <TextField
+                    label="Email"
+                    name="email"
+                    fullWidth
+                    value={editParentData.email || ''}
+                    onChange={handleEditParentChangeWithValidation}
+                    error={!!editParentEmailError}
+                    helperText={editParentEmailError}
+                  />
                 </Grid>
                 <Grid item xs={12}>
                   <TextField label="Phone Number" name="phone_number" fullWidth value={editParentData.phone_number || ''} onChange={handleEditParentChange} />
@@ -713,7 +751,15 @@ const StudentDetails = ({ student, onBack, onEdit }) => {
                       <TextField label="Name" name="name" fullWidth value={newParentForm.name} onChange={handleNewParentInputChange} />
                     </Grid>
                     <Grid item xs={12}>
-                      <TextField label="Email" name="email" fullWidth value={newParentForm.email} onChange={handleNewParentInputChange} />
+                      <TextField
+                        label="Email"
+                        name="email"
+                        fullWidth
+                        value={newParentForm.email}
+                        onChange={handleNewParentInputChangeWithValidation}
+                        error={!!addParentEmailError}
+                        helperText={addParentEmailError}
+                      />
                     </Grid>
                     <Grid item xs={12}>
                       <TextField label="Phone Number" name="phone_number" fullWidth value={newParentForm.phone_number} onChange={handleNewParentInputChange} />

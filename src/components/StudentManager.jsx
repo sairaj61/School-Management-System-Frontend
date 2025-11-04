@@ -35,6 +35,25 @@ import UploadIcon from '@mui/icons-material/Upload';
 
 const StudentManager = (props) => {
 	const [isEditMode, setIsEditMode] = useState(false);
+	// Roll number validation state
+	const [rollNumberError, setRollNumberError] = useState('');
+
+	// Roll number validation function (example: 4-10 alphanumeric chars)
+	const validateRollNumber = (rollNumber) => {
+		if (!rollNumber) return '';
+		// Change regex as per institution's format
+		const re = /^[a-zA-Z0-9]{4,10}$/;
+		return re.test(rollNumber) ? '' : 'Invalid roll number (must be 4-10 alphanumeric characters)';
+	};
+
+	// Wrap input change handler for roll number validation
+	const handleInputChangeWithValidation = (e) => {
+		const { name, value } = e.target;
+		if (name === 'roll_number') {
+			setRollNumberError(validateRollNumber(value));
+		}
+		handleInputChange(e);
+	};
 	const [students, setStudents] = useState([]);
 	const [classes, setClasses] = useState([]);
 	const [sections, setSections] = useState([]);
@@ -1301,7 +1320,16 @@ const StudentManager = (props) => {
 								<TextField fullWidth label="Name" name="name" value={formData.name} onChange={handleInputChange} required />
 							</Grid>
 							<Grid item xs={12} sm={6}>
-								<TextField fullWidth label="Roll Number" name="roll_number" value={formData.roll_number} onChange={handleInputChange} required />
+												<TextField
+													fullWidth
+													label="Roll Number"
+													name="roll_number"
+													value={formData.roll_number}
+													onChange={handleInputChangeWithValidation}
+													required
+													error={!!rollNumberError}
+													helperText={rollNumberError}
+												/>
 							</Grid>
 							<Grid item xs={12} sm={6}>
 								<TextField fullWidth label="Date of Birth" name="date_of_birth" type="date" value={formData.date_of_birth} onChange={handleInputChange} required InputLabelProps={{ shrink: true }} />
@@ -1412,7 +1440,7 @@ const StudentManager = (props) => {
 								<TextField fullWidth label="Name" name="name" value={formData.name} onChange={handleInputChange} required />
 							</Grid>
 							<Grid item xs={12} sm={6}>
-								<TextField fullWidth label="Roll Number" name="roll_number" value={formData.roll_number} onChange={handleInputChange} required />
+								<TextField fullWidth label="Roll Number" name="roll_number" value={formData.roll_number} onChange={handleInputChangeWithValidation} required error={!!rollNumberError} helperText={rollNumberError} />
 							</Grid>
 							<Grid item xs={12} sm={6}>
 								<TextField fullWidth label="Date of Birth" name="date_of_birth" type="date" value={formData.date_of_birth} onChange={handleInputChange} required InputLabelProps={{ shrink: true }} />
