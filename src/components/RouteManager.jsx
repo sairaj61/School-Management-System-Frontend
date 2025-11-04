@@ -228,7 +228,8 @@ const RouteManager = () => {
   const handleAssignSelectedStudents = async () => {
     if (!selectedRouteForStudents || selectedStudentsToAssign.length === 0) return;
 
-    const transportFeeCategory = feeCategories.find(cat => cat.category_name === 'TRANSPORT');
+    const transportFeeCategory = feeCategories.find(cat => cat.category_name === 'Transport Fee');
+    console.log('Transport Fee Category:', feeCategories);
     if (!transportFeeCategory) {
       setAlert({ open: true, message: 'Transport fee category not found. Cannot assign students.', severity: 'error' });
       return;
