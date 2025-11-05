@@ -1,6 +1,6 @@
 const appConfig = {
-  appName: "Dr. Jack Model School",
-  logo: "/drjackmodelschoollogo.jpg",
+  appName: "skolo-admin-frontend",
+  logo: "/skolo-admin-logo.jpg",
   API_PREFIX_V1: '/api/v1',
 };
 
