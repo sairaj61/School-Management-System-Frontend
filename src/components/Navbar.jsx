@@ -156,24 +156,57 @@ const Navbar = () => {
             )}
 
             <Fade in>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <img
-                  src={appConfig.logo}
-                  alt="Logo"
-                  style={{ height: '40px', width: '40px', background: '#fff', borderRadius: '8px', padding: '4px' }}
-                />
-                <Box sx={{ display: 'flex', flexDirection: 'column', ml: 1 }}>
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 2,
+                  background: 'rgba(255,255,255,0.10)',
+                  borderRadius: 2,
+                  px: 2,
+                  py: 0.5,
+                  boxShadow: 1,
+                }}
+              >
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    background: '#fff',
+                    borderRadius: '50%',
+                    width: 44,
+                    height: 44,
+                    boxShadow: 2,
+                  }}
+                >
+                  <img
+                    src={appConfig.logo}
+                    alt="Logo"
+                    style={{ height: '32px', width: '32px', objectFit: 'contain' }}
+                  />
+                </Box>
+                <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                   <Typography
                     variant="h6"
                     sx={{
-                      fontWeight: 700,
+                      fontWeight: 800,
                       letterSpacing: 1,
                       color: 'white',
-                      textShadow: '1px 1px 2px rgba(0,0,0,0.1)',
+                      lineHeight: 1.1,
+                      fontSize: { xs: '1rem', sm: '1.25rem' },
                     }}
                   >
-                    Skolo.cloud{userInfo.tenantName ? ` | ${userInfo.tenantName}` : ''}
+                    Skolo.cloud
                   </Typography>
+                  {userInfo.tenantName && (
+                    <Typography
+                      variant="caption"
+                      sx={{ color: 'white', opacity: 0.85, fontWeight: 400 }}
+                    >
+                      {userInfo.tenantName}
+                    </Typography>
+                  )}
                 </Box>
               </Box>
             </Fade>
