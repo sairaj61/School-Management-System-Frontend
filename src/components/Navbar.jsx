@@ -160,12 +160,14 @@ const Navbar = () => {
                 sx={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 2,
-                  background: 'rgba(255,255,255,0.10)',
+                  gap: 2.5,
+                  background: 'rgba(255,255,255,0.08)',
                   borderRadius: 2,
-                  px: 2,
+                  px: 2.5,
                   py: 0.5,
                   boxShadow: 1,
+                  minWidth: 0,
+                  maxWidth: 350,
                 }}
               >
                 <Box
@@ -183,26 +185,42 @@ const Navbar = () => {
                   <img
                     src={appConfig.logo}
                     alt="Logo"
-                    style={{ height: '32px', width: '32px', objectFit: 'contain' }}
+                    style={{ height: '30px', width: '30px', objectFit: 'contain' }}
                   />
                 </Box>
-                <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                <Box sx={{ height: 36, borderLeft: '2px solid #e3e3e3', mx: 2 }} />
+                <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', minWidth: 0 }}>
                   <Typography
                     variant="h6"
                     sx={{
-                      fontWeight: 800,
-                      letterSpacing: 1,
-                      color: 'white',
+                      fontWeight: 900,
+                      letterSpacing: 1.2,
+                      color: '#fff',
                       lineHeight: 1.1,
-                      fontSize: { xs: '1rem', sm: '1.25rem' },
+                      fontSize: { xs: '1.1rem', sm: '1.35rem' },
+                      textShadow: '0 2px 8px rgba(0,0,0,0.10)',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
                     }}
                   >
-                    Skolo.cloud
+                    Skolo<span style={{ color: '#90caf9' }}>.cloud</span>
                   </Typography>
                   {userInfo.tenantName && (
                     <Typography
-                      variant="caption"
-                      sx={{ color: 'white', opacity: 0.85, fontWeight: 400 }}
+                      variant="subtitle2"
+                      sx={{
+                        color: '#fff',
+                        fontWeight: 500,
+                        letterSpacing: 0.5,
+                        opacity: 0.92,
+                        fontSize: { xs: '0.95rem', sm: '1.05rem' },
+                        maxWidth: 180,
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        mt: 0.2,
+                      }}
                     >
                       {userInfo.tenantName}
                     </Typography>
