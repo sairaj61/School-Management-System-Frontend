@@ -156,24 +156,75 @@ const Navbar = () => {
             )}
 
             <Fade in>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <img
-                  src={appConfig.logo}
-                  alt="Logo"
-                  style={{ height: '40px', width: '40px' }}
-                />
-                <Box sx={{ display: 'flex', flexDirection: 'column', ml: 1 }}>
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 2.5,
+                  background: 'rgba(255,255,255,0.08)',
+                  borderRadius: 2,
+                  px: 2.5,
+                  py: 0.5,
+                  boxShadow: 1,
+                  minWidth: 0,
+                  maxWidth: 350,
+                }}
+              >
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    background: '#fff',
+                    borderRadius: '50%',
+                    width: 44,
+                    height: 44,
+                    boxShadow: 2,
+                  }}
+                >
+                  <img
+                    src={appConfig.logo}
+                    alt="Logo"
+                    style={{ height: '30px', width: '30px', objectFit: 'contain' }}
+                  />
+                </Box>
+                <Box sx={{ height: 36, borderLeft: '2px solid #e3e3e3', mx: 2 }} />
+                <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', minWidth: 0 }}>
                   <Typography
                     variant="h6"
                     sx={{
-                      fontWeight: 700,
-                      letterSpacing: 1,
-                      color: 'white',
-                      textShadow: '1px 1px 2px rgba(0,0,0,0.1)',
+                      fontWeight: 900,
+                      letterSpacing: 1.2,
+                      color: '#fff',
+                      lineHeight: 1.1,
+                      fontSize: { xs: '1.1rem', sm: '1.35rem' },
+                      textShadow: '0 2px 8px rgba(0,0,0,0.10)',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
                     }}
                   >
-                    {userInfo.tenantName}
+                    Skolo<span style={{ color: '#90caf9' }}>.cloud</span>
                   </Typography>
+                  {userInfo.tenantName && (
+                    <Typography
+                      variant="subtitle2"
+                      sx={{
+                        color: '#fff',
+                        fontWeight: 500,
+                        letterSpacing: 0.5,
+                        opacity: 0.92,
+                        fontSize: { xs: '0.95rem', sm: '1.05rem' },
+                        maxWidth: 180,
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        mt: 0.2,
+                      }}
+                    >
+                      {userInfo.tenantName}
+                    </Typography>
+                  )}
                 </Box>
               </Box>
             </Fade>

@@ -1,1 +1,1 @@
-# School-Management-System-Frontend
+# skolo-admin-frontend
