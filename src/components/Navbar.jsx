@@ -172,7 +172,7 @@ const Navbar = () => {
                       textShadow: '1px 1px 2px rgba(0,0,0,0.1)',
                     }}
                   >
-                    {userInfo.tenantName}
+                    Skolo.cloud{userInfo.tenantName ? ` | ${userInfo.tenantName}` : ''}
                   </Typography>
                 </Box>
               </Box>
