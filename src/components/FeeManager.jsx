@@ -718,7 +718,7 @@ const FeeManager = () => {
   );
 
   return (
-    <Container maxWidth="lg" sx={containerStyle}>
+    <Container maxWidth="xl" sx={containerStyle}>
       <Paper sx={{ mb: 2, display: 'flex', flexDirection: 'column', flex: 1 }}>
         <Tabs value={mainTabValue} onChange={handleMainTabChange} aria-label="main fee tabs">
           <Tab label="Overview & Stats" />

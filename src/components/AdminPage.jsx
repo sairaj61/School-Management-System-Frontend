@@ -160,7 +160,7 @@ const AdminPage = () => {
   };
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+    <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
       <Paper elevation={3} sx={{ p: 3 }}>
         <Typography variant="h5" fontWeight={700} gutterBottom color="primary">User Management</Typography>
         <Grid container spacing={2}>

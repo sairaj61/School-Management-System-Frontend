@@ -74,7 +74,7 @@ const SuperUserLogin = () => {
   );
 
   return (
-    <Container maxWidth="xs" sx={{ mt: 10 }}>
+    <Container maxWidth="xl" sx={{ mt: 10 }}>
       <Paper elevation={3} sx={{ p: 4 }}>
         <Typography variant="h5" fontWeight={700} gutterBottom align="center">Superuser Login</Typography>
         {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
