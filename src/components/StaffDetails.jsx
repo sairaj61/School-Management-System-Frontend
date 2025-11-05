@@ -86,6 +86,16 @@ const StaffDetails = () => {
         return;
       }
     }
+    // Check for duplicate component names (case-insensitive, trimmed)
+    const nameSet = new Set();
+    for (const comp of componentsForm) {
+      const name = comp.name.trim().toLowerCase();
+      if (nameSet.has(name)) {
+        setComponentError(`Duplicate component name: "${comp.name}" is not allowed.`);
+        return;
+      }
+      nameSet.add(name);
+    }
     try {
       await axiosInstance.post(`${appConfig.API_PREFIX_V1}/administrative/staff-ctc/ctc-structure/${componentCtcId}/components/bulk`, {
         components: componentsForm.map(c => ({
