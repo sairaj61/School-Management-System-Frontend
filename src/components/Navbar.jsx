@@ -160,7 +160,7 @@ const Navbar = () => {
                 <img
                   src={appConfig.logo}
                   alt="Logo"
-                  style={{ height: '40px', width: '40px' }}
+                  style={{ height: '40px', width: '40px', background: '#fff', borderRadius: '8px', padding: '4px' }}
                 />
                 <Box sx={{ display: 'flex', flexDirection: 'column', ml: 1 }}>
                   <Typography
